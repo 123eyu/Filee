@@ -82,6 +82,24 @@ public sealed class WindowsPlatformServices : IPlatformServices
     /// <summary>True for the desktop's window classes: its icons are not among Shell.Application's windows.</summary>
     internal static bool IsDesktop(string? windowClass) => windowClass is "Progman" or "WorkerW";
 
+    /// <summary>
+    /// True when the end of a window's owner chain (<paramref name="rootOwner"/>) is another window and the desktop.
+    /// Desktop icon layers (apps that hide Explorer's icon view and draw the icons themselves) cover the screen with a
+    /// window owned by the shell's desktop window and keep Explorer's desktop view selected like their own icons, so
+    /// over them, or with them in front, gestures and the selection shortcut act as on the desktop.
+    /// </summary>
+    internal static bool StandsForDesktop(nint window, nint rootOwner, string? rootOwnerClass) =>
+        rootOwner != 0 && rootOwner != window && IsDesktop(rootOwnerClass);
+
+    /// <summary>The desktop for a top-level window it owns (see <see cref="StandsForDesktop"/>), else the window.</summary>
+    private static nint DesktopOrSelf(nint window)
+    {
+        if (window == 0)
+            return 0;
+        var owner = NativeMethods.GetAncestor(window, NativeMethods.GA_ROOTOWNER);
+        return StandsForDesktop(window, owner, NativeMethods.ClassNameOf(owner)) ? owner : window;
+    }
+
     public string? ShortcutTarget(string path) => ShellLinks.TargetOf(path);
 
     public string DownloadsFolder => KnownFolders.Downloads
@@ -217,7 +235,7 @@ public sealed class WindowsPlatformServices : IPlatformServices
         if (foreground == 0)
             return 0;
         var root = NativeMethods.GetAncestor(foreground, NativeMethods.GA_ROOT);
-        return root == 0 ? foreground : root;
+        return DesktopOrSelf(root == 0 ? foreground : root);
     }
 
     public int SystemDragThreshold => Math.Max(2, NativeMethods.GetSystemMetrics(NativeMethods.SM_CXDRAG));
@@ -384,7 +402,7 @@ public sealed class WindowsPlatformServices : IPlatformServices
     private static nint RootWindowAt(int x, int y)
     {
         var hwnd = NativeMethods.WindowFromPoint(new NativeMethods.POINT { X = x, Y = y });
-        return hwnd == 0 ? 0 : NativeMethods.GetAncestor(hwnd, NativeMethods.GA_ROOT);
+        return hwnd == 0 ? 0 : DesktopOrSelf(NativeMethods.GetAncestor(hwnd, NativeMethods.GA_ROOT));
     }
 
     private static string? ProcessNameOf(nint hwnd)
