@@ -305,6 +305,45 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void Custom_resize_stretches_to_exactly_the_asked_size()
+    {
+        // The case from the issue: a 1080 x 1920 photo asked for a 500 x 2000 banner, distorted on purpose.
+        var options = new ImageOptions { Resize = ResizeMode.Custom, CustomWidth = 500, CustomHeight = 2000 };
+        using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
+
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+
+        Assert.Equal((500u, 2000u), (portrait.Width, portrait.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_with_the_lock_fits_inside_without_distortion()
+    {
+        var options = new ImageOptions { Resize = ResizeMode.Custom, CustomWidth = 500, CustomHeight = 2000, LockAspect = true };
+
+        // The width is the limit: 1080 x 1920 shrinks to the largest 9:16 fit inside the box, 500 x 889.
+        using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+        Assert.Equal((500u, 889u), (portrait.Width, portrait.Height));
+
+        // The lock grows as well: 250 x 444 doubles to 500 x 888, the same shape.
+        using var small = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(small, options, "png");
+        Assert.Equal((500u, 888u), (small.Width, small.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_leaves_a_picture_that_already_has_the_asked_size()
+    {
+        var options = new ImageOptions { Resize = ResizeMode.Custom, CustomWidth = 500, CustomHeight = 2000 };
+        using var exact = new MagickImage(MagickColors.White, 500, 2000);
+
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(exact, options, "png");
+
+        Assert.Equal((500u, 2000u), (exact.Width, exact.Height));
+    }
+
+    [Fact]
     public void A_long_image_splits_between_pages_into_parts_the_format_holds()
     {
         // Five 6,000 px pages: a WebP holds 16,383 px, so two pages per part; at half width (Width 50 px) all fit.

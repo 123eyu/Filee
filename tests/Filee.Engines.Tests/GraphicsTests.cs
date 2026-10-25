@@ -424,6 +424,23 @@ public class GraphicsTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task Custom_resize_stretches_a_vector_picture()
+    {
+        var dir = fx.NewFolder();
+        var svg = Write(dir, "logo.svg", GraphicsBuilders.Svg);
+
+        var rendered = await fx.ConvertAsync([svg], new Preset
+        {
+            TargetFormat = "png",
+            Image = { Resize = ResizeMode.Custom, CustomWidth = 777, CustomHeight = 333 },
+        });
+
+        AssertDone(rendered);
+        using var png = new MagickImage(rendered.Outputs.Single());
+        Assert.Equal((777u, 333u), (png.Width, png.Height));
+    }
+
+    [Fact]
     public async Task Files_that_are_not_svg_fail_with_a_message()
     {
         var dir = fx.NewFolder();

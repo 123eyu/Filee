@@ -290,6 +290,21 @@ internal static class ImageEncoder
             case ResizeMode.Width when options.Width > 0 && image.Width > options.Width:
                 image.Resize((uint)options.Width, (uint)Math.Max(1, Math.Round(image.Height * (double)options.Width / image.Width)));
                 break;
+            case ResizeMode.Custom when options.CustomWidth > 0 && options.CustomHeight > 0 && options.LockAspect:
+                {
+                    // The file's own shape is kept: scaled up or down to the largest size that fits inside the box. Both
+                    // sides come from one scale, so the aspect already matches and Resize keeps it, as it always does.
+                    var scale = Math.Min(options.CustomWidth / (double)image.Width, options.CustomHeight / (double)image.Height);
+                    if (scale != 1)
+                        image.Resize((uint)Math.Max(1, Math.Round(image.Width * scale)), (uint)Math.Max(1, Math.Round(image.Height * scale)));
+                    break;
+                }
+            case ResizeMode.Custom when options.CustomWidth > 0 && options.CustomHeight > 0:
+                // No lock: exactly the asked size, stretching or squeezing the picture on purpose (issue #576). Resize
+                // fits inside a box and keeps the aspect on its own, so the flag is what makes this a real stretch.
+                if (image.Width != (uint)options.CustomWidth || image.Height != (uint)options.CustomHeight)
+                    image.Resize(new MagickGeometry((uint)options.CustomWidth, (uint)options.CustomHeight) { IgnoreAspectRatio = true });
+                break;
         }
         FitFormat(image, targetFormat);
 

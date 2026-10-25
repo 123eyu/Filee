@@ -265,6 +265,11 @@ public enum ResizeMode
     LongEdge,
     /// <summary>Scale to <see cref="ImageOptions.Width"/> pixels wide, height in proportion (never upscales).</summary>
     Width,
+    /// <summary>
+    /// Scale to <see cref="ImageOptions.CustomWidth"/> x <see cref="ImageOptions.CustomHeight"/> pixels: stretched to exactly that
+    /// size, or with <see cref="ImageOptions.LockAspect"/> scaled (up or down) to the largest size that fits inside.
+    /// </summary>
+    Custom,
 }
 
 /// <summary>How an image is turned, after its EXIF orientation is applied.</summary>
@@ -333,6 +338,18 @@ public sealed class ImageOptions
 
     /// <summary>Target width in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Width"/>.</summary>
     public int Width { get; set; } = 1200;
+
+    /// <summary>Target width in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Custom"/> (issue #576).</summary>
+    public int CustomWidth { get; set; } = 1920;
+
+    /// <summary>Target height in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Custom"/> (issue #576).</summary>
+    public int CustomHeight { get; set; } = 1080;
+
+    /// <summary>
+    /// With <see cref="ResizeMode.Custom"/>: keep each file's own shape and scale it to the largest size that fits inside
+    /// <see cref="CustomWidth"/> x <see cref="CustomHeight"/>, instead of stretching it to exactly that size.
+    /// </summary>
+    public bool LockAspect { get; set; }
 
     /// <summary>Output DPI written into the file. <c>null</c> keeps the source value.</summary>
     public int? Dpi { get; set; }

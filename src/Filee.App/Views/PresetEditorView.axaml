@@ -128,6 +128,19 @@
             <TextBlock Classes="label" Text="{DynamicResource presets.width}" />
             <NumericUpDown Value="{Binding Width}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" AutomationProperties.Name="{DynamicResource presets.width}" />
           </StackPanel>
+          <StackPanel Grid.Column="2" IsVisible="{Binding ShowCustom}">
+            <Grid ColumnDefinitions="*,8,*">
+              <StackPanel>
+                <TextBlock Classes="label" Text="{DynamicResource presets.width}" />
+                <NumericUpDown Value="{Binding CustomWidth}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" AutomationProperties.Name="{DynamicResource presets.width}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Classes="label" Text="{DynamicResource presets.height}" />
+                <NumericUpDown Value="{Binding CustomHeight}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" AutomationProperties.Name="{DynamicResource presets.height}" />
+              </StackPanel>
+            </Grid>
+            <CheckBox Content="{DynamicResource presets.lock_aspect}" IsChecked="{Binding LockAspect}" Margin="0,8,0,0" AutomationProperties.Name="{DynamicResource presets.lock_aspect}" />
+          </StackPanel>
         </Grid>
         <Grid ColumnDefinitions="*,12,*">
           <StackPanel>

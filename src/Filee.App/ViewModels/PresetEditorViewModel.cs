@@ -160,6 +160,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _resizePercent = _edit.Image.ResizePercent;
         _longEdge = _edit.Image.LongEdge;
         _width = _edit.Image.Width;
+        _customWidth = _edit.Image.CustomWidth;
+        _customHeight = _edit.Image.CustomHeight;
+        _lockAspect = _edit.Image.LockAspect;
         _setDpi = _edit.Image.Dpi.HasValue;
         _dpi = _edit.Image.Dpi ?? 300;
         _keepMetadata = _edit.Image.KeepMetadata;
@@ -385,6 +388,10 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     [ObservableProperty] private int _resizePercent;
     [ObservableProperty] private int _longEdge;
     [ObservableProperty] private int _width;
+    [ObservableProperty] private int _customWidth;
+    [ObservableProperty] private int _customHeight;
+    /// <summary>With Custom: keep each file's shape and fit inside, instead of stretching (ImageOptions.LockAspect).</summary>
+    [ObservableProperty] private bool _lockAspect;
     [ObservableProperty] private bool _setDpi;
     [ObservableProperty] private int _dpi;
     [ObservableProperty]
@@ -636,6 +643,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     public bool ShowPercent => Resize.Value == ResizeMode.Percent;
     public bool ShowLongEdge => Resize.Value == ResizeMode.LongEdge;
     public bool ShowWidth => Resize.Value == ResizeMode.Width;
+    public bool ShowCustom => Resize.Value == ResizeMode.Custom;
     public bool ShowMargin => PageSize.Value != PdfPageSize.FitImage;
     public bool ShowSubfolder => Location.Value == OutputLocation.Subfolder;
     public bool ShowCustomFolder => Location.Value == OutputLocation.CustomFolder;
@@ -664,6 +672,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         image.ResizePercent = Math.Clamp(ResizePercent, 1, 1000);
         image.LongEdge = Math.Clamp(LongEdge, 16, 20000);
         image.Width = Math.Clamp(Width, 16, 20000);
+        image.CustomWidth = Math.Clamp(CustomWidth, 16, 16384);
+        image.CustomHeight = Math.Clamp(CustomHeight, 16, 16384);
+        image.LockAspect = LockAspect;
         image.Dpi = SetDpi ? Math.Clamp(Dpi, 36, 2400) : null;
         image.KeepMetadata = KeepMetadata;
         image.KeepColorProfile = KeepColorProfile;
