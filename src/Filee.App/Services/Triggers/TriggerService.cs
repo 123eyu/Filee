@@ -27,8 +27,14 @@ public sealed class TriggerService : IDisposable
     private GnomePointerInput? _gnomeInput;
     private HashSet<string> _excluded = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>FILEE_TRACE_GESTURES=1 logs each mouse press and scope decision, to find why a gesture doesn't fire.</summary>
+    /// <summary>
+    /// FILEE_TRACE_GESTURES=1 logs each mouse press and scope decision, to find why a gesture doesn't fire, and on
+    /// Windows each mouse move that reached Filee late (a stuck cursor, #511).
+    /// </summary>
     private static readonly bool Trace = Environment.GetEnvironmentVariable("FILEE_TRACE_GESTURES") == "1";
+
+    /// <summary>A mouse move this late (ms) goes to the trace: the clock itself is only 16 ms exact.</summary>
+    private const long LateMove = 50;
 
     public TriggerService(IPlatformServices platform, ILogger<TriggerService> log)
         : this(platform, log, () => new QueuedGlobalHook())
@@ -308,6 +314,10 @@ public sealed class TriggerService : IDisposable
 
     private void OnMove(MouseHookEventArgs e)
     {
+        // How long Windows held the cursor for Filee (#511): the event's time is in Unix milliseconds there.
+        if (Trace && OperatingSystem.IsWindows()
+            && DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (long)e.RawEvent.Time is > LateMove and var late)
+            _log.LogInformation("Trace: a mouse move reached Filee {Late} ms late", late);
         (_estX, _estY) = (e.Data.X, e.Data.Y);
         LastCursor = (e.Data.X, e.Data.Y);
         _detector.MouseMove(e.Data.X, e.Data.Y, Map(e.RawEvent.Mask), HeldButton(e.RawEvent.Mask));
