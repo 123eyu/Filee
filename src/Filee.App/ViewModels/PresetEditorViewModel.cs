@@ -113,7 +113,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
 
         _name = string.IsNullOrWhiteSpace(_edit.Name) ? loc.DisplayName(_edit) : _edit.Name;
         _target = Targets.FirstOrDefault(t => t.Value == _edit.TargetFormat) ?? Targets[1];
-        _resize = ResizeModes.First(r => r.Value == _edit.Image.Resize);
+        _resize = ResizeModes.First(r => r.Value == (_edit.Image.CustomSize is null ? _edit.Image.Resize : ResizeMode.Custom));
         _rotation = Rotations.FirstOrDefault(r => r.Value == _edit.Image.Rotation) ?? Rotations[0];
         _flip = Flips.FirstOrDefault(f => f.Value == _edit.Image.Flip) ?? Flips[0];
         _pageSize = PageSizes.First(p => p.Value == _edit.Pdf.PageSize);
@@ -160,9 +160,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _resizePercent = _edit.Image.ResizePercent;
         _longEdge = _edit.Image.LongEdge;
         _width = _edit.Image.Width;
-        _customWidth = _edit.Image.CustomWidth;
-        _customHeight = _edit.Image.CustomHeight;
-        _lockAspect = _edit.Image.LockAspect;
+        _customWidth = _edit.Image.CustomSize?.Width ?? 1920;
+        _customHeight = _edit.Image.CustomSize?.Height ?? 1080;
+        _lockAspect = _edit.Image.CustomSize?.LockAspect ?? false;
         _setDpi = _edit.Image.Dpi.HasValue;
         _dpi = _edit.Image.Dpi ?? 300;
         _keepMetadata = _edit.Image.KeepMetadata;
@@ -366,7 +366,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         }
     }
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowPercent), nameof(ShowLongEdge), nameof(ShowWidth))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowPercent), nameof(ShowLongEdge), nameof(ShowWidth), nameof(ShowCustom))]
     private Choice<ResizeMode> _resize;
 
     [ObservableProperty] private Choice<ImageRotation> _rotation;
@@ -664,7 +664,19 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _original.TargetFormat = TargetId;
         var image = _original.Image;
         image.Quality = Math.Clamp(Quality, 1, 100);
-        image.Resize = Resize.Value;
+        if (Resize.Value == ResizeMode.Custom)
+        {
+            // Custom sizing is stored as CustomSize with Resize None, never as a resize name an older version rejects
+            // (it would read presets.json as broken and fall back to the built-in presets, and the next save would
+            // write those over the user's own; issue #576).
+            image.Resize = ResizeMode.None;
+            image.CustomSize = new CustomImageSize { Width = Math.Clamp(CustomWidth, 16, 16384), Height = Math.Clamp(CustomHeight, 16, 16384), LockAspect = LockAspect };
+        }
+        else
+        {
+            image.Resize = Resize.Value;
+            image.CustomSize = null;
+        }
         // Only images and PDFs are turned; for any other target a rotation left over from an earlier target would make
         // every file fail ("can only turn images") with nothing on screen to turn it off.
         image.Rotation = CanTurn ? Rotation.Value : ImageRotation.None;
@@ -672,9 +684,6 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         image.ResizePercent = Math.Clamp(ResizePercent, 1, 1000);
         image.LongEdge = Math.Clamp(LongEdge, 16, 20000);
         image.Width = Math.Clamp(Width, 16, 20000);
-        image.CustomWidth = Math.Clamp(CustomWidth, 16, 16384);
-        image.CustomHeight = Math.Clamp(CustomHeight, 16, 16384);
-        image.LockAspect = LockAspect;
         image.Dpi = SetDpi ? Math.Clamp(Dpi, 36, 2400) : null;
         image.KeepMetadata = KeepMetadata;
         image.KeepColorProfile = KeepColorProfile;

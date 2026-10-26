@@ -120,11 +120,11 @@ public sealed class VectorConverter : IConverter, IImageTransformer
         ct.ThrowIfCancellationRequested();
         progress?.Report(0.6);
 
-        // The drawing was rendered at its final size, so the preset's resize must not scale the bitmap again. A custom
-        // width x height is different: it is an exact stretch of whatever the render produced, so it applies afterwards.
+        // The drawing was rendered at its final size, so the preset's resize must not scale the bitmap again. Custom
+        // sizing rides on CustomSize, not on Resize: with the lock the raster already fits the box, without it this is
+        // the exact stretch of what the render produced.
         var options = step.Preset.Image.Clone();
-        if (options.Resize is not Core.Presets.ResizeMode.Custom)
-            options.Resize = Core.Presets.ResizeMode.None;
+        options.Resize = Core.Presets.ResizeMode.None;
         ImageEncoder.ApplyOptions(image, options, step.To);
         return ImageEncoder.Write([image], step.To, step.Output, options);
     }

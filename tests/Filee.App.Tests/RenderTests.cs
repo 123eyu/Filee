@@ -1148,6 +1148,66 @@ public class RenderTests
     }
 
     [AvaloniaTheory]
+    [InlineData("en")]
+    [InlineData("de")]
+    [InlineData("ru")]
+    public void Custom_resize_shows_its_fields_and_never_writes_a_name_older_versions_reject(string language)
+    {
+        TestServices.EnsureInitialized(language);
+        var loc = AppHost.Get<ILocalizer>();
+        var preset = Filee.Core.Presets.BuiltInData.CreatePresets().Single(p => p.Id == "jpg-70");
+        var vm = new PresetEditorViewModel(preset, loc);
+
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.Percent);
+        Assert.False(vm.ShowCustom);
+
+        var raised = new List<string>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.Custom);
+        Assert.True(vm.ShowCustom);
+        Assert.Contains(nameof(vm.ShowCustom), raised);   // the boxes appear without reopening the editor
+
+        vm.CustomWidth = 777;
+        vm.CustomHeight = 333;
+        vm.LockAspect = true;
+        var window = new PresetEditorWindow { DataContext = vm, Height = 900 };
+        window.Show();
+        Pump();
+        Save(window, $"preset-custom-{language}.png");
+        window.Close();
+
+        Assert.True(vm.Apply());
+        // Stored as customSize with resize None, so an older Filee keeps reading presets.json instead of treating it
+        // as broken and overwriting the user's presets with the built-in ones (issue #576).
+        Assert.Equal(Filee.Core.Presets.ResizeMode.None, preset.Image.Resize);
+    }
+
+    [AvaloniaFact]
+    public void Custom_resize_stores_a_size_that_switching_the_mode_clears()
+    {
+        TestServices.EnsureInitialized("en");
+        var loc = AppHost.Get<ILocalizer>();
+        var preset = Filee.Core.Presets.BuiltInData.CreatePresets().Single(p => p.Id == "jpg-70");
+        var vm = new PresetEditorViewModel(preset, loc);
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.Custom);
+        vm.CustomWidth = 777;
+        vm.CustomHeight = 333;
+        vm.LockAspect = true;
+        Assert.True(vm.Apply());
+        Assert.NotNull(preset.Image.CustomSize);
+        Assert.Equal((777, 333, true), (preset.Image.CustomSize!.Width, preset.Image.CustomSize!.Height, preset.Image.CustomSize.LockAspect));
+
+        // Reads back as Custom, and switching the mode clears the custom size.
+        var reloaded = new PresetEditorViewModel(preset, loc);
+        Assert.Equal(Filee.Core.Presets.ResizeMode.Custom, reloaded.Resize.Value);
+        Assert.Equal(333, reloaded.CustomHeight);
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.Percent);
+        Assert.True(vm.Apply());
+        Assert.Null(preset.Image.CustomSize);
+        Assert.Equal(Filee.Core.Presets.ResizeMode.Percent, preset.Image.Resize);
+    }
+
+    [AvaloniaTheory]
     [InlineData("en", false)]
     [InlineData("ru", false)]
     [InlineData("ar", true)]

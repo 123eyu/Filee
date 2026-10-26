@@ -3,6 +3,7 @@
 
 using System.IO.Compression;
 using System.Text;
+using SkiaSharp;
 using Filee.Core.Conversion;
 using Filee.Core.Presets;
 using Filee.Engines.Icns;
@@ -432,12 +433,42 @@ public class GraphicsTests(EngineFixture fx) : IClassFixture<EngineFixture>
         var rendered = await fx.ConvertAsync([svg], new Preset
         {
             TargetFormat = "png",
-            Image = { Resize = ResizeMode.Custom, CustomWidth = 777, CustomHeight = 333 },
+            Image = { CustomSize = new() { Width = 777, Height = 333 } },
         });
 
         AssertDone(rendered);
         using var png = new MagickImage(rendered.Outputs.Single());
         Assert.Equal((777u, 333u), (png.Width, png.Height));
+    }
+
+    [Fact]
+    public async Task Custom_resize_with_the_lock_renders_a_vector_picture_at_the_asked_size()
+    {
+        var dir = fx.NewFolder();
+        var svg = Write(dir, "logo.svg", GraphicsBuilders.Svg);
+
+        var rendered = await fx.ConvertAsync([svg], new Preset
+        {
+            TargetFormat = "png",
+            Image = { CustomSize = new() { Width = 777, Height = 333, LockAspect = true } },
+        });
+
+        AssertDone(rendered);
+        using var png = new MagickImage(rendered.Outputs.Single());
+        // The 400 x 200 drawing is rendered at min(777/400, 333/200) = 1.665: the largest 2:1 shape inside the box.
+        Assert.Equal((666u, 333u), (png.Width, png.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_renders_vectors_at_the_asked_scale_instead_of_stretching_a_default_raster()
+    {
+        var image = new ImageOptions { CustomSize = new() { Width = 777, Height = 333, LockAspect = true } };
+        // With the lock, the fit-inside scale: the raster already keeps the file's shape at the box's edge.
+        Assert.Equal(1.665f, SvgRenderer.RasterScale(new SKRect(0, 0, 400, 200), image, new PdfOptions()), 3);
+
+        // Without, the larger side's scale, so the stretch that follows only ever shrinks the other side.
+        image.CustomSize = new() { Width = 777, Height = 333 };
+        Assert.Equal(1.9425f, SvgRenderer.RasterScale(new SKRect(0, 0, 400, 200), image, new PdfOptions()), 3);
     }
 
     [Fact]

@@ -199,16 +199,22 @@ internal static class ImageEncoder
     }
 
     /// <summary>
-    /// How much <see cref="ApplyOptions"/> resizes a <paramref name="width"/> × <paramref name="height"/> image before
-    /// <see cref="FitFormat"/> (1 when it does not).
+    /// How much <see cref="ApplyOptions"/> resizes a width x height image before <see cref="FitFormat"/> (1 when it
+    /// does not). Custom sizing with the aspect kept takes one scale for both sides; stretched, the height's factor
+    /// is what a tall run of pages has to fit.
     /// </summary>
-    public static double ResizeScale(double width, double height, ImageOptions options) => options.Resize switch
-    {
-        ResizeMode.Percent when options.ResizePercent > 0 => options.ResizePercent / 100.0,
-        ResizeMode.LongEdge when options.LongEdge > 0 => Math.Min(1, options.LongEdge / Math.Max(width, height)),
-        ResizeMode.Width when options.Width > 0 => Math.Min(1, options.Width / width),
-        _ => 1,
-    };
+    public static double ResizeScale(double width, double height, ImageOptions options) =>
+        options.CustomSize is { } custom
+            ? custom.LockAspect
+                ? Math.Min(custom.Width / width, custom.Height / height)
+                : custom.Height / height
+            : options.Resize switch
+            {
+                ResizeMode.Percent when options.ResizePercent > 0 => options.ResizePercent / 100.0,
+                ResizeMode.LongEdge when options.LongEdge > 0 => Math.Min(1, options.LongEdge / Math.Max(width, height)),
+                ResizeMode.Width when options.Width > 0 => Math.Min(1, options.Width / width),
+                _ => 1,
+            };
 
     /// <summary>Turns and mirrors an image as <paramref name="options"/> say (part of <see cref="ApplyOptions"/>).</summary>
     public static void Turn(IMagickImage<byte> image, ImageOptions options)
@@ -278,7 +284,24 @@ internal static class ImageEncoder
             image.SetProfile(exif);
         }
 
-        switch (options.Resize)
+        if (options.CustomSize is { } custom)
+        {
+            if (custom.LockAspect)
+            {
+                // The file's own shape is kept: scaled up or down to the largest size that fits inside the box. Both
+                // sides come from one scale, so the aspect already matches and Resize keeps it, as it always does.
+                var scale = Math.Min(custom.Width / (double)image.Width, custom.Height / (double)image.Height);
+                if (scale != 1)
+                    image.Resize((uint)Math.Max(1, Math.Round(image.Width * scale)), (uint)Math.Max(1, Math.Round(image.Height * scale)));
+            }
+            else if (image.Width != (uint)custom.Width || image.Height != (uint)custom.Height)
+            {
+                // No lock: exactly the asked size, stretching or squeezing the picture on purpose (issue #576). Resize
+                // fits inside a box and keeps the aspect on its own, so the flag is what makes this a real stretch.
+                image.Resize(new MagickGeometry((uint)custom.Width, (uint)custom.Height) { IgnoreAspectRatio = true });
+            }
+        }
+        else switch (options.Resize)
         {
             case ResizeMode.Percent when options.ResizePercent is > 0 and not 100:
                 image.Resize(new Percentage(options.ResizePercent));
@@ -289,21 +312,6 @@ internal static class ImageEncoder
                 break;
             case ResizeMode.Width when options.Width > 0 && image.Width > options.Width:
                 image.Resize((uint)options.Width, (uint)Math.Max(1, Math.Round(image.Height * (double)options.Width / image.Width)));
-                break;
-            case ResizeMode.Custom when options.CustomWidth > 0 && options.CustomHeight > 0 && options.LockAspect:
-                {
-                    // The file's own shape is kept: scaled up or down to the largest size that fits inside the box. Both
-                    // sides come from one scale, so the aspect already matches and Resize keeps it, as it always does.
-                    var scale = Math.Min(options.CustomWidth / (double)image.Width, options.CustomHeight / (double)image.Height);
-                    if (scale != 1)
-                        image.Resize((uint)Math.Max(1, Math.Round(image.Width * scale)), (uint)Math.Max(1, Math.Round(image.Height * scale)));
-                    break;
-                }
-            case ResizeMode.Custom when options.CustomWidth > 0 && options.CustomHeight > 0:
-                // No lock: exactly the asked size, stretching or squeezing the picture on purpose (issue #576). Resize
-                // fits inside a box and keeps the aspect on its own, so the flag is what makes this a real stretch.
-                if (image.Width != (uint)options.CustomWidth || image.Height != (uint)options.CustomHeight)
-                    image.Resize(new MagickGeometry((uint)options.CustomWidth, (uint)options.CustomHeight) { IgnoreAspectRatio = true });
                 break;
         }
         FitFormat(image, targetFormat);

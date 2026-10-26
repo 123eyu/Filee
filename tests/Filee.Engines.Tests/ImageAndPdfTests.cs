@@ -308,7 +308,7 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     public void Custom_resize_stretches_to_exactly_the_asked_size()
     {
         // The case from the issue: a 1080 x 1920 photo asked for a 500 x 2000 banner, distorted on purpose.
-        var options = new ImageOptions { Resize = ResizeMode.Custom, CustomWidth = 500, CustomHeight = 2000 };
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
         using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
 
         Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
@@ -319,7 +319,7 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     [Fact]
     public void Custom_resize_with_the_lock_fits_inside_without_distortion()
     {
-        var options = new ImageOptions { Resize = ResizeMode.Custom, CustomWidth = 500, CustomHeight = 2000, LockAspect = true };
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000, LockAspect = true } };
 
         // The width is the limit: 1080 x 1920 shrinks to the largest 9:16 fit inside the box, 500 x 889.
         using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
@@ -335,12 +335,25 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     [Fact]
     public void Custom_resize_leaves_a_picture_that_already_has_the_asked_size()
     {
-        var options = new ImageOptions { Resize = ResizeMode.Custom, CustomWidth = 500, CustomHeight = 2000 };
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
         using var exact = new MagickImage(MagickColors.White, 500, 2000);
 
         Filee.Engines.Magick.ImageEncoder.ApplyOptions(exact, options, "png");
 
         Assert.Equal((500u, 2000u), (exact.Width, exact.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_plans_pdf_page_runs_at_the_scale_the_resize_will_use()
+    {
+        // How PdfiumConverter.Split plans runs: the factor the stacked strip is scaled by (issue #576).
+        var locked = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000, LockAspect = true } };
+        Assert.Equal(1.25, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, locked), 3);
+
+        var stretched = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
+        Assert.Equal(2.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, stretched), 3);
+
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions()), 3);
     }
 
     [Fact]

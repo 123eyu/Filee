@@ -61,6 +61,18 @@ public sealed class PresetKindJsonConverter : LenientEnumJsonConverter<PresetKin
 }
 
 /// <summary>
+/// Reads like the lenient converter and, when writing, never emits <see cref="ResizeMode.Custom"/> (an editor-only
+/// choice): a preset with custom sizing stores Resize None plus CustomSize, so a version without the mode keeps
+/// reading presets.json instead of rejecting it as broken and overwriting the user's presets with the built-in
+/// ones (issue #576).
+/// </summary>
+public sealed class ResizeModeJsonConverter : LenientEnumJsonConverter<ResizeMode>
+{
+    public override void Write(Utf8JsonWriter writer, ResizeMode value, JsonSerializerOptions options) =>
+        writer.WriteStringValue((value == ResizeMode.Custom ? ResizeMode.None : value).ToString());
+}
+
+/// <summary>
 /// A named conversion recipe. The donut toolbar shows presets; dropping files on one runs it.
 /// </summary>
 /// <remarks>
@@ -266,8 +278,10 @@ public enum ResizeMode
     /// <summary>Scale to <see cref="ImageOptions.Width"/> pixels wide, height in proportion (never upscales).</summary>
     Width,
     /// <summary>
-    /// Scale to <see cref="ImageOptions.CustomWidth"/> x <see cref="ImageOptions.CustomHeight"/> pixels: stretched to exactly that
-    /// size, or with <see cref="ImageOptions.LockAspect"/> scaled (up or down) to the largest size that fits inside.
+    /// Scale to the free width x height in <see cref="ImageOptions.CustomSize"/>: stretched to exactly that size, or
+    /// with the aspect kept, scaled (up or down) to the largest size that fits inside (issue #576). An editor choice
+    /// only: a preset with custom sizing stores <see cref="ImageOptions.Resize"/> None plus
+    /// <see cref="ImageOptions.CustomSize"/>, so a version without the mode still reads the file.
     /// </summary>
     Custom,
 }
@@ -316,6 +330,13 @@ public sealed class ImageOptions
     /// <summary>Lossy quality 1-100 (JPG, WEBP, AVIF, HEIC).</summary>
     public int Quality { get; set; } = 90;
 
+    /// <summary>
+    /// How the picture is scaled. A preset with <see cref="CustomSize"/> set stores None here (custom sizing wins),
+    /// so a version without custom sizing simply does not resize instead of rejecting a name it does not know. The
+    /// lenient converter also reads a name a future version might add as None, and the writer maps Custom down to
+    /// None (see <see cref="ResizeModeJsonConverter"/>).
+    /// </summary>
+    [JsonConverter(typeof(ResizeModeJsonConverter))]
     public ResizeMode Resize { get; set; } = ResizeMode.None;
 
     /// <summary>Turns the image (after its EXIF orientation is applied).</summary>
@@ -339,17 +360,14 @@ public sealed class ImageOptions
     /// <summary>Target width in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Width"/>.</summary>
     public int Width { get; set; } = 1200;
 
-    /// <summary>Target width in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Custom"/> (issue #576).</summary>
-    public int CustomWidth { get; set; } = 1920;
-
-    /// <summary>Target height in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Custom"/> (issue #576).</summary>
-    public int CustomHeight { get; set; } = 1080;
-
     /// <summary>
-    /// With <see cref="ResizeMode.Custom"/>: keep each file's own shape and scale it to the largest size that fits inside
-    /// <see cref="CustomWidth"/> x <see cref="CustomHeight"/>, instead of stretching it to exactly that size.
+    /// Free width x height resizing (issue #576): stretched to exactly that size, or with
+    /// <see cref="CustomImageSize.LockAspect"/> scaled (up or down) to the largest size that fits inside. When set it
+    /// wins over <see cref="Resize"/>; null leaves <see cref="Resize"/> in charge. Stored as one object so a
+    /// presets.json written by this version never carries a resize name an older version rejects: older versions skip
+    /// the unknown property and simply do not resize.
     /// </summary>
-    public bool LockAspect { get; set; }
+    public CustomImageSize? CustomSize { get; set; }
 
     /// <summary>Output DPI written into the file. <c>null</c> keeps the source value.</summary>
     public int? Dpi { get; set; }
@@ -453,8 +471,27 @@ public sealed class ImageOptions
     {
         var copy = (ImageOptions)MemberwiseClone();
         copy.IcoSizes = [.. IcoSizes];
+        copy.CustomSize = CustomSize is { } size
+            ? new CustomImageSize { Width = size.Width, Height = size.Height, LockAspect = size.LockAspect }
+            : null;
         return copy;
     }
+}
+
+/// <summary>The free width x height a preset resizes to: <see cref="ImageOptions.CustomSize"/> (issue #576).</summary>
+public sealed class CustomImageSize
+{
+    /// <summary>Target width in pixels.</summary>
+    public int Width { get; set; } = 1920;
+
+    /// <summary>Target height in pixels.</summary>
+    public int Height { get; set; } = 1080;
+
+    /// <summary>
+    /// Keep each file's own shape and scale it to the largest size that fits inside Width x Height, instead of
+    /// stretching it to exactly that size.
+    /// </summary>
+    public bool LockAspect { get; set; }
 }
 
 /// <summary>Page size used when images are placed into a PDF.</summary>
