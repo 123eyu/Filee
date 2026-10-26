@@ -320,6 +320,10 @@
   "clip.cannot_play": "클립을 재생할 수 없어요",
 
   "preset.half_size": "50% 축소",
+  "preset.image_edit": "사진 편집",
+  "image_edit.count": "사진 {0}장",
+  "image_edit.hint": "이 사진들의 크기, 형식, 회전을 고르세요. 고른 값은 다음에도 그대로 쓰입니다.",
+  "image_edit.convert": "변환",
   "preset.half_size.donut": "50% 축소",
   "preset.grayscale": "흑백",
   "preset.remove_background": "배경 제거",

@@ -36,8 +36,10 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
 
     private CropOverlayWindow? _cropOverlay;
     private ClipWindow? _clipWindow;
+    private ImageEditWindow? _imageEdit;
 
     internal ClipWindow? ClipWindow => _clipWindow;
+    internal ImageEditWindow? ImageEdit => _imageEdit;
     private readonly HashSet<SpreadsheetPrintStudioWindow> _spreadsheetStudios = [];
 
     internal IReadOnlyCollection<SpreadsheetPrintStudioWindow> SpreadsheetStudios => _spreadsheetStudios;
@@ -128,6 +130,8 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
     {
         if (preset.IsClipTool)
             ShowClipWindow(files, preset, near);
+        else if (preset.IsImageEditTool)
+            ShowImageEditWindow(files, preset);
         // Before the crop: the print studio and the PDF page tools have no Tool of their own, which reads as a crop
         // ("Crop PDF" is one and opens the crop overlay).
         else if (preset.Id == "tool-sheet-studio")
@@ -171,6 +175,50 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         _clipWindow = win;
         win.Show();
         win.Activate();
+    }
+
+    /// <summary>
+    /// Opens the "Edit pictures" window on the pictures among the files. Its Convert starts ordinary conversions, shown
+    /// in the toast.
+    /// </summary>
+    public void ShowImageEditWindow(IReadOnlyList<string> files, Preset preset)
+    {
+        var pictures = files.Where(f => FormatRegistry.Detect(f) is { } format && ImageEditTool.CanEdit(format.Id)).ToList();
+        if (pictures.Count == 0)
+            return;
+        _imageEdit?.Close();
+        var store = services.GetRequiredService<UserDataStore>();
+        var catalog = services.GetRequiredService<ConverterCatalog>();
+        var conversions = services.GetRequiredService<ConversionService>();
+        var log = services.GetService<ILogger<ImageEditViewModel>>();
+        var planner = catalog.CreatePlanner();
+        var vm = new ImageEditViewModel(pictures, preset, loc, store,
+            (path, chosen) => ImageEditTool.TargetFor(FormatRegistry.Detect(path)?.Id ?? "", chosen, planner),
+            (paths, conversion) => conversions.Start(paths, conversion), PictureSize, log);
+        var win = new ImageEditWindow { DataContext = vm };
+        PrepareWindow(win);
+        win.Closed += (_, _) =>
+        {
+            if (_imageEdit == win)
+                _imageEdit = null;
+        };
+        _imageEdit = win;
+        win.Show();
+        win.Activate();
+    }
+
+    /// <summary>The pixel size of a picture, read from its header; null when ImageMagick can't read it.</summary>
+    private static (int Width, int Height)? PictureSize(string path)
+    {
+        try
+        {
+            var info = new ImageMagick.MagickImageInfo(path);
+            return ((int)info.Width, (int)info.Height);
+        }
+        catch (Exception ex) when (ex is ImageMagick.MagickException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Opens the interactive crop overlay for the files.</summary>

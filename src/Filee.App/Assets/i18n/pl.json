@@ -320,6 +320,10 @@
   "clip.cannot_play": "Nie można odtworzyć klipu",
 
   "preset.half_size": "Połowa rozmiaru",
+  "preset.image_edit": "Edytuj obrazy",
+  "image_edit.count": "Obrazy: {0}",
+  "image_edit.hint": "Wybierz rozmiar, format i obrót tych obrazów. Filee zapamięta wybór na następny raz.",
+  "image_edit.convert": "Konwertuj",
   "preset.half_size.donut": "Połowa rozmiaru",
   "preset.grayscale": "Skala szarości",
   "preset.remove_background": "Usuń tło",

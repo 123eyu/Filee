@@ -1,0 +1,78 @@
+<!-- "Edit pictures" (#584): the size, format, turn and colour of the dropped pictures, chosen right before they are
+     converted. Convert starts the conversions (shown in the toast); Cancel or closing the window starts nothing. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Filee.App.ViewModels"
+        x:Class="Filee.App.Views.ImageEditWindow"
+        x:DataType="vm:ImageEditViewModel"
+        Title="{DynamicResource preset.image_edit}"
+        Icon="avares://Filee/Assets/Icons/filee.ico"
+        Width="480" SizeToContent="Height" MinWidth="400" CanResize="False"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Padding="20,12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource SubtleBorderBrush}"
+            Background="{DynamicResource SurfaceBrush}">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button x:Name="CancelEdit" Content="{DynamicResource common.cancel}" Click="OnCancel" IsCancel="True" />
+        <Button x:Name="StartEdit" Classes="accent" Content="{DynamicResource image_edit.convert}" Click="OnConvert" IsDefault="True" />
+      </StackPanel>
+    </Border>
+    <StackPanel Margin="20,18,20,16" Spacing="12">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="h2" Text="{Binding Heading}" TextTrimming="CharacterEllipsis" />
+        <TextBlock Classes="caption" TextWrapping="Wrap" Text="{DynamicResource image_edit.hint}" />
+      </StackPanel>
+
+      <StackPanel>
+        <TextBlock Classes="label" Text="{DynamicResource presets.target}" />
+        <ComboBox x:Name="TargetChoice" ItemsSource="{Binding Targets}" SelectedItem="{Binding Target}" HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="{DynamicResource presets.target}" />
+      </StackPanel>
+
+      <Grid ColumnDefinitions="*,12,*">
+        <StackPanel>
+          <TextBlock Classes="label" Text="{DynamicResource presets.resize}" />
+          <ComboBox x:Name="ResizeChoice" ItemsSource="{Binding ResizeModes}" SelectedItem="{Binding Resize}" HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="{DynamicResource presets.resize}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" IsVisible="{Binding ShowPercent}">
+          <TextBlock Classes="label" Text="{DynamicResource presets.percent}" />
+          <NumericUpDown Value="{Binding ResizePercent}" Minimum="1" Maximum="1000" Increment="5" FormatString="0" AutomationProperties.Name="{DynamicResource presets.percent}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" IsVisible="{Binding ShowLongEdge}">
+          <TextBlock Classes="label" Text="{DynamicResource presets.long_edge}" />
+          <NumericUpDown Value="{Binding LongEdge}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" AutomationProperties.Name="{DynamicResource presets.long_edge}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" IsVisible="{Binding ShowWidth}">
+          <TextBlock Classes="label" Text="{DynamicResource presets.width}" />
+          <NumericUpDown Value="{Binding Width}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" AutomationProperties.Name="{DynamicResource presets.width}" />
+        </StackPanel>
+      </Grid>
+      <TextBlock x:Name="SizeChange" Classes="caption" Text="{Binding SizeChange}"
+                 IsVisible="{Binding SizeChange, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <Grid ColumnDefinitions="*,12,*">
+        <StackPanel>
+          <TextBlock Classes="label" Text="{DynamicResource presets.rotation}" />
+          <ComboBox ItemsSource="{Binding Rotations}" SelectedItem="{Binding Rotation}" HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="{DynamicResource presets.rotation}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="label" Text="{DynamicResource presets.flip}" />
+          <ComboBox ItemsSource="{Binding Flips}" SelectedItem="{Binding Flip}" HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="{DynamicResource presets.flip}" />
+        </StackPanel>
+      </Grid>
+
+      <StackPanel IsVisible="{Binding ShowQuality}">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Right" Text="{Binding Quality}" FontWeight="SemiBold" />
+          <TextBlock Classes="label" Text="{DynamicResource presets.quality}" />
+        </DockPanel>
+        <Slider Minimum="1" Maximum="100" Value="{Binding Quality}" TickFrequency="1" IsSnapToTickEnabled="True" AutomationProperties.Name="{DynamicResource presets.quality}" />
+      </StackPanel>
+
+      <CheckBox Content="{DynamicResource presets.grayscale}" IsChecked="{Binding Grayscale}" />
+    </StackPanel>
+  </DockPanel>
+</Window>
