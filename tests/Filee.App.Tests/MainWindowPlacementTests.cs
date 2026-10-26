@@ -1,7 +1,9 @@
 // The main window opens where it was, also after Filee restarts (#586), and always fits the screen it opens on: a
 // small or scaled screen gets a window that fits instead of one that runs off its bottom.
 
+using System.Reflection;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Filee.App.Services;
@@ -111,6 +113,44 @@ public class MainWindowPlacementTests
             Assert.Equal((900.0, 640.0), (second.Main!.Width, second.Main.Height));
             second.Main.Close();
             Pump();
+        }
+        finally
+        {
+            store.Settings.MainWindow = before;
+            store.SaveSettings();
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(WindowCloseReason.ApplicationShutdown, true)] // Quit from the tray (lifetime.Shutdown())
+    [InlineData(WindowCloseReason.OSShutdown, false)] // Windows signing out or shutting down
+    public void Quitting_while_the_window_is_open_remembers_it_too(WindowCloseReason reason, bool programmatic)
+    {
+        TestServices.EnsureInitialized("en");
+        var store = AppHost.Get<UserDataStore>();
+        var before = store.Settings.MainWindow;
+        var service = ActivatorUtilities.CreateInstance<WindowService>(AppHost.Services);
+        try
+        {
+            store.Settings.MainWindow = null;
+            service.ShowMain();
+            var main = service.Main!;
+            main.Width = 940;
+            main.Height = 620;
+            Pump();
+
+            // What ClassicDesktopStyleApplicationLifetime does to every window when Filee quits or Windows ends the
+            // session: Window.CloseCore with that reason (Avalonia 12, DoShutdown).
+            typeof(Window).GetMethod("CloseCore", BindingFlags.Instance | BindingFlags.NonPublic, [typeof(WindowCloseReason), typeof(bool), typeof(bool)])!
+                .Invoke(main, [reason, programmatic, false]);
+            Pump();
+
+            Assert.False(main.IsVisible);
+            Assert.True(main.IsReleased); // closed for good, not to the tray
+            var reloaded = new UserDataStore(store.Directory);
+            reloaded.Load();
+            var saved = Assert.IsType<WindowBounds>(reloaded.Settings.MainWindow);
+            Assert.Equal((940.0, 620.0, false), (saved.Width, saved.Height, saved.Maximized));
         }
         finally
         {
