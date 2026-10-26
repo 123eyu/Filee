@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using Filee.Core.Conversion;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpCompress.Compressors.Xz;
@@ -368,14 +369,15 @@ public sealed class EngineInstaller
             throw;
         }
         if (process.ExitCode != 0)
-            throw new InvalidOperationException(MsiFailure(id, process.ExitCode, log));
+            throw MsiFailure(id, process.ExitCode, log);
     }
 
-    internal static string MsiFailure(string id, int exitCode, string log) => exitCode switch
+    /// <summary>What the Engines card shows: the reasons a user can act on in their language (error.* keys).</summary>
+    internal static Exception MsiFailure(string id, int exitCode, string log) => exitCode switch
     {
-        1618 => "Another installation is running. Try again when it has finished.",
-        1620 => $"Windows Installer couldn't open the {id} package (error 1620): a folder on its way may be a link to another drive (log: {log}).",
-        _ => $"Unpacking {id} failed (msiexec exit code {exitCode}, log: {log}).",
+        1618 => new ConversionRefusedException("error.msi_busy"),
+        1620 => new ConversionRefusedException("error.msi_link", $"msiexec 1620, log: {log}"),
+        _ => new InvalidOperationException($"Unpacking {id} failed (msiexec exit code {exitCode}, log: {log})."),
     };
 
     /// <summary>

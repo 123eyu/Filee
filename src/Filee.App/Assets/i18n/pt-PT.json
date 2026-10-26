@@ -88,6 +88,8 @@
   "format_request.notice_title": "O Filee ainda não consegue converter ficheiros {0}",
   "format_request.notice_text": "Diz-nos de que formato precisas.\nOs pedidos ajudam a decidir os próximos formatos suportados pelo Filee.\nNão é possível converter ficheiros encriptados ou protegidos contra cópia (DRM), seja qual for o formato.",
   "error.no_route": "Nenhum motor consegue fazer esta conversão",
+  "error.msi_busy": "Está a decorrer outra instalação. Tente novamente quando terminar",
+  "error.msi_link": "O Windows Installer não conseguiu abrir o pacote: uma pasta no caminho pode ser uma ligação para outra unidade",
   "error.cannot_turn": "Só é possível rodar e inverter imagens",
   "error.images_only": "Só funciona com imagens",
   "error.no_transparency": "Este formato não admite transparência, pelo que não há nada para recortar",

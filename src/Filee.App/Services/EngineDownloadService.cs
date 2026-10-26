@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Filee.App.ViewModels;
 using Filee.Core.Conversion;
 using Filee.Core.Localization;
 using Filee.Engines.Infrastructure;
@@ -295,7 +296,7 @@ public sealed class EngineDownloadService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Installing engine package {Package} failed", state.Package.Id);
-            state.Error = ex is HttpRequestException ? ex.Message : ex.GetBaseException().Message;
+            state.Error = ErrorText(_loc, ex);
             state.Status = EnginePackageStatus.Failed;
         }
         finally
@@ -304,6 +305,12 @@ public sealed class EngineDownloadService
             state.ProgressDetail = "";
         }
     }
+
+    /// <summary>The reason on the Engines card: an installer's error.* reason in the user's language (#527).</summary>
+    internal static string ErrorText(ILocalizer loc, Exception ex) =>
+        ex is HttpRequestException ? ex.Message
+        : ex.GetBaseException() is ConversionRefusedException refused ? FailureText.Reason(loc, refused.ErrorKey, refused.Detail)
+        : ex.GetBaseException().Message;
 
     public void Cancel(EnginePackageState state) => state.Cancellation?.Cancel();
 

@@ -88,6 +88,8 @@
   "format_request.notice_title": "아직 {0} 파일은 변환할 수 없어요",
   "format_request.notice_text": "필요한 형식을 알려주세요.\n요청을 보고 다음에 지원할 형식을 정해요.\n암호화되거나 DRM이 걸린 파일은 변환할 수 없어요.",
   "error.no_route": "이 변환을 할 수 있는 엔진이 없어요",
+  "error.msi_busy": "다른 설치가 진행 중입니다. 끝난 뒤 다시 시도하세요",
+  "error.msi_link": "Windows Installer가 패키지를 열지 못했습니다. 경로의 폴더가 다른 드라이브로 연결된 링크일 수 있습니다",
   "error.cannot_turn": "회전·반전은 이미지에만 할 수 있어요",
   "error.images_only": "이미지에만 쓸 수 있어요",
   "error.no_transparency": "이 형식에는 투명한 부분이 없어서 잘라낼 것이 없어요",
