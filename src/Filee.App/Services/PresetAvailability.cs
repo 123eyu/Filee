@@ -139,6 +139,14 @@ public sealed class PresetAvailability
         if (formats.Count == 0)
             return new(PresetUse.Unusable, _loc["error.unsupported_source"]);
 
+        // Resizing, greyscale, trimming or squeezing a file into its own format needs a picture: an MP3 or a ZIP has none.
+        if (preset.TargetFormat == BuiltInData.SameAsSource && preset.Image.EditsPicture)
+        {
+            formats = [.. formats.Where(f => f.Category == FormatCategory.Image)];
+            if (formats.Count == 0)
+                return new(PresetUse.Unusable, _loc["error.images_only"]);
+        }
+
         // "Trim transparent borders" on JPG and other formats without transparency would only re-encode them.
         if (preset.Image.TrimTransparent
             && formats.All(f => !Filee.Engines.Magick.ImageEncoder.HoldsAlpha(preset.TargetFormat == BuiltInData.SameAsSource ? f.Id : preset.TargetFormat)))

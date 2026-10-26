@@ -56,7 +56,7 @@
       只顯示適合當前拖曳檔案的格式，就在你所在的位置。
     </td>
     <td width="33%" valign="top">
-      <b>263 種格式，無需其他軟體</b><br>
+      <b>265 種格式，無需其他軟體</b><br>
       圖片、PDF、Word、Excel、PowerPoint、HWP、電子書、壓縮檔、字型、CAD、3D 模型和地理資訊資料，無需 Office、韓文文書軟體或 LibreOffice。
     </td>
     <td width="33%" valign="top">

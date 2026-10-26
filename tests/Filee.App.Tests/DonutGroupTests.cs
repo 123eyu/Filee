@@ -438,6 +438,51 @@ public class DonutGroupTests
     }
 
     [AvaloniaFact]
+    public void Picture_edits_in_the_same_format_are_offered_for_images_only()
+    {
+        TestServices.EnsureInitialized("en");
+        var availability = AppHost.Get<PresetAvailability>();
+        var presets = BuiltInData.CreatePresets();
+        var halfSize = presets.Single(p => p.Id == "half-size");
+        var grayscale = presets.Single(p => p.Id == "grayscale");
+        var trim = presets.Single(p => p.Id == "trim-transparent");
+        var compress = presets.Single(p => p.Id == "compress-image");
+        var removeMetadata = presets.Single(p => p.Id == "remove-metadata");
+        var png = Filee.Core.Formats.FormatRegistry.Get("png");
+        var gif = Filee.Core.Formats.FormatRegistry.Get("gif");
+        var mp3 = Filee.Core.Formats.FormatRegistry.Get("mp3");
+
+        foreach (var preset in new[] { halfSize, grayscale, trim, compress })
+        {
+            Assert.Null(availability.Check(preset, [png]));
+            Assert.Null(availability.Check(preset, [gif]));
+            foreach (var id in new[] { "mp3", "mp4", "zip", "pdf", "srt", "dxf", "geojson", "txt", "svg" })
+                Assert.Equal("Works on images only", availability.Check(preset, [Filee.Core.Formats.FormatRegistry.Get(id)]));
+        }
+
+        Assert.Null(availability.Check(halfSize, [png, mp3]));
+        Assert.Equal("This format has no transparency, so there's nothing to trim",
+            availability.Check(trim, [Filee.Core.Formats.FormatRegistry.Get("jpg"), mp3]));
+
+        var speed = new Preset { TargetFormat = BuiltInData.SameAsSource, Image = { AnimationSpeed = 2 } };
+        Assert.Equal("Works on images only", availability.Check(speed, [mp3]));
+        Assert.Null(availability.Check(speed, [gif]));
+
+        var removeBackground = new Preset { TargetFormat = BuiltInData.SameAsSource, Image = { RemoveBackground = true } };
+        Assert.Equal("Works on images only", availability.Check(removeBackground, [mp3]));
+        Assert.Null(availability.Check(removeBackground, [png]));
+
+        var mixedOptions = new Preset
+        {
+            TargetFormat = BuiltInData.SameAsSource,
+            Image = { Grayscale = true },
+            Media = { RemoveMetadata = true },
+        };
+        Assert.Equal("Works on images only", availability.Check(mixedOptions, [mp3]));
+        Assert.NotEqual("Works on images only", availability.Check(removeMetadata, [mp3]));
+    }
+
+    [AvaloniaFact]
     public void Tool_presets_are_available_only_for_writable_single_frame_raster_formats()
     {
         TestServices.EnsureInitialized("en");

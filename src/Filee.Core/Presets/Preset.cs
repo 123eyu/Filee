@@ -357,6 +357,10 @@ public sealed class ImageOptions
     [JsonIgnore]
     public bool TurnsOrMirrors => Rotation != ImageRotation.None || Flip != ImageFlip.None;
 
+    /// <summary>Whether the preset edits picture content, size, or playback speed.</summary>
+    [JsonIgnore]
+    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed;
+
     /// <summary>Scale in percent when <see cref="Resize"/> is <see cref="ResizeMode.Percent"/>.</summary>
     public int ResizePercent { get; set; } = 50;
 

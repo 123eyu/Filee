@@ -34,6 +34,62 @@ public class MediaTests(EngineFixture fx) : IClassFixture<EngineFixture>
         Assert.Null(fx.Catalog.CreatePlanner().Plan("mp4", "usm"));
     }
 
+    [Fact]
+    public void M4s_pieces_are_read_but_never_written()
+    {
+        // #354: a fragmented MP4 FFmpeg reads directly; never a target.
+        var route = Planner().Plan("m4s", "mp4");
+        Assert.NotNull(route);
+        Assert.Equal("ffmpeg", Assert.Single(route.Steps).Converter.Id);
+        Assert.Null(Planner().Plan("mp4", "m4s"));
+    }
+
+    [Fact]
+    public async Task A_self_contained_m4s_converts_and_a_bare_dash_segment_is_refused()
+    {
+        SkipUnlessInstalled();
+        var folder = fx.NewFolder();
+        // Several fragments after an empty moov, as DASH packagers write them.
+        var fragmented = await MakeClipAsync(folder, "fragmented.mp4", seconds: 2, size: "160x120",
+            extra: ["-movflags", "+frag_keyframe+empty_moov+default_base_moof", "-frag_duration", "500000"]);
+        var boxes = TopLevelBoxes(await File.ReadAllBytesAsync(fragmented, TestContext.Current.CancellationToken));
+        Assert.Equal(["ftyp", "moov"], boxes.Take(2).Select(b => b.Type));
+        Assert.True(boxes.Count(b => b.Type == "moof") >= 2, string.Join(" ", boxes.Select(b => b.Type)));
+
+        // The reporter's layout (GPAC): ftyp + moov, then a styp before every moof / mdat pair.
+        byte[] styp = [0, 0, 0, 24, .. "stypmsdh"u8, 0, 0, 0, 0, .. "msdhmsix"u8];
+        var whole = Path.Combine(folder, "whole.m4s");
+        await File.WriteAllBytesAsync(whole, boxes.SelectMany(b => b.Type == "moof" ? [.. styp, .. b.Bytes] : b.Bytes).ToArray(),
+            TestContext.Current.CancellationToken);
+        var probed = await ProbeAsync(await ConvertAsync(whole, "mp4"));
+        Assert.NotNull(probed.Video);
+        Assert.NotNull(probed.Audio);
+        Assert.InRange(probed.Duration, 1.7, 2.4);
+
+        // Without ftyp and moov the fragments need an init segment: Filee's message, not FFmpeg's error.
+        var segment = Path.Combine(folder, "segment.m4s");
+        await File.WriteAllBytesAsync(segment, styp.Concat(boxes.Skip(2).SelectMany(b => b.Bytes)).ToArray(),
+            TestContext.Current.CancellationToken);
+        var job = await fx.ConvertAsync([segment], new Preset { TargetFormat = "mp4" });
+        var file = Assert.Single(job.Files);
+        Assert.Equal((FileState.Failed, "error.m4s_needs_init"), (file.State, file.ErrorKey));
+        Assert.Empty(Directory.GetFiles(folder, "segment*.mp4"));
+    }
+
+    /// <summary>The top-level boxes of a short MP4 (32-bit sizes, as FFmpeg writes them for small files).</summary>
+    private static List<(string Type, byte[] Bytes)> TopLevelBoxes(byte[] data)
+    {
+        var boxes = new List<(string, byte[])>();
+        for (var at = 0; at + 8 <= data.Length;)
+        {
+            var size = (int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(at));
+            Assert.InRange(size, 8, data.Length - at);
+            boxes.Add((System.Text.Encoding.Latin1.GetString(data, at + 4, 4), data[at..(at + size)]));
+            at += size;
+        }
+        return boxes;
+    }
+
     private static readonly (string Ffmpeg, string Ffprobe)? Tools = FfmpegConverter.Locate();
 
     private static void SkipUnlessInstalled() =>

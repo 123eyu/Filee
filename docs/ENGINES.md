@@ -1440,6 +1440,11 @@ or slower; its frames are all kept.
 CRI USM (`.usm`, read only, #485), the video of many games' cutscenes, is read by FFmpeg's `usm` demuxer and goes to
 every video and audio target like the other read-only containers. Encrypted USM files (common in recent games) can't
 be read and fail with FFmpeg's error.
+A self-contained `.m4s` (read only, #354), a fragmented MP4 that starts with `ftyp` + `moov` and then holds
+`styp` / `sidx` / `moof` / `mdat` fragments (GPAC and some downloaders save them), is read by FFmpeg's mp4 demuxer
+and goes to every video and audio target. A DASH media segment, whose top-level boxes reach a `moof` before any
+`moov`, plays only with a separate init segment; Filee refuses it before FFmpeg runs, with its own message
+(`error.m4s_needs_init`), instead of FFmpeg's demuxer error.
 A Video CD's `MPEGAV/AVSEQ01.DAT` (MPEG-1 in a RIFF/CDXA wrapper) counts as MPEG: `.dat` is an extension of that
 format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fails instead of making a file.
 

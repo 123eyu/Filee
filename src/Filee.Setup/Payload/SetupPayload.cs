@@ -117,6 +117,23 @@ public sealed class SetupPayload : IDisposable
         return certificates > 0 && size > 0 && certificates + (long)size == file.Length ? new ProgramSignature(certificates, (int)size) : null;
     }
 
+    /// <summary>
+    /// True when the PE header names a certificate table that runs past the end of the file: a signed program that was
+    /// cut off (a download that didn't finish), the payload's trailer in front of the signature gone with it.
+    /// </summary>
+    internal static bool SignatureCutOff(Stream file)
+    {
+        var entry = SecurityDirectory(file);
+        if (entry < 0)
+            return false;
+        Span<byte> buffer = stackalloc byte[8];
+        file.Position = entry;
+        file.ReadExactly(buffer);
+        var certificates = BinaryPrimitives.ReadUInt32LittleEndian(buffer);
+        var size = BinaryPrimitives.ReadUInt32LittleEndian(buffer[4..]);
+        return certificates > 0 && size > 0 && certificates + (long)size > file.Length;
+    }
+
     /// <summary>File position of the PE header's security directory entry (IMAGE_DIRECTORY_ENTRY_SECURITY), or -1.</summary>
     private static long SecurityDirectory(Stream file)
     {

@@ -436,7 +436,9 @@ have no semibold) instead of the app's embedded Noto fonts.
   counts as installed when `uninstall.exe` (or 1.x's `unins000.exe`) is next to it (`UpdateService.IsInstalled`).
 - **Uninstall**: `uninstall.exe` is Setup without its payload. Run from the install folder it copies itself to
   `%TEMP%` and waits for the copy, which removes what `uninstall.json` lists (other files in the folder stay), the
-  shortcuts, the PATH entry and the key. Files in use are moved out and deleted at the next restart.
+  shortcuts, the PATH entry and the key. Files in use are moved out and deleted at the next restart. A program without
+  a payload is the uninstaller only as `uninstall.exe`, as `Filee.Setup.exe` (a development build) or with `/UNINSTALL`
+  (`SetupStart`); any other name is a Setup.exe whose download didn't finish, and it says so instead (exit code 1).
 - **Command line**: Inno Setup's switches (`SetupOptions`, documented at the top of the file), because Filee 1.x
   updates itself with `/SILENT /NORESTART` and winget passes `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`. Exit codes as
   Inno Setup's: 0 done, 1 could not start, 2 cancelled before installing (also a declined UAC prompt), 4 failed.

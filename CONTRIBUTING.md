@@ -125,8 +125,10 @@ pwsh build/sign-release.ps1 -Version X.Y.Z -CertificateThumbprint <sha1>
 ```
 
 It signs every unsigned program in the build and the Setup program, packs and signs `Filee-X.Y.Z-win-Setup.exe`, zips
-the portable copy, checks the signed Setup in a sandbox install and uploads the files with their SHA-256 sums. Look
-over the draft and publish it (or pass `-Publish`). `build/sign-windows.ps1` signs any folder or file on its own.
+the portable copy, checks the signed Setup in a sandbox install and uploads the files with their SHA-256 sums. It also
+copies them to the download mirror `https://dl.filee.sh/X.Y.Z/` (Cloudflare R2; needs `npx wrangler login` once),
+which the Microsoft Store listing points at because GitHub's download links redirect. Look over the draft and publish
+it (or pass `-Publish`). `build/sign-windows.ps1` signs any folder or file on its own.
 
 ### "What's new" slides for a release
 

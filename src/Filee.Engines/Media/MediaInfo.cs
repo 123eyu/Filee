@@ -93,9 +93,13 @@ internal sealed record MediaInfo(TimeSpan? Duration, VideoStreamInfo? Video, Aud
 
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromMinutes(1);
 
-    /// <summary>Runs ffprobe on <paramref name="input"/>; throws with FFmpeg's message when the file cannot be read.</summary>
+    /// <summary>
+    /// Runs ffprobe on <paramref name="input"/>; throws with FFmpeg's message when the file cannot be read, or refuses an
+    /// .m4s media segment that needs its init segment (<see cref="DashSegment"/>).
+    /// </summary>
     public static async Task<MediaInfo> ProbeAsync(string ffprobe, string input, CancellationToken cancellationToken)
     {
+        DashSegment.ThrowIfNeedsInitSegment(input);
         var result = await ProcessRunner.RunAsync(ffprobe,
             ["-hide_banner", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", "-show_data_hash", "MD5", input],
             ProbeTimeout, cancellationToken);

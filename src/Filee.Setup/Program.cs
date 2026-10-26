@@ -1,5 +1,5 @@
 // Entry point of Setup (Filee-<version>-win-Setup.exe, which carries a payload) and of the uninstaller (uninstall.exe,
-// the same program without one).
+// the same program without one). SetupStart tells them apart, and from a Setup.exe whose download didn't finish.
 //
 // Rights: the program starts without administrator rights (asInvoker). An install for all users starts itself again
 // with them (one UAC prompt) and waits; the elevated copy writes what to start at the end into a file, and this
@@ -43,17 +43,9 @@ internal static class Program
         var paths = sandbox is null ? SetupPaths.Real() : SetupPaths.Sandbox(sandbox);
         Directory.CreateDirectory(paths.Temp);
 
-        SetupPayload? payload = null;
-        Exception? damaged = null;
-        try
-        {
-            payload = SetupPayload.Open(exe);
-        }
-        catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
-        {
-            damaged = ex;
-        }
-        var uninstall = options.Uninstall || (payload is null && damaged is null);
+        var start = SetupStart.Of(exe, options.Uninstall);
+        var payload = start.Payload;
+        var uninstall = start.Mode == StartMode.Uninstall;
         var log = new SetupLog(options.LogFile ?? SetupLog.DefaultFile(paths.Temp, uninstall ? "Filee-Uninstall" : "Filee-Setup"));
         log.Info($"{(uninstall ? "Uninstaller" : "Setup")} {SetupInfo.Version}{(payload is null ? "" : $" with Filee {payload.Manifest.Version}")}: " +
                  $"{exe} {SetupOptions.Join(args)}; administrator: {NativeMethods.IsElevated()}; Windows {Environment.OSVersion.Version} " +
@@ -74,10 +66,16 @@ internal static class Program
                 Tell(options, texts["installer.error.windows"], NativeMethods.MB_ICONERROR);
                 return ExitInitFailed;
             }
-            if (damaged is not null)
+            if (start.Mode == StartMode.Damaged)
             {
-                log.Error($"Damaged payload: {damaged.Message}");
+                log.Error($"Damaged payload: {start.Problem}");
                 Tell(options, texts["installer.error.damaged"], NativeMethods.MB_ICONERROR);
+                return ExitInitFailed;
+            }
+            if (start.Mode == StartMode.Incomplete)
+            {
+                log.Error($"Incomplete download: {start.Problem}");
+                Tell(options, texts["installer.error.incomplete"], NativeMethods.MB_ICONERROR);
                 return ExitInitFailed;
             }
             return uninstall

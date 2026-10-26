@@ -56,7 +56,7 @@
       いま作業している場所に、ドラッグ中のファイルに合う形式だけが表示されます。
     </td>
     <td width="33%" valign="top">
-      <b>263形式、ほかのソフトは不要</b><br>
+      <b>265形式、ほかのソフトは不要</b><br>
       画像、PDF、Word、Excel、PowerPoint、HWP、電子書籍、アーカイブ、フォント、CAD、3Dモデル、地理空間データを、Office、Hancom Office、LibreOfficeなしで変換できます。
     </td>
     <td width="33%" valign="top">
