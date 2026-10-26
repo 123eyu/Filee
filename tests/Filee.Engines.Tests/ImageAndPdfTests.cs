@@ -344,6 +344,22 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void A_custom_size_read_from_a_file_with_a_side_of_zero_or_below_is_skipped()
+    {
+        // The editor keeps both sides within 16-16384, but a hand-edited presets.json or an imported bundle can
+        // carry anything, and a width of 0 or below used to reach (uint)custom.Width and wrap to about 4 billion px.
+        var options = new ImageOptions { CustomSize = new() { Width = 0, Height = 2000 } };
+        using var zeroed = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(zeroed, options, "png");
+        Assert.Equal((250u, 444u), (zeroed.Width, zeroed.Height));
+
+        options.CustomSize = new() { Width = -5, Height = 2000 };
+        using var negative = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(negative, options, "png");
+        Assert.Equal((250u, 444u), (negative.Width, negative.Height));
+    }
+
+    [Fact]
     public void Custom_resize_plans_pdf_page_runs_at_the_scale_the_resize_will_use()
     {
         // How PdfiumConverter.Split plans runs: the factor the stacked strip is scaled by (issue #576).
@@ -354,6 +370,13 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
         Assert.Equal(2.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, stretched), 3);
 
         Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions()), 3);
+
+        // A size of 0 or below from a hand-edited file is no size: the preset's own resize runs instead of it.
+        var zeroed = new ImageOptions { CustomSize = new() { Width = 0, Height = 2000 } };
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, zeroed), 3);
+
+        var negative = new ImageOptions { CustomSize = new() { Width = 500, Height = -1 } };
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, negative), 3);
     }
 
     [Fact]

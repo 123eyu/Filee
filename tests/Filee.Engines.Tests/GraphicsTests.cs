@@ -3,7 +3,6 @@
 
 using System.IO.Compression;
 using System.Text;
-using SkiaSharp;
 using Filee.Core.Conversion;
 using Filee.Core.Presets;
 using Filee.Engines.Icns;
@@ -12,6 +11,7 @@ using Filee.Engines.Vector;
 using ImageMagick;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
+using SkiaSharp;
 
 namespace Filee.Engines.Tests;
 
@@ -469,6 +469,12 @@ public class GraphicsTests(EngineFixture fx) : IClassFixture<EngineFixture>
         // Without, the larger side's scale, so the stretch that follows only ever shrinks the other side.
         image.CustomSize = new() { Width = 777, Height = 333 };
         Assert.Equal(1.9425f, SvgRenderer.RasterScale(new SKRect(0, 0, 400, 200), image, new PdfOptions()), 3);
+
+        // A size of 0 or below from a hand-edited file is no size: the raster keeps the default DPI scale.
+        var zeroed = new ImageOptions { CustomSize = new() { Width = 0, Height = 333 } };
+        var bounds = new SKRect(0, 0, 400, 200);
+        Assert.Equal(SvgRenderer.RasterScale(bounds, new ImageOptions(), new PdfOptions()),
+            SvgRenderer.RasterScale(bounds, zeroed, new PdfOptions()));
     }
 
     [Fact]

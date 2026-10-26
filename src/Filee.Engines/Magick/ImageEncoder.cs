@@ -204,7 +204,7 @@ internal static class ImageEncoder
     /// is what a tall run of pages has to fit.
     /// </summary>
     public static double ResizeScale(double width, double height, ImageOptions options) =>
-        options.CustomSize is { } custom
+        options.CustomSize is { Width: > 0, Height: > 0 } custom
             ? custom.LockAspect
                 ? Math.Min(custom.Width / width, custom.Height / height)
                 : custom.Height / height
@@ -284,7 +284,10 @@ internal static class ImageEncoder
             image.SetProfile(exif);
         }
 
-        if (options.CustomSize is { } custom)
+        // A hand-edited presets.json or an imported bundle can carry sizes the editor would never write, and a
+        // width of 0 or below would wrap to about 4 billion px in the (uint) casts below: such a size is skipped,
+        // so the picture keeps the preset's own resize behavior (None for a Custom preset) instead.
+        if (options.CustomSize is { Width: > 0, Height: > 0 } custom)
         {
             if (custom.LockAspect)
             {
@@ -302,18 +305,18 @@ internal static class ImageEncoder
             }
         }
         else switch (options.Resize)
-        {
-            case ResizeMode.Percent when options.ResizePercent is > 0 and not 100:
-                image.Resize(new Percentage(options.ResizePercent));
-                break;
-            case ResizeMode.LongEdge when options.LongEdge > 0:
-                // Greater = only shrink images that are larger than the box, never upscale.
-                image.Resize(new MagickGeometry((uint)options.LongEdge, (uint)options.LongEdge) { Greater = true });
-                break;
-            case ResizeMode.Width when options.Width > 0 && image.Width > options.Width:
-                image.Resize((uint)options.Width, (uint)Math.Max(1, Math.Round(image.Height * (double)options.Width / image.Width)));
-                break;
-        }
+            {
+                case ResizeMode.Percent when options.ResizePercent is > 0 and not 100:
+                    image.Resize(new Percentage(options.ResizePercent));
+                    break;
+                case ResizeMode.LongEdge when options.LongEdge > 0:
+                    // Greater = only shrink images that are larger than the box, never upscale.
+                    image.Resize(new MagickGeometry((uint)options.LongEdge, (uint)options.LongEdge) { Greater = true });
+                    break;
+                case ResizeMode.Width when options.Width > 0 && image.Width > options.Width:
+                    image.Resize((uint)options.Width, (uint)Math.Max(1, Math.Round(image.Height * (double)options.Width / image.Width)));
+                    break;
+            }
         FitFormat(image, targetFormat);
 
         // Before grayscale (a blue signature stays blue until then) and before alpha is flattened for JPG and co.

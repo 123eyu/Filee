@@ -359,7 +359,7 @@ public sealed class ImageOptions
 
     /// <summary>Whether the preset edits picture content, size, or playback speed.</summary>
     [JsonIgnore]
-    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed;
+    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed || CustomSize is not null;
 
     /// <summary>Scale in percent when <see cref="Resize"/> is <see cref="ResizeMode.Percent"/>.</summary>
     public int ResizePercent { get; set; } = 50;
@@ -488,7 +488,9 @@ public sealed class ImageOptions
     }
 }
 
-/// <summary>The free width x height a preset resizes to: <see cref="ImageOptions.CustomSize"/> (issue #576).</summary>
+/// <summary>The free width x height a preset resizes to: <see cref="ImageOptions.CustomSize"/> (issue #576). The
+/// editor keeps both sides within 16-16384; a size read from a hand-edited file with a side of 0 or below is
+/// ignored where it is used, so the picture keeps the preset's own resize behavior instead.</summary>
 public sealed class CustomImageSize
 {
     /// <summary>Target width in pixels.</summary>
