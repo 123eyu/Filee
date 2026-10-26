@@ -113,6 +113,13 @@
                         <TextBlock Text="{DynamicResource home.open_folder}" />
                       </StackPanel>
                     </Button>
+                    <!-- Only while every result is as the job left it: they go to the Recycle Bin / Trash. -->
+                    <Button Command="{Binding UndoCommand}" IsVisible="{Binding CanUndo}" Padding="10,5" ToolTip.Tip="{DynamicResource home.undo_hint}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Width="13" Height="13" Data="{StaticResource Icon.Undo}" />
+                        <TextBlock Text="{DynamicResource home.undo}" />
+                      </StackPanel>
+                    </Button>
                   </StackPanel>
                   <!-- The result: its picture, else its format; the corner says whether the job went well. -->
                   <Panel DockPanel.Dock="Left" Width="42" Height="42" Margin="0,0,12,0">
@@ -155,6 +162,9 @@
                     </StackPanel>
                   </StackPanel>
                 </DockPanel>
+
+                <TextBlock Classes="caption" Margin="54,0,0,0" TextWrapping="Wrap" Text="{Binding UndoneText}" IsVisible="{Binding IsUndone}" />
+                <TextBlock Classes="caption danger" Margin="54,0,0,0" TextWrapping="Wrap" Text="{Binding UndoError}" IsVisible="{Binding HasUndoError}" />
 
                 <!-- Failed files: the list on demand, and converting them again -->
                 <DockPanel IsVisible="{Binding HasFailures}" Margin="54,0,0,0">

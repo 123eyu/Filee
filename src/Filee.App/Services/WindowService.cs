@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Filee.App.ViewModels;
 using Filee.App.Views;
 using Filee.Core.Conversion;
@@ -65,6 +66,56 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         dialog.Activate();
         await closed.Task;
         return dialog.Result;
+    }
+
+    /// <summary>
+    /// "Ask every time" (#521): one save dialog for the batch, starting in the first source's folder. One result is
+    /// saved under a name (<see cref="AskedLocation.ForFile"/>), several go into a folder. Null when cancelled.
+    /// </summary>
+    /// <param name="oneResult">The batch makes one file (a single source, or a merge of several).</param>
+    public async Task<Preset?> AskSaveLocationAsync(IReadOnlyList<string> sources, Preset preset, bool oneResult)
+    {
+        // The donut has closed and the main window may be in the tray: a small window of its own owns the dialog.
+        var host = new Window
+        {
+            Width = 1,
+            Height = 1,
+            Opacity = 0,
+            ShowInTaskbar = false,
+            WindowDecorations = WindowDecorations.None,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            Title = "Filee",
+        };
+        host.Show();
+        try
+        {
+            var storage = host.StorageProvider;
+            var start = await storage.TryGetFolderFromPathAsync(Path.GetDirectoryName(Path.GetFullPath(sources[0]))!);
+            if (oneResult)
+            {
+                var extension = AskedLocation.Extension(preset, sources[0]);
+                var file = await storage.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+                {
+                    Title = loc["ask.save_title"],
+                    SuggestedStartLocation = start,
+                    SuggestedFileName = AskedLocation.SuggestedName(preset, loc.DisplayName(preset), sources[0]),
+                    DefaultExtension = extension.Length == 0 ? null : extension,
+                    ShowOverwritePrompt = true,
+                });
+                return file?.TryGetLocalPath() is { } path ? AskedLocation.ForFile(preset, path) : null;
+            }
+            var folders = await storage.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+            {
+                Title = loc["ask.folder_title"],
+                SuggestedStartLocation = start,
+                AllowMultiple = false,
+            });
+            return folders.FirstOrDefault()?.TryGetLocalPath() is { } folder ? AskedLocation.ForFolder(preset, folder) : null;
+        }
+        finally
+        {
+            host.Close();
+        }
     }
 
     public MainWindow? Main => _main;

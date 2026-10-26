@@ -382,7 +382,8 @@ internal static partial class MediaEncoding
     /// </summary>
     internal static bool CanCopyVideo(string target, VideoStreamInfo video, MediaOptions options)
     {
-        if (options.Quality == MediaQuality.Small || options.MaxHeight > 0 && video.DisplayHeight > Math.Max(16, options.MaxHeight)
+        // A size limit encodes the video, so its bitrate can be capped (ForSizeLimit).
+        if (options.Quality == MediaQuality.Small || options.MaxSizeMb > 0 || options.MaxHeight > 0 && video.DisplayHeight > Math.Max(16, options.MaxHeight)
             || video.Codec is not { } codec || !Remuxable.TryGetValue(target, out var codecs))
             return false;
         var takes = MediaCodecs.Effective(target, options.VideoCodec) switch
@@ -454,6 +455,80 @@ internal static partial class MediaEncoding
 
     /// <summary>PAL (25 fps) for 25/50 fps sources, NTSC (29.97 fps) for everything else.</summary>
     internal static bool IsPal(double fps) => Math.Abs(fps - 25) < 0.5 || Math.Abs(fps - 50) < 1 || Math.Abs(fps - 12.5) < 0.3;
+
+    /// <summary>
+    /// The size limit (#553): the video bitrate in kbit/s that fits <paramref name="limitBytes"/> over
+    /// <paramref name="seconds"/>, less the sound and a margin for the container; 0 when not even 100 kbit/s fits.
+    /// </summary>
+    internal static int FitBitrateKbps(long limitBytes, double seconds, int audioKbps)
+    {
+        var video = (int)(limitBytes * 8 * 0.95 / 1000 / seconds) - audioKbps;
+        return video >= 100 ? video : 0;
+    }
+
+    /// <summary>
+    /// The options a video with a size limit is encoded with, and the video bitrate that fits (0 when the length is
+    /// unknown or nothing fits): the video is never copied as it is (<see cref="CanCopyVideo"/>), the sound is at most
+    /// 96 kbit/s a track, and no graphics chip encodes, since software rate control keeps to the cap.
+    /// </summary>
+    internal static (MediaOptions Options, int Kbps) ForSizeLimit(MediaOptions media, MediaInfo info, long limitBytes)
+    {
+        var fitting = new Preset { Media = media }.Clone().Media;
+        fitting.HardwareEncoding = false;
+        fitting.AudioBitrateKbps = fitting.AudioBitrateKbps is > 0 and < 96 ? fitting.AudioBitrateKbps : 96;
+        var audio = fitting.RemoveAudio ? 0 : fitting.AudioBitrateKbps * info.AudioTracks.Count;
+        var kbps = info.Duration is { TotalSeconds: > 0 } length ? FitBitrateKbps(limitBytes, length.TotalSeconds, audio) : 0;
+        return (fitting, kbps);
+    }
+
+    /// <summary>
+    /// The passes with the video's peaks capped at <paramref name="kbps"/> next to its constant quality: one encode,
+    /// never larger than without the cap and usually within the size limit. VP9 and libaom's "-b:v 0" becomes the cap.
+    /// </summary>
+    internal static IReadOnlyList<FfmpegPass> WithMaxRate(IReadOnlyList<FfmpegPass> passes, int kbps) =>
+        [.. passes.Select(pass => pass with { Arguments = WithMaxRate(pass.Arguments, kbps) })];
+
+    private static List<string> WithMaxRate(IReadOnlyList<string> args, int kbps)
+    {
+        var result = new List<string>();
+        for (var i = 0; i < args.Count; i++)
+        {
+            if (args[i] == "-b:v" && i + 1 < args.Count && args[i + 1] == "0")
+            {
+                result.AddRange(["-b:v", $"{kbps}k"]);
+                i++;
+                continue;
+            }
+            result.Add(args[i]);
+            if (args[i] is "-crf" or "-q:v" && i + 1 < args.Count)
+            {
+                result.AddRange([args[++i], "-maxrate", $"{kbps}k", "-bufsize", $"{kbps * 2}k"]);
+            }
+        }
+        return result;
+    }
+
+    /// <summary>The passes with the video at <paramref name="kbps"/> instead of a constant quality (CRF or quantizer).</summary>
+    internal static IReadOnlyList<FfmpegPass> AtBitrate(IReadOnlyList<FfmpegPass> passes, int kbps) =>
+        [.. passes.Select(pass => pass with { Arguments = AtBitrate(pass.Arguments, kbps) })];
+
+    private static List<string> AtBitrate(IReadOnlyList<string> args, int kbps)
+    {
+        var result = new List<string>();
+        for (var i = 0; i < args.Count; i++)
+        {
+            if (args[i] is "-crf" or "-q:v" && i + 1 < args.Count)
+            {
+                result.AddRange(["-b:v", $"{kbps}k", "-maxrate", $"{kbps * 3 / 2}k", "-bufsize", $"{kbps * 2}k"]);
+                i++;
+            }
+            else if (args[i] == "-b:v" && i + 1 < args.Count && args[i + 1] == "0")
+                i++; // VP9 / libaom's "constant quality" switch
+            else
+                result.Add(args[i]);
+        }
+        return result;
+    }
 
     internal static IEnumerable<string> VideoCodecArguments(string target, string codec, MediaQuality quality, VideoStreamInfo video, bool pal)
     {

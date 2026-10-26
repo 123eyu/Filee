@@ -30,11 +30,15 @@ internal sealed class FakeConverter(string id, params ConversionEdge[] edges) : 
     public IReadOnlyList<string> FontsToReport { get; set; } = [];
     public ConcurrentQueue<string?> OriginalSources { get; } = new();
 
+    /// <summary>The preset each step was given.</summary>
+    public ConcurrentQueue<Filee.Core.Presets.Preset> Presets { get; } = new();
+
     public EngineStatus GetStatus() => Available ? EngineStatus.Available() : EngineStatus.Unavailable("engine.reason.not_installed");
 
     public Task<IReadOnlyList<string>> ConvertAsync(ConversionStep step, IProgress<double>? progress, CancellationToken cancellationToken)
     {
         OriginalSources.Enqueue(step.OriginalSourcePath);
+        Presets.Enqueue(step.Preset);
         if (Throw)
             throw new InvalidOperationException("boom");
         if (Failure is not null)

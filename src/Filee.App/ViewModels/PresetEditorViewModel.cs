@@ -91,7 +91,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
             .Select(l => new Choice<string>(l.Code, l.NativeName,
                 OcrLanguages.IsInstalled(l.Code) || vision.Reads(l.Code) ? null
                     : loc.Format("presets.ocr_language_size", $"{l.Size / 1_000_000.0:0.#} MB")))];
-        Locations = Enum.GetValues<OutputLocation>().Select(v => new Choice<OutputLocation>(v, loc[$"presets.location.{v}"])).ToList();
+        // "Ask every time" (#521) is a bool of its own on the preset (OutputRule.AskEveryTime): its choice has no location.
+        Locations = [.. Enum.GetValues<OutputLocation>().Select(v => new Choice<OutputLocation?>(v, loc[$"presets.location.{v}"])),
+            new Choice<OutputLocation?>(null, loc["presets.location.Ask"])];
         Conflicts = Enum.GetValues<ConflictPolicy>().Select(v => new Choice<ConflictPolicy>(v, loc[$"presets.conflict.{v}"])).ToList();
         TiffCompressions = Enum.GetValues<TiffCompression>().Select(v => new Choice<TiffCompression>(v, v.ToString().ToUpperInvariant())).ToList();
         FitsTiffModes = Enum.GetValues<FitsTiffMode>().Select(v => new Choice<FitsTiffMode>(v, loc[$"presets.fits_tiff.{v}"])).ToList();
@@ -124,7 +126,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _pdfPassword = _edit.Pdf.Password;
         _ocr = _edit.Pdf.Ocr;
         _ocrLanguage = OcrLanguageChoices.FirstOrDefault(l => l.Value == _edit.Pdf.OcrLanguage) ?? OcrLanguageChoices[0];
-        _location = Locations.First(l => l.Value == _edit.Output.Location);
+        _location = _edit.Output.AskEveryTime ? Locations[^1] : Locations.First(l => l.Value == _edit.Output.Location);
         _conflict = Conflicts.First(c => c.Value == _edit.Output.Conflict);
         _tiffCompression = TiffCompressions.First(t => t.Value == _edit.Image.TiffCompression);
         _fitsTiffMode = FitsTiffModes.FirstOrDefault(m => m.Value == _edit.Image.FitsTiff) ?? FitsTiffModes[0];
@@ -157,6 +159,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _traceColors = Math.Clamp(_edit.Trace.Colors, TracingOptions.MinColors, TracingOptions.MaxColors);
         _traceDetail = Math.Clamp(_edit.Trace.Detail, 0, 100);
         _quality = _edit.Image.Quality;
+        _imageMaxSizeMb = (decimal)_edit.Image.MaxSizeMb;
+        _videoMaxSizeMb = (decimal)_edit.Media.MaxSizeMb;
         _resizePercent = _edit.Image.ResizePercent;
         _longEdge = _edit.Image.LongEdge;
         _width = _edit.Image.Width;
@@ -214,7 +218,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
 
     /// <summary>PDF → PDF: don't compress, or the level (pictures at 72, 150 or 300 dpi).</summary>
     public IReadOnlyList<Choice<PdfCompression>> CompressionLevels { get; }
-    public IReadOnlyList<Choice<OutputLocation>> Locations { get; }
+    public IReadOnlyList<Choice<OutputLocation?>> Locations { get; }
     public IReadOnlyList<Choice<ConflictPolicy>> Conflicts { get; }
     public IReadOnlyList<Choice<TiffCompression>> TiffCompressions { get; }
 
@@ -243,7 +247,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         nameof(ShowFitsTiff), nameof(ShowFitsDebayer),
         nameof(ShowZipResult), nameof(ShowPdf), nameof(ShowPdfBuild), nameof(ShowDocument), nameof(ShowLeaveOutPictures), nameof(ShowPdfSplit), nameof(ShowPdfCombine),
         nameof(ShowPdfCompression), nameof(ShowPdfCompressionOptions), nameof(ShowOcr), nameof(ShowPageSize), nameof(ShowPdfTablesNote),
-        nameof(ShowMedia), nameof(ShowMediaQuality), nameof(ShowMaxHeight), nameof(ShowAudioBitrate), nameof(ShowRemoveAudio),
+        nameof(ShowMedia), nameof(ShowMediaQuality), nameof(ShowMaxHeight), nameof(ShowVideoMaxSize), nameof(ShowAudioBitrate), nameof(ShowRemoveAudio),
         nameof(ShowAudioChannels), nameof(ShowWav), nameof(VideoCodecs), nameof(VideoCodecChoice), nameof(ShowVideoCodec), nameof(ShowHardwareEncoding),
         nameof(AudioCodecs), nameof(AudioCodecChoice), nameof(ShowAudioCodec),
         nameof(ShowArchive), nameof(ShowArchiveOptions), nameof(ShowExtractNote),
@@ -376,7 +380,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     private Choice<PdfPageSize> _pageSize;
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowSubfolder), nameof(ShowCustomFolder))]
-    private Choice<OutputLocation> _location;
+    private Choice<OutputLocation?> _location;
 
     [ObservableProperty] private Choice<ConflictPolicy> _conflict;
     [ObservableProperty] private Choice<TiffCompression> _tiffCompression;
@@ -385,6 +389,10 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     /// <summary>FITS → other pictures: debayer a colour camera's raw frame (ImageOptions.FitsDebayer).</summary>
     [ObservableProperty] private bool _fitsDebayer;
     [ObservableProperty] private int _quality;
+
+    /// <summary>"Size limit (MB)" for a picture or a video (0 = none, #553).</summary>
+    [ObservableProperty] private decimal? _imageMaxSizeMb;
+    [ObservableProperty] private decimal? _videoMaxSizeMb;
     [ObservableProperty] private int _resizePercent;
     [ObservableProperty] private int _longEdge;
     [ObservableProperty] private int _width;
@@ -523,7 +531,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     partial void OnRotationChanged(Choice<ImageRotation>? oldValue, Choice<ImageRotation> newValue) => Choices.Restore(oldValue, newValue, v => Rotation = v);
     partial void OnFlipChanged(Choice<ImageFlip>? oldValue, Choice<ImageFlip> newValue) => Choices.Restore(oldValue, newValue, v => Flip = v);
     partial void OnPageSizeChanged(Choice<PdfPageSize>? oldValue, Choice<PdfPageSize> newValue) => Choices.Restore(oldValue, newValue, v => PageSize = v);
-    partial void OnLocationChanged(Choice<OutputLocation>? oldValue, Choice<OutputLocation> newValue) => Choices.Restore(oldValue, newValue, v => Location = v);
+    partial void OnLocationChanged(Choice<OutputLocation?>? oldValue, Choice<OutputLocation?> newValue) => Choices.Restore(oldValue, newValue, v => Location = v);
     partial void OnConflictChanged(Choice<ConflictPolicy>? oldValue, Choice<ConflictPolicy> newValue) => Choices.Restore(oldValue, newValue, v => Conflict = v);
     partial void OnTiffCompressionChanged(Choice<TiffCompression>? oldValue, Choice<TiffCompression> newValue) =>
         Choices.Restore(oldValue, newValue, v => TiffCompression = v);
@@ -614,6 +622,10 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     public bool ShowAudioCodec => AudioCodecs.Count > 1;
     public bool ShowMediaQuality => TargetIsLossyMedia;
     public bool ShowMaxHeight => TargetIsVideo;
+    /// <summary>A size limit for a converted video; a clip is cut, not fitted.</summary>
+    public bool ShowVideoMaxSize => TargetCategory == FormatCategory.Video && !_original.IsClipTool
+        // Not where nothing fits it: a join or slideshow, or VOB and DV, which have a fixed bitrate.
+        && !_original.Media.JoinIntoOne && !_isSlideshow && TargetId is not ("vob" or "dv");
     public bool ShowAudioBitrate => TargetIsLossyMedia;
     public bool ShowRemoveAudio => TargetIsVideo;
     public bool ShowArchive => TargetCategory == FormatCategory.Archive;
@@ -648,6 +660,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     public bool ShowSubfolder => Location.Value == OutputLocation.Subfolder;
     public bool ShowCustomFolder => Location.Value == OutputLocation.CustomFolder;
 
+    /// <summary>An emptied box is no limit; at most 4 GB, the largest file FAT32 (and many sites) take.</summary>
+    private static double SizeLimit(decimal? megabytes) => (double)Math.Clamp(megabytes ?? 0, 0, 4096);
+
     public string? NameError => string.IsNullOrWhiteSpace(Name) ? _loc["presets.name_required"] : null;
     public bool IsValid => NameError is null;
 
@@ -664,6 +679,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _original.TargetFormat = TargetId;
         var image = _original.Image;
         image.Quality = Math.Clamp(Quality, 1, 100);
+        // Only where the field is shown, as with SaveEveryFrame below: a limit left behind by a JPG target fits nothing.
+        image.MaxSizeMb = ShowQuality ? SizeLimit(ImageMaxSizeMb) : 0;
         if (Resize.Value == ResizeMode.Custom)
         {
             // Custom sizing is stored as CustomSize with Resize None, never as a resize name an older version rejects
@@ -744,6 +761,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         var media = _original.Media;
         media.Quality = MediaQuality.Value;
         media.MaxHeight = MaxHeight.Value;
+        media.MaxSizeMb = ShowVideoMaxSize ? SizeLimit(VideoMaxSizeMb) : 0;
         media.AudioBitrateKbps = AudioBitrate.Value;
         media.RemoveAudio = RemoveAudio;
         media.AudioChannels = AudioChannels.Value;
@@ -779,7 +797,10 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _original.Cad.Version = ShowCad ? CadVersion.Value : default;
 
         var output = _original.Output;
-        output.Location = Location.Value;
+        // Asking keeps the location it had: a Filee that can't ask (or one from before it) saves there.
+        output.AskEveryTime = Location.Value is null;
+        if (Location.Value is { } location)
+            output.Location = location;
         output.SubfolderName = string.IsNullOrWhiteSpace(SubfolderName) ? "converted" : SubfolderName.Trim();
         // Only with a subfolder, where it is offered: a box ticked there must not stay on hidden behind another location.
         output.SubfolderOnlyForSeveralFiles = ShowSubfolder && SubfolderOnlyForSeveralFiles;

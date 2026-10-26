@@ -161,9 +161,10 @@ public sealed class CropCanvas : Control
     // The picture is never mirrored, also in a right-to-left UI.
     public CropCanvas() => FlowDirection = FlowDirection.LeftToRight;
 
-    public void ResetCrop()
+    /// <summary>Starts the frame over: the whole picture, or <paramref name="frame"/> (a ratio carried from the last picture).</summary>
+    public void ResetCrop(Rect? frame = null)
     {
-        SetRect(new Rect(0, 0, 1, 1), animate: true);
+        SetRect(frame ?? new Rect(0, 0, 1, 1), animate: true);
     }
 
     public void SetAspectRatio(double ratio)

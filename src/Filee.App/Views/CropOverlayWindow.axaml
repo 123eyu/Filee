@@ -309,6 +309,16 @@
                 <Border Classes="key"><TextBlock Text="A" /></Border>
               </StackPanel>
             </Button>
+            <!-- The custom ratio: W × H, only while it's the one in use. -->
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding IsCustomAspect}">
+              <NumericUpDown x:Name="CustomWidthBox" Value="{Binding CustomWidth}" Minimum="1" Maximum="99999" Increment="1"
+                             FormatString="0" Width="64" ShowButtonSpinner="False" HorizontalContentAlignment="Center" AutomationProperties.Name="{DynamicResource crop.custom_width}"
+                             ToolTip.Tip="{DynamicResource crop.custom_width}" />
+              <TextBlock Text="×" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <NumericUpDown x:Name="CustomHeightBox" Value="{Binding CustomHeight}" Minimum="1" Maximum="99999" Increment="1"
+                             FormatString="0" Width="64" ShowButtonSpinner="False" HorizontalContentAlignment="Center" AutomationProperties.Name="{DynamicResource crop.custom_height}"
+                             ToolTip.Tip="{DynamicResource crop.custom_height}" />
+            </StackPanel>
 
             <Border Width="1" Height="22" Margin="3,0" Background="{DynamicResource SubtleBorderBrush}" VerticalAlignment="Center" />
 
@@ -403,7 +413,8 @@
       <c:AspectDial x:Name="Dial" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="False"
                     Classes.open="{Binding IsAspectDialOpen}"
                     CornerRadius="{DynamicResource SoftRadius}"
-                    SelectedMode="{Binding SelectedAspect}" IsPortrait="{Binding IsPortrait}" OriginalRatio="{Binding OriginalRatio}">
+                    SelectedMode="{Binding SelectedAspect}" IsPortrait="{Binding IsPortrait}" OriginalRatio="{Binding OriginalRatio}"
+                    CustomRatio="{Binding CustomRatio}">
         <c:RingSegment Mode="free" Content="{DynamicResource crop.aspect_free}" Command="{Binding SetAspectCommand}" CommandParameter="free" />
         <c:RingSegment Mode="original" Content="{DynamicResource crop.aspect_original}" Command="{Binding SetAspectCommand}" CommandParameter="original" />
         <c:RingSegment Mode="1:1" Command="{Binding SetAspectCommand}" CommandParameter="1:1" />
@@ -411,6 +422,10 @@
         <c:RingSegment Mode="4:3" Command="{Binding SetAspectCommand}" CommandParameter="4:3" />
         <c:RingSegment Mode="3:2" Command="{Binding SetAspectCommand}" CommandParameter="3:2" />
         <c:RingSegment Mode="16:9" Command="{Binding SetAspectCommand}" CommandParameter="16:9" />
+        <!-- The ratio typed in the W and H boxes beside the ratio button (#542). -->
+        <c:RingSegment Mode="custom" Content="{Binding CustomLabel}" Command="{Binding SetAspectCommand}" CommandParameter="custom"
+                       ToolTip.Tip="{DynamicResource crop.aspect_custom}" />
+
         <Button Classes="hub" Command="{Binding SwapOrientationCommand}" IsEnabled="{Binding CanSwapOrientation}"
                 ToolTip.Tip="{DynamicResource crop.swap}" AutomationProperties.Name="{DynamicResource crop.swap}">
           <StackPanel Spacing="3" HorizontalAlignment="Center">

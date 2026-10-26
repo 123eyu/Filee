@@ -47,6 +47,9 @@ public static partial class OutputPathResolver
         var isSource = PathsEqual(candidate, tokens.SourcePath);
         if (!isSource && !exists(candidate))
             return candidate;
+        // The save dialog asked about replacing exactly this file ("Ask every time"); any other keeps the policy.
+        if (!isSource && rule.ConfirmedPath is { } confirmed && PathsEqual(candidate, confirmed))
+            return candidate;
 
         if (!isSource && rule.Conflict == ConflictPolicy.Overwrite)
             return candidate;

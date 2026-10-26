@@ -45,7 +45,7 @@ public class CropMathTests
     [Fact]
     public void Only_fixed_ratios_that_arent_square_swap()
     {
-        Assert.Equal(["5:4", "4:3", "3:2", "16:9"], CropMath.AspectModes.Where(CropMath.CanSwap));
+        Assert.Equal(["5:4", "4:3", "3:2", "16:9", "custom"], CropMath.AspectModes.Where(CropMath.CanSwap));
         Assert.Equal("4:5", CropMath.Numbers("5:4", portrait: true));
         Assert.Equal("9:16", CropMath.Numbers("16:9", portrait: true));
         Assert.Equal("16:9", CropMath.Numbers("16:9", portrait: false));
@@ -53,6 +53,20 @@ public class CropMathTests
         Assert.Equal(0, CropMath.Ratio("original", false, 0, 0));
         Assert.Equal(4, CropMath.AspectIndex("4:3"));
         Assert.Equal(-1, CropMath.AspectIndex("21:9"));
+    }
+
+    [Fact]
+    public void A_custom_ratio_is_the_typed_w_over_h_shown_as_small_as_it_goes()
+    {
+        // 1080 × 1350 is 4:5 (#542); the hub turns it to 5:4.
+        Assert.Equal(1080.0 / 1350, CropMath.Ratio("custom", false, 1600, 1000, 1080.0 / 1350), 6);
+        Assert.Equal(1350.0 / 1080, CropMath.Ratio("custom", true, 1600, 1000, 1080.0 / 1350), 6);
+        Assert.Equal("4:5", CropMath.CustomNumbers(1080, 1350, portrait: false));
+        Assert.Equal("5:4", CropMath.CustomNumbers(1080, 1350, portrait: true));
+        Assert.Equal("7:3", CropMath.CustomNumbers(7, 3, portrait: false));
+        Assert.Equal("1:1", CropMath.CustomNumbers(0, 0, portrait: false)); // an emptied box counts as 1
+        Assert.Equal(0, CropMath.Ratio("custom", true, 1600, 1000)); // no ratio yet: free, never 1 / 0
+        Assert.Equal(7, CropMath.AspectIndex("custom")); // the last slice
     }
 
     [Fact]
@@ -78,6 +92,21 @@ public class CropMathTests
     {
         Assert.Equal(new PixelSize(800, 333), CropMath.PixelSize(new Rect(0, 0, 0.5, 0.333), 1600, 1000));
         Assert.Equal(new PixelSize(1, 1), CropMath.PixelSize(new Rect(0, 0, 0.0001, 0), 1600, 1000));
+    }
+
+    [Fact]
+    public void A_carried_ratio_starts_as_the_largest_centred_frame()
+    {
+        // 4:5 on a landscape 1600 × 1000: the whole height, 800 wide in the middle.
+        Assert.Equal(new Rect(0.25, 0, 0.5, 1), CropMath.Centered(4.0 / 5, 1600, 1000));
+        // 16:9 on an upright 1000 × 1600: the whole width, 562.5 high in the middle.
+        var wide = CropMath.Centered(16.0 / 9, 1000, 1600);
+        Assert.Equal((0, 1), (wide.X, wide.Width));
+        Assert.Equal(562.5 / 1600, wide.Height, 6);
+        Assert.Equal((1 - wide.Height) / 2, wide.Y, 6);
+        // The picture's own ratio, and free, fill it.
+        Assert.Equal(new Rect(0, 0, 1, 1), CropMath.Centered(1.6, 1600, 1000));
+        Assert.Equal(new Rect(0, 0, 1, 1), CropMath.Centered(0, 1600, 1000));
     }
 
     [Fact]

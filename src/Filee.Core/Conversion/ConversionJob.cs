@@ -63,6 +63,9 @@ public sealed class FileResult
     /// <summary>The system's own words after <see cref="NoticeReasonKey"/> (not localized), or null.</summary>
     public string? NoticeDetail { get; set; }
 
+    /// <summary>"Replace the original" sent the source to the Recycle Bin / Trash (its path may now hold the result).</summary>
+    public bool OriginalInTrash { get; set; }
+
     /// <summary>
     /// Referenced document font families that weren't installed before rendering. Conversion still completes with the
     /// renderer's substitutions; the UI can offer trusted sources afterwards.

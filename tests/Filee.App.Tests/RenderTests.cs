@@ -447,6 +447,73 @@ public class RenderTests
         }
     }
 
+    [AvaloniaTheory]
+    [InlineData("en")]
+    [InlineData("ru")]
+    public void Add_offers_presets_for_where_a_file_goes_and_the_editor_keeps_their_size_limit(string language)
+    {
+        TestServices.EnsureInitialized(language);
+        var store = AppHost.Get<Filee.Core.Settings.UserDataStore>();
+        var loc = AppHost.Get<Filee.Core.Localization.ILocalizer>();
+        using var vm = new MainWindowViewModel(AppHost.Services, loc, AppHost.Get<UpdateService>());
+        vm.Navigate("presets");
+        var page = (PresetsPageViewModel)vm.CurrentPage;
+        Assert.Equal(["for-email", "for-discord", "for-whatsapp", "for-instagram"], page.PlacePresets.Select(p => p.Preset.Id));
+        Assert.All(page.PlacePresets, p => Assert.DoesNotContain("preset.", p.Name)); // translated, not a raw key
+
+        var whatsapp = page.PlacePresets[2].Preset;
+        page.AddPlaceCommand.Execute(whatsapp);
+        page.AddPlaceCommand.Execute(whatsapp);
+        var added = store.Presets.Where(p => p.NameKey == "preset.for_whatsapp").ToList();
+        try
+        {
+            // Two copies, each its own preset; the offer itself stays as it was.
+            Assert.Equal(2, added.Count);
+            Assert.Equal(2, added.Select(p => p.Id).Distinct().Count());
+            Assert.DoesNotContain(added, p => p.Id == "for-whatsapp");
+            Assert.Same(added[^1], page.SelectedPreset!.Preset);
+
+            var editor = page.Editor!;
+            Assert.True(editor.ShowVideoMaxSize);
+            Assert.Equal(16m, editor.VideoMaxSizeMb);
+            editor.VideoMaxSizeMb = 25;
+            Assert.True(editor.Apply());
+            Assert.Equal(25, added[^1].Media.MaxSizeMb);
+            Assert.Equal(16, whatsapp.Media.MaxSizeMb);
+
+            // Not where nothing could fit it: VOB and DV have a fixed bitrate.
+            editor.Target = editor.Targets.Single(t => t.Value == "vob");
+            Assert.False(editor.ShowVideoMaxSize);
+            editor.Target = editor.Targets.Single(t => t.Value == "mp4");
+            Assert.True(editor.ShowVideoMaxSize);
+            Assert.False(new PresetEditorViewModel(Filee.Core.Presets.BuiltInData.CreatePresets().First(p => p.JoinsIntoOneMedia), loc).ShowVideoMaxSize);
+
+            // A cleared box is no limit; a JPG target shows its own box, and a limit left behind by MP4 isn't kept.
+            editor.VideoMaxSizeMb = null;
+            editor.Target = editor.Targets.Single(t => t.Value == "jpg");
+            Assert.False(editor.ShowVideoMaxSize);
+            Assert.True(editor.ShowQuality);
+            editor.ImageMaxSizeMb = 1.5m;
+            Assert.True(editor.Apply());
+            Assert.Equal((0.0, 1.5), (added[^1].Media.MaxSizeMb, added[^1].Image.MaxSizeMb));
+
+            var window = new MainWindow { DataContext = vm, Width = 1180, Height = 900 };
+            window.Show();
+            Pump();
+            var add = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "AddPresetButton");
+            add.Flyout!.ShowAt(add);
+            Pump();
+            Save(window, $"presets-add-menu-{language}.png");
+            window.Close();
+        }
+        finally
+        {
+            foreach (var preset in added)
+                store.Presets.Remove(preset);
+            store.SaveLibrary();
+        }
+    }
+
     [AvaloniaFact]
     public void General_page_keeps_the_history_limit_within_its_range()
     {

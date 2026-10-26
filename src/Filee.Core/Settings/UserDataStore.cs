@@ -58,7 +58,7 @@ public sealed class UserDataStore
     /// <summary>Raised after presets or profiles were saved.</summary>
     public event EventHandler? LibraryChanged;
 
-    /// <summary>Raised after a history entry was added.</summary>
+    /// <summary>Raised after a history entry was added or changed, or the history cleared.</summary>
     public event EventHandler? HistoryChanged;
 
     private string SettingsPath => Path.Combine(Directory, "settings.json");
@@ -129,6 +129,17 @@ public sealed class UserDataStore
         }
         Write(HistoryPath, History, FileeJsonContext.Default.ListHistoryEntry);
         HistoryChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Saves a change to an entry already in <see cref="History"/> (Undo marks results moved, and the entry undone).
+    /// <paramref name="notify"/> false leaves the list as it is shown, so the card can say why it stopped.
+    /// </summary>
+    public void SaveHistory(bool notify = true)
+    {
+        Write(HistoryPath, History, FileeJsonContext.Default.ListHistoryEntry);
+        if (notify)
+            HistoryChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void ClearHistory()
@@ -872,6 +883,9 @@ internal static class SettingsMigrations
                 changed = true;
             }
         }
+        // v47: Garmin FIT activities (.fit) learn the geospatial donut; custom claims stay put.
+        if (from < 47)
+            changed |= LearnExtensions(profiles, out _, ["fit"]);
         return changed;
     }
 

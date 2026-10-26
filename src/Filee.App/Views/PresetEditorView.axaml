@@ -111,6 +111,11 @@
           </DockPanel>
           <Slider Minimum="1" Maximum="100" Value="{Binding Quality}" TickFrequency="1" IsSnapToTickEnabled="True" AutomationProperties.Name="{DynamicResource presets.quality}" />
         </StackPanel>
+        <Grid ColumnDefinitions="Auto,12,170" IsVisible="{Binding ShowQuality}">
+          <TextBlock Classes="label" VerticalAlignment="Center" Text="{DynamicResource presets.max_size}" />
+          <NumericUpDown Grid.Column="2" Value="{Binding ImageMaxSizeMb}" Minimum="0" Maximum="4096" Increment="0.5" FormatString="0.#"
+                         ToolTip.Tip="{DynamicResource presets.max_size_hint_image}" AutomationProperties.Name="{DynamicResource presets.max_size}" />
+        </Grid>
         <Grid ColumnDefinitions="*,12,*">
           <StackPanel>
             <TextBlock Classes="label" Text="{DynamicResource presets.resize}" />
@@ -249,6 +254,11 @@
         </Grid>
         <!-- Two per row, whichever apply to the target: hidden ones leave no gap. -->
         <UniformGrid Columns="2" ColumnSpacing="12" RowSpacing="10">
+          <StackPanel IsVisible="{Binding ShowVideoMaxSize}">
+            <TextBlock Classes="label" Text="{DynamicResource presets.max_size}" />
+            <NumericUpDown Value="{Binding VideoMaxSizeMb}" Minimum="0" Maximum="4096" Increment="1" FormatString="0.#"
+                           ToolTip.Tip="{DynamicResource presets.max_size_hint_video}" AutomationProperties.Name="{DynamicResource presets.max_size}" />
+          </StackPanel>
           <StackPanel IsVisible="{Binding ShowVideoCodec}">
             <TextBlock Classes="label" Text="{DynamicResource presets.video_codec}" />
             <ComboBox ItemsSource="{Binding VideoCodecs}" SelectedItem="{Binding VideoCodecChoice}" HorizontalAlignment="Stretch"
