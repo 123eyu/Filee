@@ -96,7 +96,8 @@ they can be installed or removed later in Settings → *Engines*. A conversion t
   install root, so uninstalling removes them.
 - LibreOffice and calibre come as MSIs and are unpacked with an administrative install (`msiexec /a`): files only,
   no registry entries, no admin rights. LibreOffice's help, gallery and most dictionaries are removed afterwards
-  (~500 MB).
+  (~500 MB). msiexec gets the real paths of the package, the target and its log: the Windows Installer service won't
+  follow a junction a user made (error 1620 or 1622, #527), as when `AppData\Local` was moved to another drive.
 - Ghostscript comes from conda-forge (Artifex publishes only an NSIS installer): a `.conda` package is a zip with a
   zstd tarball, of which only `Library/bin` is unpacked (SharpCompress; `fetch-engines.ps1` uses Windows' `tar.exe`).
   Its fonts and resources are compiled into `gsdll64.dll`. The Microsoft C++ runtime it was built against
