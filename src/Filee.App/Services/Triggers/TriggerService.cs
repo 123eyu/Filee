@@ -20,9 +20,9 @@ public sealed class TriggerService : IDisposable
     private readonly ILogger<TriggerService> _log;
     private readonly GestureDetector _detector = new();
     private readonly string _ownProcess = Process.GetCurrentProcess().ProcessName;
-    private EventLoopGlobalHook? _hook;
+    private QueuedGlobalHook? _hook;
     private Thread? _hookThread;
-    private readonly Func<EventLoopGlobalHook> _createHook;
+    private readonly Func<QueuedGlobalHook> _createHook;
     private GnomePointerBridge? _gnomeBridge;
     private GnomePointerInput? _gnomeInput;
     private HashSet<string> _excluded = new(StringComparer.OrdinalIgnoreCase);
@@ -31,11 +31,11 @@ public sealed class TriggerService : IDisposable
     private static readonly bool Trace = Environment.GetEnvironmentVariable("FILEE_TRACE_GESTURES") == "1";
 
     public TriggerService(IPlatformServices platform, ILogger<TriggerService> log)
-        : this(platform, log, () => new EventLoopGlobalHook(useBackgroundThreadForEventLoop: true))
+        : this(platform, log, () => new QueuedGlobalHook())
     {
     }
 
-    internal TriggerService(IPlatformServices platform, ILogger<TriggerService> log, Func<EventLoopGlobalHook> createHook)
+    internal TriggerService(IPlatformServices platform, ILogger<TriggerService> log, Func<QueuedGlobalHook> createHook)
     {
         _platform = platform;
         _log = log;
@@ -221,7 +221,8 @@ public sealed class TriggerService : IDisposable
                     NotifyStatus();
                 }
             })
-            { IsBackground = true, Name = "Filee global input" };
+            // Highest: Windows holds every mouse move until this thread has queued it (#511). It does nothing else.
+            { IsBackground = true, Name = "Filee global input", Priority = ThreadPriority.Highest };
             _hookThread.Start();
         }
         catch (Exception ex)

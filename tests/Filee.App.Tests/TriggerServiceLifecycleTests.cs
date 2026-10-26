@@ -111,6 +111,33 @@ public sealed class TriggerServiceLifecycleTests
         }
     }
 
+    [Fact]
+    public void Input_after_the_event_queue_closed_never_throws_on_the_hook_thread()
+    {
+        // #528: a stop that fails leaves the native hook running with its queue closed. SharpHook's own event loop
+        // hook then threw on the OS hook thread for the next mouse move, which ended Filee.
+        var provider = new DelayedProvider();
+        var hook = new QueuedGlobalHook(provider);
+        var moves = 0;
+        hook.MouseMoved += (_, _) => Interlocked.Increment(ref moves);
+        var run = new Thread(() => hook.Run()) { IsBackground = true };
+        run.Start();
+        Assert.True(SpinWait.SpinUntil(() => provider.Runs == 1, 2000));
+        provider.PostMouse(EventType.MouseMoved, 1, 1, EventMask.None);
+        Assert.True(SpinWait.SpinUntil(() => Volatile.Read(ref moves) == 1, 2000));
+
+        provider.FailStop = true;
+        Assert.Throws<HookException>(hook.Dispose);
+        provider.PostMouse(EventType.MouseMoved, 2, 2, EventMask.None); // threw here before
+        provider.PostKey(EventType.KeyPressed, KeyCode.VcA);
+
+        provider.FailStop = false;
+        provider.StopRequested.Set();
+        provider.AllowExit.Set();
+        Assert.True(run.Join(2000));
+        Assert.Equal(1, Volatile.Read(ref moves));
+    }
+
     private const EventMask Held = EventMask.LeftCtrl | EventMask.Button1;
 
     [AvaloniaFact]
@@ -248,7 +275,7 @@ public sealed class TriggerServiceLifecycleTests
     internal static TriggerService Create(DelayedProvider provider, Action key, bool wayland = false) =>
         new(new NullPlatformServicesForHooks { PressCarriesPosition = !wayland }, NullLogger<TriggerService>.Instance, () =>
         {
-            var hook = new EventLoopGlobalHook(provider, useBackgroundThreadForEventLoop: true);
+            var hook = new QueuedGlobalHook(provider);
             hook.KeyPressed += (_, _) => key();
             return hook;
         });
