@@ -10,6 +10,7 @@ using Filee.Core.Localization;
 using Filee.Core.Presets;
 using Filee.Core.Settings;
 using ImageMagick;
+using static Filee.App.Tests.RenderTests;
 
 namespace Filee.App.Tests;
 
@@ -31,6 +32,8 @@ public class ImageEditWindowTests
             vm.Rotation = vm.Rotations.Single(r => r.Value == ImageRotation.Right90);
             Assert.Equal("512 × 256 → 16 × 32", vm.SizeChange);
             vm.Grayscale = true;
+            Pump();
+            Save(window, "window-image-edit-en.png");
 
             vm.Convert();
 
