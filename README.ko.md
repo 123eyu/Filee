@@ -57,7 +57,7 @@
       끌고 있는 파일에 맞는 형식만 지금 있는 자리에 나타나요.
     </td>
     <td width="33%" valign="top">
-      <b>265가지 형식, 다른 프로그램 없이</b><br>
+      <b>266가지 형식, 다른 프로그램 없이</b><br>
       이미지, PDF, 워드, 엑셀, 파워포인트, HWP, 전자책, 압축 파일, 글꼴, CAD, 3D 모델, 지리 정보 데이터를 오피스·한컴오피스·LibreOffice 없이 변환해요.
     </td>
     <td width="33%" valign="top">
@@ -162,7 +162,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **자막**: SRT, ASS/SSA, WebVTT, SAMI(SMI), LRC, TTML, MicroDVD, SCC | 서로 변환, UTF-8로 저장(CP949 한글 자막도 깨지지 않아요) |
 | **압축 파일**: ZIP, ANSYS Workbench(WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG 등 | 압축 풀기, ZIP, 7Z, TAR, TAR.GZ;<br>여러 파일 → ZIP 하나 |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **글꼴**: TTF, OTF, WOFF, WOFF2, EOT | 서로 변환 |
+| **글꼴**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON(Windows 비트맵 글꼴)은 읽기 | 서로 변환;<br>FON → 크기마다 글꼴 하나 |
 | **데이터**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | 서로 변환, CSV·XLSX(표 모양 데이터);<br>vCard, iCalendar ↔ CSV |
 | **3D 모델**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>FBX는 읽기 | 서로 변환, PNG 미리보기 |
 | **지리 정보(벡터)**: Shapefile, GeoJSON, KML, KMZ, GPX<br>좌표가 있는 CSV;<br>Garmin FIT는 읽기 | 서로 변환, CSV·XLSX·JSON;<br>투영 좌표계(UTM, 웹 메르카토르, 람베르트, 알버스)는 WGS 84 경위도로 변환 |

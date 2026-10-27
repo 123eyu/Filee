@@ -56,7 +56,7 @@
       ฟอร์แมตที่เหมาะสมจะแสดงขึ้นตรงจุดที่คุณทำงานอยู่ โดยแสดงเฉพาะฟอร์แมตที่ใช้ได้กับไฟล์ที่คุณลากเท่านั้น
     </td>
     <td width="33%" valign="top">
-      <b>265 ฟอร์แมต โดยไม่ต้องลงโปรแกรมอื่นเพิ่ม</b><br>
+      <b>266 ฟอร์แมต โดยไม่ต้องลงโปรแกรมอื่นเพิ่ม</b><br>
       รูปภาพ, PDF, Word, Excel, PowerPoint, HWP, อีบุ๊ก, ไฟล์บีบอัด, ฟอนต์, CAD, โมเดล 3D และข้อมูลเชิงพื้นที่ ทำงานได้โดยไม่ต้องมี Microsoft Office, Hancom Office หรือ LibreOffice
     </td>
     <td width="33%" valign="top">
@@ -161,7 +161,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **คำบรรยาย**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | แปลงสลับกันเป็น UTF-8 (อ่านไฟล์ SMI/SRT เกาหลีรหัส CP949 ได้ถูกต้อง) |
 | **ไฟล์บีบอัด**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | แตกไฟล์, บีบอัดเป็น ZIP, 7Z, TAR, TAR.GZ;<br>รวมทุกไฟล์เป็นหนึ่ง ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **ฟอนต์**: TTF, OTF, WOFF, WOFF2, EOT | แปลงสลับกันได้ |
+| **ฟอนต์**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (ฟอนต์บิตแมปของ Windows) อ่านอย่างเดียว | แปลงระหว่างกัน;<br>FON → หนึ่งไฟล์ต่อขนาด |
 | **ข้อมูล**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | แปลงสลับกันได้, CSV และ XLSX (ตาราง);<br>vCard, iCalendar ↔ CSV |
 | **โมเดล 3D**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>อ่าน FBX | แปลงสลับกันได้, แสดงภาพตัวอย่าง PNG |
 | **ข้อมูลเวกเตอร์เชิงพื้นที่**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV พร้อมพิกัด;<br>อ่าน Garmin FIT | แปลงสลับกันได้ และเป็น CSV / XLSX / JSON<br>โดยพิกัดโปรเจกชัน (UTM, Web Mercator, Lambert, Albers) จะถูกแปลงเป็น WGS 84 ลองจิจูด/ละติจูด |

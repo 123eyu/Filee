@@ -56,7 +56,7 @@
       いま作業している場所に、ドラッグ中のファイルに合う形式だけが表示されます。
     </td>
     <td width="33%" valign="top">
-      <b>265形式、ほかのソフトは不要</b><br>
+      <b>266形式、ほかのソフトは不要</b><br>
       画像、PDF、Word、Excel、PowerPoint、HWP、電子書籍、アーカイブ、フォント、CAD、3Dモデル、地理空間データを、Office、Hancom Office、LibreOfficeなしで変換できます。
     </td>
     <td width="33%" valign="top">
@@ -164,7 +164,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **字幕**：SRT、ASS/SSA、WebVTT、SAMI（SMI）、LRC、TTML、MicroDVD、SCC | 相互変換、UTF-8で保存（CP949の韓国語ファイルも正しく読み込み） |
 | **アーカイブ**：ZIP、ANSYS Workbench（WBPZ）、7Z、RAR、TAR、TAR.GZ、TAR.BZ2、TAR.XZ、GZ、ISO、CAB、DMG、ALZ、EGG など | 展開、ZIP、7Z、TAR、TAR.GZ。<br>複数のファイル → 1つのZIP |
 | **CAD**：DWG、DXF | PDF、SVG、PNG、DWG ↔ DXF |
-| **フォント**：TTF、OTF、WOFF、WOFF2、EOT | 相互変換 |
+| **フォント**：TTF、OTF、WOFF、WOFF2、EOT；<br>FON（Windowsビットマップフォント）は読み込みのみ | 相互変換；<br>FON → サイズごとに1ファイル |
 | **データ**：JSON、JSON Lines、YAML、TOML、XML<br>vCard、iCalendar | 相互変換、CSVとXLSX（表形式のデータ）。<br>vCard、iCalendar ↔ CSV |
 | **3Dモデル**：GLB、glTF、STL、OBJ（+ MTL）、3MF、PLY。<br>FBXは読み込みのみ | 相互変換、PNGプレビュー |
 | **地理空間ベクターデータ**：Shapefile、GeoJSON、KML、KMZ、GPX<br>座標付きのCSV。<br>Garmin FITは読み込みのみ | 相互変換、CSV/XLSX/JSON。<br>投影座標系（UTM、Webメルカトル、ランベルト、アルベルス）のデータはWGS 84の経度/緯度で出力 |

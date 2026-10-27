@@ -6,6 +6,7 @@
 using System.IO.Compression;
 using Filee.Core.Conversion;
 using Filee.Core.Platform;
+using Filee.Engines.Pdf;
 using ImageMagick;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
@@ -115,8 +116,9 @@ internal static class ComicBook
         {
             cancellationToken.ThrowIfCancellationRequested();
             // JPEG and PNG go in as they are (PDFsharp embeds JPEG data without re-encoding); others become one of them.
-            if (EbookFiles.CommonImage(pages[i], converted, gifAndSvg: false) is not ({ } file, _))
+            if (EbookFiles.CommonImage(pages[i], converted, gifAndSvg: false) is not ({ } common, _))
                 continue;
+            var file = PdfPictures.Readable(common, converted);
             var info = new MagickImageInfo(file);
             var dpi = info.Density is { X: >= 36 } density ? density.Units == DensityUnit.PixelsPerCentimeter ? density.X * 2.54 : density.X : 96;
             using var image = XImage.FromFile(file);

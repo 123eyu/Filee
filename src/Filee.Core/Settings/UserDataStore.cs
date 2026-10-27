@@ -883,9 +883,9 @@ internal static class SettingsMigrations
                 changed = true;
             }
         }
-        // v47: Garmin FIT activities (.fit) learn the geospatial donut; custom claims stay put.
+        // v47: .fit learns the geospatial donut and .fon the fonts donut; custom claims stay put.
         if (from < 47)
-            changed |= LearnExtensions(profiles, out _, ["fit"]);
+            changed |= LearnExtensions(profiles, out _, ["fit", "fon"]);
         // v48: fragmented MP4 pieces (.m4s) learn the video donut; custom claims stay put.
         if (from < 48)
             changed |= LearnExtensions(profiles, out _, ["m4s"]);

@@ -86,6 +86,40 @@ public class EnginesPageTests
     }
 
     [AvaloniaFact]
+    public void Font_card_describes_fon_input_only()
+    {
+        TestServices.EnsureInitialized("en");
+        var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<ILocalizer>(), AppHost.Get<UpdateService>());
+        vm.Navigate("engines");
+        var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
+        window.Show();
+        Pump();
+        try
+        {
+            var page = window.GetVisualDescendants().OfType<EnginesPage>().Single();
+            var engines = ((EnginesPageViewModel)page.DataContext!).Engines;
+            var font = engines.Single(e => e.Converter.Id == "font");
+            var card = page.FindControl<ItemsControl>("EngineList")!.ContainerFromIndex(engines.IndexOf(font))!;
+
+            // The card's tooltip is the engine's own detail, and FON is only ever a source.
+            var tip = card.GetVisualDescendants().OfType<StackPanel>().Select(ToolTip.GetTip).OfType<string>().Single();
+            Assert.Equal(font.Converter.GetStatus().Detail, tip);
+            Assert.Contains("FON", tip);
+            Assert.Equal(["eot", "otf", "ttf", "woff", "woff2"], font.Converter.Edges.Where(e => e.From == "fon").Select(e => e.To).Order());
+            Assert.DoesNotContain(font.Converter.Edges, e => e.To == "fon");
+
+            var description = AppHost.Get<ILocalizer>()["engine.font.description"];
+            Assert.Equal(description, font.Description);
+            Assert.Contains(card.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == description && t.IsVisible);
+            Assert.Contains("FON", description);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void Only_LibreOffice_has_settings_and_they_change_the_saved_switches()
     {
         TestServices.EnsureInitialized("en");

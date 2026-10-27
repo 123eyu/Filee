@@ -56,7 +56,7 @@
       Formaty pojawiają się tam, gdzie już jesteś, i tylko te, które pasują do przeciąganych plików.
     </td>
     <td width="33%" valign="top">
-      <b>265 formatów bez dodatkowych programów</b><br>
+      <b>266 formatów bez dodatkowych programów</b><br>
       Obrazy, PDF, Word, Excel, PowerPoint, HWP, e-booki, archiwa, czcionki, CAD, modele 3D i dane geoprzestrzenne działają bez pakietu Office, Hancom Office i LibreOffice.
     </td>
     <td width="33%" valign="top">
@@ -161,7 +161,7 @@ Aby to cofnąć, usuń te wpisy w Zabezpieczenia Windows → Kontrola aplikacji 
 | **Napisy**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | między sobą, w UTF-8 (koreańskie pliki CP949 są odczytywane poprawnie) |
 | **Archiwa**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | rozpakowanie, ZIP, 7Z, TAR, TAR.GZ;<br>dowolne pliki → jeden ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **Czcionki**: TTF, OTF, WOFF, WOFF2, EOT | między sobą |
+| **Czcionki**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (bitmapowe czcionki Windows) tylko odczyt | konwersja między sobą;<br>FON → plik na rozmiar |
 | **Dane**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | między sobą, CSV i XLSX (tabele);<br>vCard, iCalendar ↔ CSV |
 | **Modele 3D**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>FBX tylko odczyt | między sobą, podgląd PNG |
 | **Dane geoprzestrzenne (wektorowe)**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV ze współrzędnymi;<br>Garmin FIT tylko odczyt | między sobą oraz CSV / XLSX / JSON;<br>dane w odwzorowaniach (UTM, Web Mercator, Lambert, Albers) wychodzą jako długość / szerokość geograficzna WGS 84 |

@@ -56,7 +56,7 @@
       只显示适合当前拖动文件的格式，就在你所在的位置。
     </td>
     <td width="33%" valign="top">
-      <b>265 种格式，无需其他软件</b><br>
+      <b>266 种格式，无需其他软件</b><br>
       图片、PDF、Word、Excel、PowerPoint、HWP、电子书、压缩包、字体、CAD、3D 模型和地理信息数据，无需 Office、韩文办公软件或 LibreOffice。
     </td>
     <td width="33%" valign="top">
@@ -161,7 +161,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **字幕** SRT、ASS/SSA、WebVTT、SAMI（SMI）、LRC、TTML、MicroDVD、SCC | 互相转换，保存为 UTF-8（也能读取 CP949 韩文字幕） |
 | **压缩包** ZIP、ANSYS Workbench（WBPZ）、7Z、RAR、TAR、TAR.GZ、TAR.BZ2、TAR.XZ、GZ、ISO、CAB、DMG、ALZ、EGG 等 | 解压、ZIP、7Z、TAR、TAR.GZ，<br>多个文件 → 一个 ZIP |
 | **CAD** DWG、DXF | PDF、SVG、PNG、DWG ↔ DXF |
-| **字体** TTF、OTF、WOFF、WOFF2、EOT | 互相转换 |
+| **字体**：TTF、OTF、WOFF、WOFF2、EOT；<br>FON（Windows 位图字体）仅读取 | 相互转换；<br>FON → 每个尺寸一个文件 |
 | **数据** JSON、JSON Lines、YAML、TOML、XML<br>vCard、iCalendar | 互相转换、CSV 和 XLSX（表格数据）、<br>vCard、iCalendar ↔ CSV |
 | **3D 模型** GLB、glTF、STL、OBJ（+ MTL）、3MF、PLY，<br>FBX 仅读取 | 互相转换、PNG 预览 |
 | **地理信息（矢量）** Shapefile、GeoJSON、KML、KMZ、GPX<br>带坐标的 CSV，<br>Garmin FIT 仅读取 | 互相转换、CSV / XLSX / JSON，<br>投影坐标系（UTM、Web 墨卡托、兰伯特、阿尔伯斯）会转换为 WGS 84 经纬度 |

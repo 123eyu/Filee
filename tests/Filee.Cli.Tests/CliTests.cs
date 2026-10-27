@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.Text.Json;
 using System.Xml.Linq;
 using Filee.Core.Presets;
+using Filee.Engines.Tests;
 
 namespace Filee.Cli.Tests;
 
@@ -435,6 +436,135 @@ public sealed class CliTests : IDisposable
         Assert.Contains("한글 report's", Path.GetFileName(result));
         Assert.True(File.Exists(result));
         Assert.True(File.Exists(source));
+    }
+
+    // ──────────── Windows bitmap fonts (#177): in-memory samples shared with the engine tests ────────────
+
+    private static readonly string[] FontFormats = ["ttf", "otf", "woff", "woff2", "eot"];
+
+    /// <summary>Writes a synthetic sample to <c>Name.fon</c> in this test's folder (or a subfolder).</summary>
+    private string Fon(string sample, string? folder = null)
+    {
+        folder = Path.Combine(_folder, folder ?? "");
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "Name.fon");
+        File.WriteAllBytes(path, FonBuilder.Sample(sample));
+        return path;
+    }
+
+    private static string[] Outputs(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return [.. document.RootElement.GetProperty("files")[0].GetProperty("outputs").EnumerateArray().Select(o => o.GetString()!)];
+    }
+
+    [Fact]
+    public void Generated_fon_samples_are_written_to_cli_input()
+    {
+        foreach (var sample in new[] { "Fon-v2-fixed.fon", "Fon-multi.fon" })
+        {
+            var bytes = FonBuilder.Sample(sample);
+            Assert.Equal("MZ"u8.ToArray(), bytes[..2]);
+            Assert.Equal(bytes, File.ReadAllBytes(Fon(sample, Path.GetFileNameWithoutExtension(sample))));
+        }
+    }
+
+    [Theory]
+    [InlineData("ttf")]
+    [InlineData("otf")]
+    [InlineData("woff")]
+    [InlineData("woff2")]
+    [InlineData("eot")]
+    public async Task Fon_single_resource_omits_size_suffix_in_all_five_formats(string format)
+    {
+        var source = Fon("Fon-v2-fixed.fon");
+        var json = Path.Combine(_folder, "json");
+        var text = Path.Combine(_folder, "text");
+
+        var (code, output, errors) = await Run("convert", source, "--to", format, "-o", json, "--json");
+        Assert.Equal(Cli.Success, code);
+        Assert.Equal("", errors);
+        Assert.Equal([Path.Combine(json, "Name." + format)], Outputs(output));
+        Assert.Equal(["Name." + format], Directory.EnumerateFiles(json).Select(Path.GetFileName));
+
+        (code, output, _) = await Run("convert", source, "--to", format, "-o", text);
+        Assert.Equal(Cli.Success, code);
+        Assert.Contains("Name." + format, output);
+        Assert.DoesNotContain("13px", output);
+        Assert.Equal(["Name." + format], Directory.EnumerateFiles(text).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    public async Task Fon_reports_each_strike_and_obeys_conflicts()
+    {
+        var source = Fon("Fon-multi.fon");
+        string[] names = ["Name-13px.ttf", "Name-13px-2.ttf", "Name-14px.ttf"];
+
+        // No conflict, in each format: one file per RT_FONT resource, every path in the text and JSON output.
+        foreach (var format in FontFormats)
+        {
+            var clean = Path.Combine(_folder, "clean-" + format);
+            var (code, output, _) = await Run("convert", source, "--to", format, "-o", clean, "--json");
+            Assert.Equal(Cli.Success, code);
+            Assert.Equal(names.Select(n => Path.Combine(clean, Path.ChangeExtension(n, format))), Outputs(output));
+        }
+        var seed = Path.Combine(_folder, "clean-ttf");
+        var (textCode, text, _) = await Run("convert", source, "--to", "ttf", "-o", Path.Combine(_folder, "text"));
+        Assert.Equal(Cli.Success, textCode);
+        Assert.All(names, n => Assert.Contains(n, text));
+
+        // One size already there: skip writes the other two, rename and overwrite write three.
+        string Folder(string name)
+        {
+            var folder = Path.Combine(_folder, name);
+            Directory.CreateDirectory(folder);
+            File.WriteAllText(Path.Combine(folder, "Name-13px.ttf"), "old");
+            return folder;
+        }
+
+        var skip = Folder("skip");
+        var (skipCode, skipped, _) = await Run("convert", source, "--to", "ttf", "-o", skip, "--skip", "--json");
+        Assert.Equal(Cli.Success, skipCode);
+        Assert.Equal([Path.Combine(skip, "Name-13px-2.ttf"), Path.Combine(skip, "Name-14px.ttf")], Outputs(skipped));
+        Assert.Equal("old", File.ReadAllText(Path.Combine(skip, "Name-13px.ttf")));
+
+        var rename = Folder("rename");
+        var (renameCode, renamed, _) = await Run("convert", source, "--to", "ttf", "-o", rename, "--json");
+        Assert.Equal(Cli.Success, renameCode);
+        Assert.Equal([Path.Combine(rename, "Name-13px (2).ttf"), Path.Combine(rename, "Name-13px-2.ttf"), Path.Combine(rename, "Name-14px.ttf")],
+            Outputs(renamed));
+        Assert.Equal("old", File.ReadAllText(Path.Combine(rename, "Name-13px.ttf")));
+
+        var overwrite = Folder("overwrite");
+        var (overwriteCode, overwritten, _) = await Run("convert", source, "--to", "ttf", "-o", overwrite, "--overwrite", "--json");
+        Assert.Equal(Cli.Success, overwriteCode);
+        Assert.Equal(names.Select(n => Path.Combine(overwrite, n)), Outputs(overwritten));
+        Assert.All(names, n => Assert.Equal(File.ReadAllBytes(Path.Combine(seed, n)), File.ReadAllBytes(Path.Combine(overwrite, n))));
+
+        // Every size there: skipped, with no outputs.
+        var (allCode, all, _) = await Run("convert", source, "--to", "ttf", "-o", seed, "--skip", "--json");
+        Assert.Equal(Cli.Success, allCode);
+        using var json = JsonDocument.Parse(all);
+        Assert.Equal("skipped", json.RootElement.GetProperty("files")[0].GetProperty("state").GetString());
+        Assert.Equal(0, json.RootElement.GetProperty("files")[0].GetProperty("outputs").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Fon_formats_are_read_only_and_no_to_fon()
+    {
+        var (code, output, _) = await Run("formats");
+        Assert.Equal(Cli.Success, code);
+        Assert.Contains(output.Split('\n'), line => line.TrimStart().StartsWith("fon ", StringComparison.Ordinal) && line.Contains("(read only)"));
+
+        (code, output, _) = await Run("formats", "fon");
+        Assert.Equal(Cli.Success, code);
+        var targets = output.Split('\n')[1].Split(',', StringSplitOptions.TrimEntries);
+        Assert.Equal(FontFormats.Order(), targets.Order());
+
+        var (refused, _, errors) = await Run("convert", Fon("Fon-v2-fixed.fon"), "--to", "fon");
+        Assert.Equal(Cli.UsageError, refused);
+        Assert.Contains("can't write", errors);
+        Assert.Equal(["Name.fon"], Directory.EnumerateFiles(_folder).Select(Path.GetFileName));
     }
 
     [Fact]

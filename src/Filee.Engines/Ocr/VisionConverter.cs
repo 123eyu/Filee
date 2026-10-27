@@ -10,6 +10,7 @@
 // page of a TIFF.
 
 using Filee.Core.Conversion;
+using Filee.Engines.Pdf;
 using ImageMagick;
 
 namespace Filee.Engines.Ocr;
@@ -152,7 +153,7 @@ public sealed class VisionConverter : IConverter
             var dpi = Dpi(frame);
             frame.AutoOrient();
             var png = Path.Combine(scratch, $"picture-{index++}.png");
-            frame.Write(png, MagickFormat.Png);
+            PdfPictures.WritePng(frame, png);
             yield return new Picture(png, frame.Width, frame.Height, dpi);
         }
     }

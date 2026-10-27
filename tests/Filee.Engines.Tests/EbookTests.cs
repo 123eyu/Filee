@@ -468,6 +468,22 @@ public class EbookTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task A_comic_with_black_and_white_pages_becomes_a_pdf()
+    {
+        // #605: PNG pages go into the PDF as they are, and PDFsharp refuses a 1-bit PNG.
+        var dir = fx.NewFolder();
+        var cbz = Path.Combine(dir, "scans.cbz");
+        using (var zip = ZipFile.Open(cbz, ZipArchiveMode.Create))
+        {
+            zip.CreateEntryFromFile(ImageAndPdfTests.MakeScan(dir, "page1.png"), "page1.png");
+            zip.CreateEntryFromFile(ImageAndPdfTests.MakeScan(dir, "page2.png", "16", "2"), "page2.png");
+        }
+
+        using var document = PdfReader.Open(await ConvertAsync(cbz, "pdf"), PdfDocumentOpenMode.Import);
+        Assert.Equal(2, document.PageCount);
+    }
+
+    [Fact]
     public async Task Comics_become_fixed_layout_epub_and_pdf_becomes_cbz()
     {
         var dir = fx.NewFolder();

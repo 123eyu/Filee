@@ -58,7 +58,7 @@
       تظهر الصيغ حيث أنت، ولا يظهر منها إلا ما يناسب الملفات التي تسحبها.
     </td>
     <td width="33%" valign="top">
-      <b>265 صيغة دون برامج أخرى</b><br>
+      <b>266 صيغة دون برامج أخرى</b><br>
       الصور وPDF وWord وExcel وPowerPoint وHWP والكتب الإلكترونية والأرشيفات والخطوط وCAD والنماذج ثلاثية الأبعاد والبيانات الجغرافية، كلها تعمل دون Office أو Hancom Office أو LibreOffice.
     </td>
     <td width="33%" valign="top">
@@ -167,7 +167,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **الترجمة**: SRT, ASS/SSA, WebVTT، SAMI (SMI)، LRC, TTML, MicroDVD, SCC | فيما بينها بترميز UTF-8 (تُقرأ ملفات CP949 الكورية بشكل صحيح) |
 | **الأرشيفات**: ZIP، وANSYS Workbench (WBPZ)، و7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG وغيرها | الاستخراج، ZIP, 7Z, TAR, TAR.GZ؛<br>وجمع أي ملفات في ZIP واحد |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **الخطوط**: TTF, OTF, WOFF, WOFF2, EOT | فيما بينها |
+| **الخطوط**: TTF, OTF, WOFF, WOFF2, EOT؛<br>FON (خطوط نقطية من Windows) للقراءة | تحويل فيما بينها؛<br>FON → ملف خط واحد لكل حجم |
 | **البيانات**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | فيما بينها، وإلى CSV وXLSX (للجداول)؛<br>vCard, iCalendar ↔ CSV |
 | **النماذج ثلاثية الأبعاد**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY؛<br>وFBX للقراءة | فيما بينها، معاينة PNG |
 | **البيانات الجغرافية المتجهية**: Shapefile, GeoJSON, KML, KMZ, GPX<br>ملفات CSV فيها إحداثيات؛<br>وGarmin FIT للقراءة | فيما بينها، وإلى CSV / XLSX / JSON؛<br>وتُحوَّل البيانات المُسقَطة (UTM, Web Mercator, Lambert, Albers) إلى خطوط الطول والعرض في WGS 84 |

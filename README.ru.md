@@ -56,7 +56,7 @@
       Форматы появляются там, где вы уже работаете, и только те, что подходят перетаскиваемым файлам.
     </td>
     <td width="33%" valign="top">
-      <b>265 форматов без лишних программ</b><br>
+      <b>266 форматов без лишних программ</b><br>
       Изображения, PDF, Word, Excel, PowerPoint, HWP, электронные книги, архивы, шрифты, чертежи CAD, 3D-модели и геоданные работают без Office, Hancom Office и LibreOffice.
     </td>
     <td width="33%" valign="top">
@@ -161,7 +161,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **Субтитры**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | друг в друга, в UTF-8 (корейские файлы в CP949 читаются правильно) |
 | **Архивы**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | распаковка, ZIP, 7Z, TAR, TAR.GZ;<br>любые файлы → один ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **Шрифты**: TTF, OTF, WOFF, WOFF2, EOT | друг в друга |
+| **Шрифты**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (растровые шрифты Windows) только чтение | преобразование друг в друга;<br>FON → один файл на размер |
 | **Данные**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | друг в друга, CSV и XLSX (таблицы);<br>vCard, iCalendar ↔ CSV |
 | **3D-модели**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>FBX только чтение | друг в друга, превью в PNG |
 | **Геоданные (векторные)**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV с координатами;<br>Garmin FIT только чтение | друг в друга и CSV / XLSX / JSON;<br>данные в проекциях (UTM, Web Mercator, Ламберта, Альберса) переводятся в долготу / широту WGS 84 |

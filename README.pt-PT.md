@@ -56,7 +56,7 @@
       Os formatos aparecem onde estás, apenas os que fazem sentido para os ficheiros que arrastas.
     </td>
     <td width="33%" valign="top">
-      <b>265 formatos, sem outro software</b><br>
+      <b>266 formatos, sem outro software</b><br>
       Imagens, PDF, Word, Excel, PowerPoint, HWP, livros digitais, arquivos, tipos de letra, CAD, modelos 3D e dados geoespaciais funcionam sem Office, Hancom Office ou LibreOffice.
     </td>
     <td width="33%" valign="top">
@@ -161,7 +161,7 @@ Para reverter a alteração, remove as entradas em Segurança do Windows → Con
 | **Legendas**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | conversão entre estes formatos em UTF-8 (leitura correta de ficheiros coreanos em CP949) |
 | **Arquivos**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | extrair, ZIP, 7Z, TAR, TAR.GZ;<br>quaisquer ficheiros → um ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **Tipos de letra**: TTF, OTF, WOFF, WOFF2, EOT | conversão entre estes formatos |
+| **Tipos de letra**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (tipos de letra bitmap do Windows) apenas leitura | conversão entre si;<br>FON → um ficheiro por tamanho |
 | **Dados**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | conversão entre estes formatos, CSV e XLSX (tabelas);<br>vCard, iCalendar ↔ CSV |
 | **Modelos 3D**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>leitura de FBX | conversão entre estes formatos, pré-visualização em PNG |
 | **Vetores geoespaciais**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV com coordenadas | conversão entre estes formatos e CSV / XLSX / JSON;<br>os dados projetados (UTM, Web Mercator, Lambert, Albers) são convertidos em longitude / latitude WGS 84 |
