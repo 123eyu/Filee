@@ -993,6 +993,13 @@ and writes the files; Filee's own renderer draws them with SkiaSharp (one drawin
   follow the insert's layer). White and near-white (ACI 7, which AutoCAD shows white on black) draw black on the white
   page. Line weights are plotted in millimetres ("Default" as a thin 0.18 mm line); line types become dash patterns
   scaled by LTSCALE, the entity's scale and the block scale (shapes and text inside complex line types are omitted).
+- **Colours of the output** (preset, CAD drawing card, for PDF, SVG and image targets; #411): *As drawn* (above),
+  *Black and white* or *Grayscale*. Black and white draws every line, curve, text, dimension, hatch pattern line,
+  point, arrowhead, SOLID/TRACE and wide polyline in black, like a plot with monochrome.ctb. Filled hatches (solid,
+  gradient and the tint of a too dense pattern) are not filled black, which would hide whatever lies on a light
+  background colour: they become the gray of their brightness (Rec. 601 luma), so a light fill stays light and a black
+  one black. Grayscale gives every colour the gray of its brightness; lines and text are scaled to 0–160 so the
+  lightest (yellow) still prints as a mid gray. The page stays white. Applied while drawing, so PDF and SVG stay vector.
 - **Layers**: off, frozen and non-plotting layers (including Defpoints) are not drawn, like a plot. A frozen layer
   hides a whole block reference; an OFF one only its layer-0 contents.
 - **Fonts**: drawings name SHX fonts, which are not available, so text uses the text style's TrueType font when it is

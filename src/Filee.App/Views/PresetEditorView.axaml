@@ -453,6 +453,21 @@
       </StackPanel>
     </Border>
 
+    <!-- DWG / DXF drawn into a PDF, SVG or picture: as drawn, black and white or grayscale (#411). After the PDF card:
+         most PDFs and pictures aren't made from drawings. -->
+    <Border x:Name="CadColorsCard" Classes="card" IsVisible="{Binding ShowCadColors}" Padding="14">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="h2" Text="{DynamicResource presets.group.cad}" />
+        <Grid ColumnDefinitions="*,12,*">
+          <StackPanel>
+            <TextBlock Classes="label" Text="{DynamicResource presets.cad_colors}" />
+            <ComboBox ItemsSource="{Binding CadColorChoices}" SelectedItem="{Binding CadColors}" HorizontalAlignment="Stretch" AutomationProperties.Name="{DynamicResource presets.cad_colors}" />
+          </StackPanel>
+        </Grid>
+        <TextBlock Classes="caption" Text="{DynamicResource presets.cad_colors_hint}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
     <!-- Output -->
     <Border Classes="card" Padding="14">
       <StackPanel Spacing="10">
