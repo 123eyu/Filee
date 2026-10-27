@@ -49,6 +49,7 @@ public static class BuiltInData
             Id = "tool-crop", NameKey = "preset.crop", TargetFormat = SameAsSource,
             Kind = PresetKind.Tool, Output = { FileNamePattern = "{name}_cropped" },
         },
+        .. HidePresets(),
         new()
         {
             Id = "tool-sheet-studio", NameKey = "preset.sheet_studio", TargetFormat = "pdf",
@@ -190,6 +191,19 @@ public static class BuiltInData
         {
             Id = "tool-clip", NameKey = "preset.clip", TargetFormat = SameAsSource,
             Kind = PresetKind.Tool, Tool = Preset.ClipTool, Output = { FileNamePattern = "{name}_clip" },
+        },
+    ];
+
+    /// <summary>
+    /// "Pixelate / blur" (added in settings schema 52): parts of a picture (names, faces, numbers) covered before it is
+    /// shared. On the front of the images donut after "Half size".
+    /// </summary>
+    public static List<Preset> HidePresets() =>
+    [
+        new()
+        {
+            Id = "tool-hide", NameKey = "preset.hide", TargetFormat = SameAsSource,
+            Kind = PresetKind.Tool, Tool = Preset.HideTool, Output = { FileNamePattern = "{name}_hidden" },
         },
     ];
 
@@ -527,7 +541,8 @@ public static class BuiltInData
         {
             Id = "images", NameKey = "profile.images",
             Extensions = ExtensionsOf(FormatCategory.Image),
-            PresetIds = ["to-png", "to-jpg", "to-webp", "to-pdf", "trace-svg", "trace-line-art", "to-tiff", "to-bmp", "to-ico", "half-size"],
+            PresetIds = ["to-png", "to-jpg", "to-webp", "to-pdf", "trace-svg", "trace-line-art", "to-tiff", "to-bmp", "to-ico", "half-size",
+                "tool-hide"],
             // Full (ToolbarProfile.MaxSlices): "Extract Live Photo video" stays in the library, on no donut.
             BackPresetIds = ["tool-crop", "rotate", "flip", "remove-background", "trim-transparent", "grayscale", "to-avif", "to-gif", "merge-pdf",
                 "compress-image", "remove-metadata", "zip-all"],

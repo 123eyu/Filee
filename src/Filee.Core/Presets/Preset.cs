@@ -195,9 +195,14 @@ public sealed class Preset
     public const string ClipTool = "clip";
 
     /// <summary>
+    /// <see cref="Tool"/> of "Pixelate / blur": parts of a picture covered before it is shared (names, faces, numbers).
+    /// </summary>
+    public const string HideTool = "hide";
+
+    /// <summary>
     /// <see cref="PresetKind.Tool"/>: which window it opens, <see cref="CropTool"/> (or null, as saved before there were
-    /// other tools) or <see cref="ClipTool"/>. A tool this version doesn't know (from a newer Filee) opens nothing.
-    /// Ignored for other kinds.
+    /// other tools), <see cref="ClipTool"/> or <see cref="HideTool"/>. A tool this version doesn't know (from a newer
+    /// Filee) opens nothing. Ignored for other kinds.
     /// </summary>
     public string? Tool { get; set; }
 
@@ -208,6 +213,10 @@ public sealed class Preset
     /// <summary>True for "Cut a clip".</summary>
     [JsonIgnore]
     public bool IsClipTool => IsTool && Tool == ClipTool;
+
+    /// <summary>True for "Pixelate / blur".</summary>
+    [JsonIgnore]
+    public bool IsHideTool => IsTool && Tool == HideTool;
 
     /// <summary>
     /// True if converting a <paramref name="sourceFormat"/> file cuts a clip of it (<see cref="MediaOptions.Clip"/>,
@@ -305,6 +314,29 @@ public enum FitsTiffMode
     Stretched,
 }
 
+/// <summary>How "Pixelate / blur" covers the parts of a picture it hides (<see cref="ImageOptions.HideStyle"/>).</summary>
+public enum HideStyle
+{
+    /// <summary>Squares of the average colour of what is under them.</summary>
+    Pixelate,
+    /// <summary>A strong blur.</summary>
+    Blur,
+}
+
+/// <summary>
+/// A part of a picture to hide, in parts of the picture as it is seen (EXIF orientation applied): 0 to 1 from its left
+/// and top edges.
+/// </summary>
+public sealed class HiddenArea
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
+
+    public HiddenArea Clone() => (HiddenArea)MemberwiseClone();
+}
+
 /// <summary>Raster image encoding options.</summary>
 public sealed class ImageOptions
 {
@@ -330,6 +362,13 @@ public sealed class ImageOptions
     /// <summary>Turns or mirrors the image: only engines that do (<see cref="Conversion.IImageTransformer"/>) can run it.</summary>
     [JsonIgnore]
     public bool TurnsOrMirrors => Rotation != ImageRotation.None || Flip != ImageFlip.None;
+
+    /// <summary>
+    /// Turns, mirrors or covers parts of the image (<see cref="HidesAreas"/>): done once, in the first step of a route whose
+    /// engine applies image options (<see cref="Conversion.IImageTransformer"/>); a file is never passed on as it is.
+    /// </summary>
+    [JsonIgnore]
+    public bool ReworksPixels => TurnsOrMirrors || HidesAreas;
 
     /// <summary>Whether the preset edits picture content, size, or playback speed.</summary>
     [JsonIgnore]
@@ -422,6 +461,30 @@ public sealed class ImageOptions
     /// <summary>Icon sizes embedded in an ICO file.</summary>
     public List<int> IcoSizes { get; set; } = [256, 128, 64, 48, 32, 16];
 
+    /// <summary>
+    /// "Pixelate / blur": how <see cref="HiddenAreas"/> are covered. Kept in the tool, so its window opens with the last
+    /// one. A field of its own (not a value added to another option), read leniently: an older Filee skips it.
+    /// </summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<HideStyle>))]
+    public HideStyle HideStyle { get; set; }
+
+    /// <summary>
+    /// How large the squares or how wide the blur over <see cref="HiddenAreas"/> is, <see cref="HideTool.MinStrength"/>
+    /// to <see cref="HideTool.MaxStrength"/> (see <see cref="HideTool.EffectSize"/>). Kept in the tool, as
+    /// <see cref="HideStyle"/>.
+    /// </summary>
+    public int HideStrength { get; set; } = HideTool.DefaultStrength;
+
+    /// <summary>
+    /// The parts of the picture "Pixelate / blur" covers. Set by its window on the conversion it starts, never on a
+    /// saved preset.
+    /// </summary>
+    public List<HiddenArea>? HiddenAreas { get; set; }
+
+    /// <summary>The picture gets parts of it covered (<see cref="HiddenAreas"/>).</summary>
+    [JsonIgnore]
+    public bool HidesAreas => HiddenAreas is { Count: > 0 };
+
     /// <summary>The playback speeds the preset editor offers (<see cref="AnimationSpeed"/>).</summary>
     public static readonly double[] AnimationSpeeds = [0.25, 0.5, 0.75, 1, 1.5, 2, 4];
 
@@ -446,6 +509,7 @@ public sealed class ImageOptions
     {
         var copy = (ImageOptions)MemberwiseClone();
         copy.IcoSizes = [.. IcoSizes];
+        copy.HiddenAreas = HiddenAreas?.Select(area => area.Clone()).ToList();
         return copy;
     }
 }

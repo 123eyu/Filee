@@ -94,8 +94,8 @@ public class BackFaceTests
     [Fact]
     public void The_fronts_stay_as_they_were_before_back_faces()
     {
-        Assert.Equal(["to-png", "to-jpg", "to-webp", "to-pdf", "trace-svg", "trace-line-art", "to-tiff", "to-bmp", "to-ico", "half-size"],
-            BuiltIn("images").PresetIds);
+        Assert.Equal(["to-png", "to-jpg", "to-webp", "to-pdf", "trace-svg", "trace-line-art", "to-tiff", "to-bmp", "to-ico", "half-size",
+            "tool-hide"], BuiltIn("images").PresetIds);
         Assert.Equal(BuiltInData.PdfDonut, BuiltIn("pdf").PresetIds);
         Assert.Equal(["to-pdf", "to-hwpx", "to-hwp", "to-docx", "to-odt", "to-txt", "to-html", "to-epub", "to-png", "merge-pdf"],
             BuiltIn("office").PresetIds);
