@@ -294,17 +294,20 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         var model = ActivatorUtilities.CreateInstance<MainWindowViewModel>(services);
         var main = new MainWindow { DataContext = model };
         PrepareWindow(main);
-        if (_mainPlacement is { } placement)
-        {
-            placement.ApplyTo(main);
-            if (page is null)
-                model.Navigate(placement.Page);
-        }
+        var store = services.GetService<UserDataStore>();
+        // Where it was last time: this run's, else the one settings.json kept from the last run (#586).
+        var placement = _mainPlacement ?? MainWindowPlacement.From(store?.Settings.MainWindow);
+        placement.ApplyTo(main);
+        if (page is null && placement.Page.Length > 0)
+            model.Navigate(placement.Page);
         main.Closing += (_, _) =>
         {
             // While it is still on screen: the release closes it hidden, when its position may no longer be known.
-            if (main.IsVisible)
-                _mainPlacement = MainWindowPlacement.Of(main, model, _mainPlacement);
+            if (!main.IsVisible)
+                return;
+            // Maximized or minimized it keeps the size it had before: on the first close of a run, the one it opened with.
+            _mainPlacement = MainWindowPlacement.Of(main, model, _mainPlacement ?? placement);
+            store?.SaveMainWindow(_mainPlacement.ToBounds());
         };
         main.Closed += (_, _) =>
         {
@@ -669,9 +672,18 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
     private static Window? MainWindowOrNull() =>
         (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 
-    /// <summary>Where the main window was and which page it showed, for the next one.</summary>
-    private sealed record MainWindowPlacement(PixelPoint? Position, Size? Size, bool Maximized, string Page)
+    /// <summary>
+    /// Where the main window was and which page it showed, for the next one. The page stays within this run; the rest is
+    /// also kept in settings.json for the next start (<see cref="AppSettings.MainWindow"/>).
+    /// </summary>
+    internal sealed record MainWindowPlacement(PixelPoint? Position, Size? Size, bool Maximized, string Page)
     {
+        /// <summary>Room left between the window and the edges of its screen's working area.</summary>
+        internal const double Margin = 8;
+
+        /// <summary>The title bar and borders around the content, which the size (the content's) doesn't count.</summary>
+        internal const double Frame = 40;
+
         /// <summary>The window's placement. Maximized or minimized, it keeps the position and size it had before.</summary>
         public static MainWindowPlacement Of(MainWindow window, MainWindowViewModel vm, MainWindowPlacement? last) =>
             window.WindowState switch
@@ -681,21 +693,74 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
                 _ => (last ?? new(null, null, false, "")) with { Page = vm.SelectedItem.Key },
             };
 
+        /// <summary>The placement settings.json kept, without a page; nothing (the designed size) when it kept none.</summary>
+        public static MainWindowPlacement From(WindowBounds? bounds)
+        {
+            if (bounds is null)
+                return new(null, null, false, "");
+            PixelPoint? position = bounds is { X: { } x, Y: { } y } ? new PixelPoint(x, y) : null;
+            // A size settings.json can't have come from (hand-edited, damaged) is left out.
+            Size? size = bounds is { Width: { } w, Height: { } h } && double.IsFinite(w) && double.IsFinite(h) && w >= 100 && h >= 100
+                ? new Size(w, h)
+                : null;
+            return new(position, size, bounds.Maximized, "");
+        }
+
+        public WindowBounds ToBounds() => new()
+        {
+            X = Position?.X,
+            Y = Position?.Y,
+            Width = Size?.Width,
+            Height = Size?.Height,
+            Maximized = Maximized,
+        };
+
         public void ApplyTo(MainWindow window)
         {
-            // Only on a screen that is still there (a monitor may have been unplugged since).
-            if (Position is { } position && window.Screens.ScreenFromPoint(position) is not null)
+            // On a screen that is still there (a monitor may have been unplugged since), else the primary one, where the
+            // window then opens centred.
+            var screen = Position is { } at ? window.Screens.ScreenFromPoint(at) : null;
+            var place = screen is null ? null : Position;
+            screen ??= window.Screens.Primary;
+            var size = Size ?? new Size(window.Width, window.Height);
+            if (screen is { Scaling: > 0 })
+            {
+                var fitted = Fit(screen.WorkingArea, screen.Scaling, place, size, new Size(window.MinWidth, window.MinHeight));
+                window.MinWidth = fitted.Min.Width;
+                window.MinHeight = fitted.Min.Height;
+                size = fitted.Size;
+                place = fitted.Position;
+            }
+            if (place is { } position)
             {
                 window.WindowStartupLocation = WindowStartupLocation.Manual;
                 window.Position = position;
             }
-            if (Size is { } size)
-            {
-                window.Width = size.Width;
-                window.Height = size.Height;
-            }
+            window.Width = size.Width;
+            window.Height = size.Height;
             if (Maximized)
                 window.WindowState = WindowState.Maximized;
+        }
+
+        /// <summary>
+        /// The main window on a screen whose working area is <paramref name="area"/> (pixels, at <paramref name="scaling"/>):
+        /// <paramref name="size"/> made to fit the area less <see cref="Margin"/> and <see cref="Frame"/>, the
+        /// <paramref name="min"/>imum lowered where the area is smaller than it, and <paramref name="position"/> moved
+        /// back inside the area where the window would stick out (null stays null: the window opens centred).
+        /// </summary>
+        internal static (Size Size, Size Min, PixelPoint? Position) Fit(PixelRect area, double scaling, PixelPoint? position, Size size, Size min)
+        {
+            var room = new Size(Math.Max(1, area.Width / scaling - 2 * Margin), Math.Max(1, area.Height / scaling - 2 * Margin - Frame));
+            var fitted = new Size(Math.Min(size.Width, room.Width), Math.Min(size.Height, room.Height));
+            var fittedMin = new Size(Math.Min(min.Width, fitted.Width), Math.Min(min.Height, fitted.Height));
+            if (position is not { } at)
+                return (fitted, fittedMin, null);
+            // The whole window in pixels, frame included, and the corner that keeps it inside the area.
+            var width = (int)Math.Ceiling(fitted.Width * scaling);
+            var height = (int)Math.Ceiling((fitted.Height + Frame) * scaling);
+            var x = Math.Clamp(at.X, area.X, Math.Max(area.X, area.Right - width));
+            var y = Math.Clamp(at.Y, area.Y, Math.Max(area.Y, area.Bottom - height));
+            return (fitted, fittedMin, new PixelPoint(x, y));
         }
     }
 }

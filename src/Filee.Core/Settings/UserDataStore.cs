@@ -106,6 +106,16 @@ public sealed class UserDataStore
         Write(SettingsPath, Settings, FileeJsonContext.Default.AppSettings);
     }
 
+    /// <summary>
+    /// Remembers where the main window was (<see cref="AppSettings.MainWindow"/>), quietly as <see cref="SaveUiScale"/>:
+    /// nothing else depends on it.
+    /// </summary>
+    public void SaveMainWindow(WindowBounds bounds)
+    {
+        Settings.MainWindow = bounds;
+        Write(SettingsPath, Settings, FileeJsonContext.Default.AppSettings);
+    }
+
     public void SaveLibrary()
     {
         EnsureConsistency();
