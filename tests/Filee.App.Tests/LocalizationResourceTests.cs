@@ -130,4 +130,62 @@ public class LocalizationResourceTests
         Assert.Equal("Aus", toggle.OffContent);
         window.Close();
     }
+
+    /// <summary>
+    /// A language switch publishes its strings in one resource change: a change per key reached every control of every
+    /// window still alive, and made the later App tests minutes slower (#540).
+    /// </summary>
+    [AvaloniaFact]
+    public void A_language_switch_publishes_its_strings_in_one_resource_change()
+    {
+        TestServices.EnsureInitialized("en");
+        var app = Application.Current!;
+        var changes = 0;
+        void Count(object? sender, ResourcesChangedEventArgs e) => changes++;
+        app.ResourcesChanged += Count;
+        try
+        {
+            AppHost.Get<LocalizationService>().SetLanguage("ko");
+            Assert.Equal(1, changes);
+            Assert.True(app.TryGetResource("home.title", null, out var title));
+            Assert.Equal("홈", title);
+        }
+        finally
+        {
+            app.ResourcesChanged -= Count;
+            TestServices.EnsureInitialized("en");
+        }
+    }
+
+    /// <summary>A switch before the dictionary is attached still takes effect, and attaching later shows the last language.</summary>
+    [AvaloniaFact]
+    public void A_language_set_before_attaching_shows_once_attached()
+    {
+        TestServices.EnsureInitialized("en");
+        var app = Application.Current!;
+        var merged = app.Resources.MergedDictionaries;
+        var count = merged.Count;
+        var localization = new LocalizationService();
+        var changed = 0;
+        localization.LanguageChanged += (_, _) => changed++;
+        try
+        {
+            localization.SetLanguage("ko");
+            Assert.Equal("ko", localization.Language);
+            Assert.Equal("ko", System.Globalization.CultureInfo.CurrentUICulture.Name);
+            Assert.Equal("홈", localization["home.title"]);
+            Assert.Equal(1, changed);
+
+            localization.Attach(app);
+            Assert.Equal(count + 1, merged.Count);
+            Assert.True(app.TryGetResource("home.title", null, out var title));
+            Assert.Equal("홈", title);
+        }
+        finally
+        {
+            while (merged.Count > count)
+                merged.RemoveAt(merged.Count - 1);
+            TestServices.EnsureInitialized("en");
+        }
+    }
 }
