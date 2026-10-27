@@ -277,7 +277,8 @@ internal static class Program
         var builder = AppBuilder.Configure<App>();
 #if FILEE_NATIVE_WAYLAND
         // The native backend is only compiled into Linux builds and only used when asked for (FILEE_USE_WAYLAND=1).
-        builder = Filee.Platform.Linux.WaylandSupport.NativeWaylandRequested ? builder.UseWayland() : builder.UsePlatformDetect();
+        // UseWayland configures the Wayland windowing subsystem; UseSkia registers the rendering subsystem; UseHarfBuzz provides text shaping.
+        builder = Filee.Platform.Linux.WaylandSupport.NativeWaylandRequested ? builder.UseWayland().UseSkia().UseHarfBuzz() : builder.UsePlatformDetect();
 #else
         builder = builder.UsePlatformDetect();
 #endif
