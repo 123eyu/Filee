@@ -229,6 +229,9 @@ public static class FormatRegistry
         // Fragmented MP4 (#354): an .m4s with its own moov (ftyp + moov, then styp / sidx / moof / mdat) is read by FFmpeg;
         // a DASH media segment that needs a separate init segment is refused (DashSegment).
         new("m4s", "M4S", FormatCategory.Video, ["m4s"], Writable: false),
+        // Dahua and similar DVR / NVR recordings (#594): FFmpeg's dhav demuxer reads them (H.264 / H.265 video, often
+        // with G.711 or AAC sound).
+        new("dav", "DAV", FormatCategory.Video, ["dav"], Writable: false),
         // Raw H.265 / H.264 streams with no container, as security cameras and VMS software export them (issue #301).
         new("h265", "H.265", FormatCategory.Video, ["h265", "265", "hevc"], Writable: false),
         new("h264", "H.264", FormatCategory.Video, ["h264", "264"], Writable: false),

@@ -1463,6 +1463,11 @@ A self-contained `.m4s` (read only, #354), a fragmented MP4 that starts with `ft
 and goes to every video and audio target. A DASH media segment, whose top-level boxes reach a `moof` before any
 `moov`, plays only with a separate init segment; Filee refuses it before FFmpeg runs, with its own message
 (`error.m4s_needs_init`), instead of FFmpeg's demuxer error.
+Dahua DVR / NVR recordings (`.dav`, read only, #594) are read by FFmpeg's `dhav` demuxer, which finds them by the
+`DHAV` chunks they are made of, and go to every video and audio target. Their H.264 / H.265 video is copied where
+the target and preset allow it (`CanCopyVideo`), like any other container's; G.711 sound is encoded for targets that
+can't hold it. The chunks carry the camera's wall-clock time, so FFmpeg reports the recording date as the start time;
+the output starts at zero.
 A Video CD's `MPEGAV/AVSEQ01.DAT` (MPEG-1 in a RIFF/CDXA wrapper) counts as MPEG: `.dat` is an extension of that
 format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fails instead of making a file.
 
