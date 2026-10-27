@@ -342,7 +342,13 @@ nested `<svg>`, CSS and text are resolved the same way.
 ## HWPX writer
 
 Filee writes OWPML (HWPX) itself, so saving as HWPX needs no Hancom Office and shows no approval dialog.
-Readers turn the source into a small document model (`Hwp/Hwpx/HwpxModel.cs`) and `HwpxWriter` writes the package:
+Readers turn the source into a small document model (`Hwp/Hwpx/HwpxModel.cs`) and `HwpxWriter` writes the package.
+The model also keeps what a renderer needs and the writers ignore (`Hwp/Hwpx/HwpxModel.Layout.cs`): line rules with
+the source's meaning (Word's multiple and document grid, 한글's "between lines"), 한글's seven language slots and Word's
+four run fonts, paragraph borders and line breaking, stored line layouts, crops, rotation, z-order, master pages,
+polygons, curves and arcs (`HwpxReader.ReadForLayout` also keeps runs apart by that detail and reads master pages and
+those shapes, which `Read` leaves out as before). `StyleResolver` turns what a document leaves to the
+한글 style into concrete values. What the readers take over:
 
 - **DOCX** is read directly (`Hwp/Hwpx/Docx/DocxReader*.cs`) so the layout survives:
   - page size, orientation and margins per section; columns, also when they change mid-page;
@@ -622,7 +628,8 @@ sits on the office donut (settings schema 27 teaches existing donuts `.ofd`).
   resource files (PublicRes, DocumentRes, a page's PageRes, and the unnamed `Res.xml` WPS writes next to them).
   Parts are looked up by name inside the ZIP and never written out under their own names; references are resolved
   against the referring part (or the package root for "/…"), "." and ".." applied, and anything that leaves the
-  package, a URL or a drive path finds nothing. XML is read without DTDs; a part may unpack to 64 MB, a picture to
+  package, a URL or a drive path finds nothing. The package is read like HWPX and DOCX (`Documents/DocumentPackage.cs`,
+  see [HWPX reader](#hwpx-reader)): XML without DTDs; a part may unpack to 64 MB, a picture to
   32 MB (larger ones are left out), the whole package to 1 GB; at most 100,000 parts, 10,000 pages, 2,000,000
   drawing objects, page blocks nested 32 deep. DeltaX / DeltaY "g n d" repeats never yield more values than the
   text has characters.
@@ -993,6 +1000,13 @@ and writes the files; Filee's own renderer draws them with SkiaSharp (one drawin
   follow the insert's layer). White and near-white (ACI 7, which AutoCAD shows white on black) draw black on the white
   page. Line weights are plotted in millimetres ("Default" as a thin 0.18 mm line); line types become dash patterns
   scaled by LTSCALE, the entity's scale and the block scale (shapes and text inside complex line types are omitted).
+- **Colours of the output** (preset, CAD drawing card, for PDF, SVG and image targets; #411): *As drawn* (above),
+  *Black and white* or *Grayscale*. Black and white draws every line, curve, text, dimension, hatch pattern line,
+  point, arrowhead, SOLID/TRACE and wide polyline in black, like a plot with monochrome.ctb. Filled hatches (solid,
+  gradient and the tint of a too dense pattern) are not filled black, which would hide whatever lies on a light
+  background colour: they become the gray of their brightness (Rec. 601 luma), so a light fill stays light and a black
+  one black. Grayscale gives every colour the gray of its brightness; lines and text are scaled to 0–160 so the
+  lightest (yellow) still prints as a mid gray. The page stays white. Applied while drawing, so PDF and SVG stay vector.
 - **Layers**: off, frozen and non-plotting layers (including Defpoints) are not drawn, like a plot. A frozen layer
   hides a whole block reference; an OFF one only its layer-0 contents.
 - **Fonts**: drawings name SHX fonts, which are not available, so text uses the text style's TrueType font when it is
@@ -1220,6 +1234,31 @@ Not kept (the model has no place for them; skipped and counted by the `Read(path
 OLE objects, charts, video, form controls, text art (its text is kept), arcs / polygons / curves without text,
 master pages, memos, character ratio, relative size and offset, paragraph borders, picture cropping and rotation.
 Password-protected (encrypted) HWPX and DRM-wrapped files stop with a clear error.
+
+**Limits.** Untrusted documents must not hang, exhaust the memory or crash Filee. The HWPX, DOCX and OFD readers (and
+the HWP 5.0 reader and the layout engine when they come) share `Documents/DocumentLimits.cs`; a document that passes
+one stops with `error.document_too_complex` and says which:
+
+- the package (`Documents/DocumentPackage.cs`): at most 100,000 parts; a part may unpack to 64 MB, all parts together
+  to 1 GB, counted while they unpack (a ZIP header can understate a size), and a part over 4 MB to no more than 200
+  times its packed size; parts are found by name inside the package only, and extracted pictures get names Filee
+  makes (`hwpx-media-1.png`), never the part's;
+- XML (`Infrastructure/SafeXml.cs`, also used for KML and GPX): no DTD and no resolver, so no entity expands and
+  nothing outside the package is read; at most 512 levels deep and 5,000,000 elements in a package;
+- the document (`Documents/DocumentBudget.cs`): tables in tables, text boxes, notes, groups and fields nest at most 32
+  levels; at most 1,000,000 paragraphs and 200,000 tables, pictures and drawing objects; table columns, spans and
+  row spans are cut to the table (at most 16,384 columns); Word style chains are followed 20 styles deep;
+- pictures (`Documents/PictureSize.cs`): one whose PNG, JPEG, GIF, BMP or WebP header claims more than
+  16,384 × 16,384 pixels is left out before anything decodes it;
+- layout (`Documents/LayoutGuard.cs`, for the layout engine): at most 20,000 pages, 64 empty pages in a row, ten minutes;
+  cancellation and the time are checked per paragraph, and an object larger than the page is clipped and placed.
+
+Embedded fonts (DOCX `word/fonts`, HWPX and OFD font files) are not read; a reader that uses them must pass them
+through Filee's SFNT parser (`Fonts/SfntFont.cs`) first. `DocumentHostileInputTests` holds ZIP bombs, deep nesting,
+DTDs and huge pictures; `DocumentFuzzTests` changes packages written in code at random (attributes set to extreme
+values, elements removed, repeated, renamed or nested, text and bytes damaged) and allows a reader only to read a
+file or refuse it with `InvalidDataException` / `ConversionRefusedException`. It runs briefly with every test run and
+for a few minutes per reader every night (`.github/workflows/fuzz.yml`); `FILEE_FUZZ_SEED` repeats a run.
 
 ## E-books
 

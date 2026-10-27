@@ -18,7 +18,8 @@ namespace Filee.Engines.Cad;
 /// Rendering draws model space as seen from the top (the active layout when model space is empty), fitted to the
 /// page: PDF on an A3 sheet (A4 / Letter when the preset says so), SVG and images with the drawing's aspect ratio
 /// on a white background. A PDF of a drawing with paper-space layouts has one page per layout instead, with model
-/// space shown through each layout's viewports. See docs/ENGINES.md for what is and is not drawn.
+/// space shown through each layout's viewports. Every rendered output takes the preset's colours (as drawn, black and
+/// white, grayscale: <see cref="CadPalette"/>). See docs/ENGINES.md for what is and is not drawn.
 /// </remarks>
 public sealed class CadConverter(ILogger? logger = null) : IConverter, IImageTransformer
 {
@@ -85,6 +86,7 @@ public sealed class CadConverter(ILogger? logger = null) : IConverter, IImageTra
             var output = step.Output.Allocate(step.To);
             if (output is null)
                 return [];
+            var palette = new CadPalette(step.Preset.Cad.Colors);
             switch (step.To)
             {
                 case "pdf":
@@ -93,18 +95,18 @@ public sealed class CadConverter(ILogger? logger = null) : IConverter, IImageTra
                         // With empty model space the scene is the active layout's paper space, which must not show
                         // through the viewports.
                         if (sheets.Count > 0)
-                            CadRenderer.WritePdf(sheets, scene.Space == "model" ? scene : new CadScene(), step.Preset.Pdf,
+                            CadRenderer.WritePdf(sheets, scene.Space == "model" ? scene : new CadScene(), step.Preset.Pdf, palette,
                                 Path.GetFileNameWithoutExtension(step.InputPath), stream);
                         else
-                            CadRenderer.WritePdf(scene, step.Preset.Pdf, Path.GetFileNameWithoutExtension(step.InputPath), stream);
+                            CadRenderer.WritePdf(scene, step.Preset.Pdf, palette, Path.GetFileNameWithoutExtension(step.InputPath), stream);
                     }
                     break;
                 case "svg":
                     using (var stream = File.Create(output))
-                        CadRenderer.WriteSvg(scene, stream);
+                        CadRenderer.WriteSvg(scene, palette, stream);
                     break;
                 default:
-                    WriteImage(scene, step, output);
+                    WriteImage(scene, step, palette, output);
                     break;
             }
             progress?.Report(1);
@@ -116,10 +118,10 @@ public sealed class CadConverter(ILogger? logger = null) : IConverter, IImageTra
     /// A3-sized page that is about 2500 px on the long edge), then applies the image options like other image
     /// conversions do (resize, grayscale, quality, DPI).
     /// </summary>
-    private static void WriteImage(CadScene scene, ConversionStep step, string output)
+    private static void WriteImage(CadScene scene, ConversionStep step, CadPalette palette, string output)
     {
         var dpi = Math.Clamp(step.Preset.Pdf.RenderDpi, 36, 1200);
-        using var bitmap = CadRenderer.RenderBitmap(scene, dpi);
+        using var bitmap = CadRenderer.RenderBitmap(scene, dpi, palette);
         using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
         using var image = new MagickImage(data.ToArray());
         image.Density = new Density(dpi, dpi, DensityUnit.PixelsPerInch);

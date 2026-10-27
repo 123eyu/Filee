@@ -39,6 +39,12 @@ internal sealed class FillPrimitive : ScenePrimitive
     public SKColor? GradientColor { get; init; }
 
     public double GradientAngle { get; init; }
+
+    /// <summary>
+    /// A filled hatch (solid, gradient, or the tint of a pattern too dense to draw): an area, not ink like an
+    /// arrowhead or a wide polyline. Black-and-white and grayscale output shade it instead of filling it black.
+    /// </summary>
+    public bool IsArea { get; init; }
 }
 
 /// <summary>Pattern hatch lines, clipped by the hatch boundary when drawn.</summary>

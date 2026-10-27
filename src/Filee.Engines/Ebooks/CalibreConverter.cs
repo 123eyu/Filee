@@ -19,7 +19,12 @@ namespace Filee.Engines.Ebooks;
 /// <summary>Conversions through calibre's ebook-convert.</summary>
 public sealed partial class CalibreConverter : IConverter
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(10);
+    /// <summary>
+    /// ebook-convert prints its progress ("34% Running transforms on e-book...") as it works, so a book takes as long as
+    /// it needs: a 300 MB CHM made into a PDF passed the former fixed 10 minutes (#651). Only this long without a single
+    /// line means calibre is stuck. As long as that limit was, so no conversion that finished before stops now.
+    /// </summary>
+    internal static readonly TimeSpan StallTimeout = TimeSpan.FromMinutes(10);
 
     /// <summary>Formats only calibre reads.</summary>
     internal static readonly string[] Inputs = ["lit", "lrf", "chm", "pdb", "pml", "rb", "snb", "tcr", "oeb"];
@@ -80,10 +85,12 @@ public sealed partial class CalibreConverter : IConverter
             ["CALIBRE_TEMP_DIR"] = Directory.CreateDirectory(Path.Combine(work, "temp")).FullName,
             ["CALIBRE_OVERRIDE_LANG"] = "en", // English messages in the error details, whatever the Windows language
             ["PYTHONIOENCODING"] = "utf-8",
+            ["PYTHONUNBUFFERED"] = "1", // each progress line as it is printed: the stall watch counts on them
         };
         progress?.Report(0.02);
-        var result = await ProcessRunner.RunAsync(executable, [input, temp, .. OutputOptions(step.To)], Timeout, cancellationToken,
-            workingDirectory: work, environment: environment, onOutput: line => ReportProgress(line, progress));
+        var result = await ProcessRunner.RunAsync(executable, [input, temp, .. OutputOptions(step.To)], Timeout.InfiniteTimeSpan,
+            cancellationToken, workingDirectory: work, environment: environment, onOutput: line => ReportProgress(line, progress),
+            stallTimeout: StallTimeout);
         if (result.ExitCode != 0 || !File.Exists(temp))
             throw new InvalidOperationException($"Calibre failed (exit {result.ExitCode}). {LastLines(result.StandardError.Trim().Length > 0 ? result.StandardError : result.StandardOutput)}");
 

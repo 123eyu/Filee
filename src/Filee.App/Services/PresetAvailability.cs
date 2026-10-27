@@ -120,6 +120,10 @@ public sealed class PresetAvailability
         }
 
         // Any picture among the files: the others are left out when the window opens.
+        if (preset.IsImageEditTool)
+            return formats.Any(f => ImageEditTool.CanEdit(f.Id))
+                ? new(PresetUse.Usable, null)
+                : new(PresetUse.Unusable, _loc["error.images_only"]);
         if (preset.IsHideTool)
             return formats.Any(f => HideService.CanOpen(f.Id))
                 ? new(PresetUse.Usable, null)

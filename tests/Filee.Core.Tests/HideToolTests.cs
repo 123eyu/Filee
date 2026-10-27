@@ -276,17 +276,17 @@ public class HideToolTests
     // ───────────────────────── Settings schema 52 ─────────────────────────
 
     [Fact]
-    public void A_new_library_has_the_tool_after_crop_and_on_the_images_donut_after_half_size()
+    public void A_new_library_has_the_tool_after_edit_pictures_in_the_library_and_on_the_images_donut()
     {
         var presets = BuiltInData.CreatePresets();
-        Assert.Equal("tool-crop", presets[presets.FindIndex(p => p.Id == "tool-hide") - 1].Id);
+        Assert.Equal("tool-image-edit", presets[presets.FindIndex(p => p.Id == "tool-hide") - 1].Id);
         var images = BuiltInData.CreateProfiles().Single(p => p.Id == "images");
-        Assert.Equal("tool-hide", images.PresetIds[images.PresetIds.IndexOf("half-size") + 1]);
+        Assert.Equal(["half-size", "tool-image-edit", "tool-hide"], images.PresetIds.Skip(images.PresetIds.IndexOf("half-size")));
         Assert.DoesNotContain("tool-hide", images.BackPresetIds!);
         Assert.InRange(images.PresetIds.Count, 1, ToolbarProfile.MaxSlices);
     }
 
-    private static (List<Preset> Presets, List<ToolbarProfile> Profiles, ToolbarProfile Images) Version50()
+    private static (List<Preset> Presets, List<ToolbarProfile> Profiles, ToolbarProfile Images) Version51()
     {
         var presets = BuiltInData.CreatePresets();
         presets.RemoveAll(p => p.Id == "tool-hide");
@@ -297,11 +297,11 @@ public class HideToolTests
     }
 
     [Fact]
-    public void Version_50_libraries_get_the_tool_after_half_size_once()
+    public void Version_51_libraries_get_the_tool_after_edit_pictures_once()
     {
-        var (presets, profiles, images) = Version50();
+        var (presets, profiles, images) = Version51();
 
-        Assert.True(SettingsMigrations.ApplyToLibrary(50, presets, profiles));
+        Assert.True(SettingsMigrations.ApplyToLibrary(51, presets, profiles));
 
         Assert.Equal(BuiltInData.CreatePresets().Select(p => p.Id), presets.Select(p => p.Id));
         Assert.True(presets.Single(p => p.Id == "tool-hide").IsHideTool);
@@ -311,45 +311,50 @@ public class HideToolTests
     }
 
     [Fact]
-    public void After_edit_pictures_when_that_follows_half_size()
+    public void After_edit_pictures_when_that_follows_half_size_else_after_half_size()
     {
-        var (presets, profiles, images) = Version50();
-        images.PresetIds.Insert(images.PresetIds.IndexOf("half-size") + 1, "tool-image-edit");
-
+        var (presets, profiles, images) = Version51();
         SettingsMigrations.ApplyToLibrary(51, presets, profiles);
-
         Assert.Equal(["half-size", "tool-image-edit", "tool-hide"], images.PresetIds.Skip(images.PresetIds.IndexOf("half-size")).Take(3));
+
+        // "Edit pictures" moved to the back face by the user: right after "Half size".
+        (presets, profiles, images) = Version51();
+        images.PresetIds.Remove("tool-image-edit");
+        images.BackPresetIds!.Remove("grayscale");
+        images.BackPresetIds.Insert(0, "tool-image-edit");
+        SettingsMigrations.ApplyToLibrary(51, presets, profiles);
+        Assert.Equal(["half-size", "tool-hide"], images.PresetIds.Skip(images.PresetIds.IndexOf("half-size")).Take(2));
     }
 
     [Fact]
     public void A_full_front_puts_it_on_the_back_and_a_full_donut_or_the_users_own_place_is_left_alone()
     {
         // Front full: at the end of the back face (before "Compress into one archive") when that has room.
-        var (presets, profiles, images) = Version50();
+        var (presets, profiles, images) = Version51();
         while (images.PresetIds.Count < ToolbarProfile.MaxSlices)
             images.PresetIds.Add("to-gif");
         images.BackPresetIds!.Remove("grayscale");
-        SettingsMigrations.ApplyToLibrary(50, presets, profiles);
+        SettingsMigrations.ApplyToLibrary(51, presets, profiles);
         Assert.DoesNotContain("tool-hide", images.PresetIds);
         Assert.Equal("tool-hide", images.BackPresetIds[images.BackPresetIds.IndexOf("zip-all") - 1]);
 
         // Both full: in the library only.
-        (presets, profiles, images) = Version50();
+        (presets, profiles, images) = Version51();
         while (images.PresetIds.Count < ToolbarProfile.MaxSlices)
             images.PresetIds.Add("to-gif");
         var front = images.PresetIds.ToList();
         var back = images.BackPresetIds!.ToList();
-        Assert.True(SettingsMigrations.ApplyToLibrary(50, presets, profiles));
+        Assert.True(SettingsMigrations.ApplyToLibrary(51, presets, profiles));
         Assert.Equal(front, images.PresetIds);
         Assert.Equal(back, images.BackPresetIds);
         Assert.Contains(presets, p => p.Id == "tool-hide");
 
         // Already on the donut where the user put it (a build of this branch): stays there.
-        (presets, profiles, images) = Version50();
+        (presets, profiles, images) = Version51();
         images.BackPresetIds!.Remove("grayscale");
         images.BackPresetIds.Insert(0, "tool-hide");
         presets.Insert(0, Tool());
-        SettingsMigrations.ApplyToLibrary(50, presets, profiles);
+        SettingsMigrations.ApplyToLibrary(51, presets, profiles);
         Assert.DoesNotContain("tool-hide", images.PresetIds);
         Assert.Equal("tool-hide", images.BackPresetIds[0]);
     }

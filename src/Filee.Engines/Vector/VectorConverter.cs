@@ -120,9 +120,13 @@ public sealed class VectorConverter : IConverter, IImageTransformer
         ct.ThrowIfCancellationRequested();
         progress?.Report(0.6);
 
-        // The drawing was rendered at its final size, so the preset's resize must not scale the bitmap again.
+        // The drawing was rendered at its final size, so the preset's resize must not scale the bitmap again. Custom
+        // sizing rides on CustomSize, not on Resize: with the lock the raster already fits the box, without it this is
+        // the exact stretch of what the render produced. A minimum short edge was met by the render (or stopped at its
+        // memory limit, which enlarging the bitmap afterwards must not get round), so it is dropped like Resize.
         var options = step.Preset.Image.Clone();
         options.Resize = Core.Presets.ResizeMode.None;
+        options.MinShortEdge = null;
         ImageEncoder.ApplyOptions(image, options, step.To);
         return ImageEncoder.Write([image], step.To, step.Output, options);
     }

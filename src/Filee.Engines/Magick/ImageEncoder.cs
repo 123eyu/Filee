@@ -199,16 +199,41 @@ internal static class ImageEncoder
     }
 
     /// <summary>
-    /// How much <see cref="ApplyOptions"/> resizes a <paramref name="width"/> × <paramref name="height"/> image before
-    /// <see cref="FitFormat"/> (1 when it does not).
+    /// How much <see cref="ApplyOptions"/> resizes a width x height image before <see cref="FitFormat"/> (1 when it
+    /// does not). Custom sizing with the aspect kept takes one scale for both sides; stretched, the height's factor
+    /// is what a tall run of pages has to fit.
     /// </summary>
-    public static double ResizeScale(double width, double height, ImageOptions options) => options.Resize switch
+    public static double ResizeScale(double width, double height, ImageOptions options) =>
+        options.CustomSize is { Width: > 0, Height: > 0 } custom
+            ? custom.LockAspect
+                ? Math.Min(custom.ClampedWidth / width, custom.ClampedHeight / height)
+                : custom.ClampedHeight / height
+            : options.ClampedMinShortEdge is { } minShortEdge
+                ? MinShortEdgeScale(width, height, minShortEdge)
+                : options.Resize switch
+                {
+                    ResizeMode.Percent when options.ResizePercent > 0 => options.ResizePercent / 100.0,
+                    ResizeMode.LongEdge when options.LongEdge > 0 => Math.Min(1, options.LongEdge / Math.Max(width, height)),
+                    ResizeMode.Width when options.Width > 0 => Math.Min(1, options.Width / width),
+                    _ => 1,
+                };
+
+    /// <summary>
+    /// The most pixels a minimum short edge enlarges a picture to: as many as the largest custom size holds. Without
+    /// it a hairline strip (16 x 4000 px, short edge to 4000) would ask for a picture of 4 billion pixels.
+    /// </summary>
+    internal const double MaxEnlargedPixels = (double)CustomImageSize.MaxSide * CustomImageSize.MaxSide;
+
+    /// <summary>
+    /// The factor that brings the shorter edge of a width x height picture up to <paramref name="minShortEdge"/>
+    /// (issue #652): 1 when it already reaches it (never below 1, so nothing shrinks), and at most what keeps the
+    /// result within <see cref="MaxEnlargedPixels"/>.
+    /// </summary>
+    public static double MinShortEdgeScale(double width, double height, int minShortEdge)
     {
-        ResizeMode.Percent when options.ResizePercent > 0 => options.ResizePercent / 100.0,
-        ResizeMode.LongEdge when options.LongEdge > 0 => Math.Min(1, options.LongEdge / Math.Max(width, height)),
-        ResizeMode.Width when options.Width > 0 => Math.Min(1, options.Width / width),
-        _ => 1,
-    };
+        var scale = minShortEdge / Math.Min(width, height);
+        return scale <= 1 ? 1 : Math.Max(1, Math.Min(scale, Math.Sqrt(MaxEnlargedPixels / (width * height))));
+    }
 
     /// <summary>Turns and mirrors an image as <paramref name="options"/> say (part of <see cref="ApplyOptions"/>).</summary>
     public static void Turn(IMagickImage<byte> image, ImageOptions options)
@@ -282,19 +307,52 @@ internal static class ImageEncoder
             image.SetProfile(exif);
         }
 
-        switch (options.Resize)
+        // A hand-edited presets.json or an imported bundle can carry sizes the editor would never write, and a
+        // width of 0 or below would wrap to about 4 billion px in the (uint) casts below: such a size is skipped,
+        // so the picture keeps the preset's own resize behavior (None for a Custom preset) instead. A size above the
+        // editor's range is brought down to it, so a hand-edited 200000 x 200000 cannot ask for a 40-gigapixel picture.
+        if (options.CustomSize is { Width: > 0, Height: > 0 } custom)
         {
-            case ResizeMode.Percent when options.ResizePercent is > 0 and not 100:
-                image.Resize(new Percentage(options.ResizePercent));
-                break;
-            case ResizeMode.LongEdge when options.LongEdge > 0:
-                // Greater = only shrink images that are larger than the box, never upscale.
-                image.Resize(new MagickGeometry((uint)options.LongEdge, (uint)options.LongEdge) { Greater = true });
-                break;
-            case ResizeMode.Width when options.Width > 0 && image.Width > options.Width:
-                image.Resize((uint)options.Width, (uint)Math.Max(1, Math.Round(image.Height * (double)options.Width / image.Width)));
-                break;
+            var customWidth = custom.ClampedWidth;
+            var customHeight = custom.ClampedHeight;
+            if (custom.LockAspect)
+            {
+                // The file's own shape is kept: scaled up or down to the largest size that fits inside the box. Both
+                // sides come from one scale, so the aspect already matches and Resize keeps it, as it always does.
+                var scale = Math.Min(customWidth / (double)image.Width, customHeight / (double)image.Height);
+                if (scale != 1)
+                    image.Resize((uint)Math.Max(1, Math.Round(image.Width * scale)), (uint)Math.Max(1, Math.Round(image.Height * scale)));
+            }
+            else if (image.Width != (uint)customWidth || image.Height != (uint)customHeight)
+            {
+                // No lock: exactly the asked size, stretching or squeezing the picture on purpose (issue #576). Resize
+                // fits inside a box and keeps the aspect on its own, so the flag is what makes this a real stretch.
+                image.Resize(new MagickGeometry((uint)customWidth, (uint)customHeight) { IgnoreAspectRatio = true });
+            }
         }
+        else if (options.ClampedMinShortEdge is { } minShortEdge)
+        {
+            // Only ever up, in proportion; a picture whose shorter edge already reaches the minimum is not touched
+            // (issue #652). The default filter, as for Percent above 100 % and the locked custom size, which enlarge
+            // the same way. Both sides come from one scale, so ignoring the aspect only stops ImageMagick from
+            // rounding the shorter side one pixel under the minimum while it fits the box.
+            var scale = MinShortEdgeScale(image.Width, image.Height, minShortEdge);
+            if (scale > 1)
+                image.Resize(new MagickGeometry((uint)Math.Max(1, Math.Round(image.Width * scale)), (uint)Math.Max(1, Math.Round(image.Height * scale))) { IgnoreAspectRatio = true });
+        }
+        else switch (options.Resize)
+            {
+                case ResizeMode.Percent when options.ResizePercent is > 0 and not 100:
+                    image.Resize(new Percentage(options.ResizePercent));
+                    break;
+                case ResizeMode.LongEdge when options.LongEdge > 0:
+                    // Greater = only shrink images that are larger than the box, never upscale.
+                    image.Resize(new MagickGeometry((uint)options.LongEdge, (uint)options.LongEdge) { Greater = true });
+                    break;
+                case ResizeMode.Width when options.Width > 0 && image.Width > options.Width:
+                    image.Resize((uint)options.Width, (uint)Math.Max(1, Math.Round(image.Height * (double)options.Width / image.Width)));
+                    break;
+            }
         FitFormat(image, targetFormat);
 
         // Before grayscale (a blue signature stays blue until then) and before alpha is flattened for JPG and co.
@@ -489,6 +547,10 @@ internal static class ImageEncoder
         var sizes = options.IcoSizes.Where(s => s is > 0 and <= 256).Distinct().OrderDescending().ToList();
         if (sizes.Count == 0)
             sizes = [256, 48, 32, 16];
+        // Resized on purpose to less than an icon holds ("Edit pictures": 512 × 512 → 32 × 32): the icon is that size and
+        // the smaller ones asked for, not the larger sizes blown up from it.
+        if (options.Resize != ResizeMode.None && side < 256)
+            sizes = [(int)side, .. sizes.Where(s => s < side)];
         image.Settings.SetDefine(MagickFormat.Icon, "auto-resize", string.Join(',', sizes));
     }
 
