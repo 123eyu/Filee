@@ -36,9 +36,11 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
 
     private CropOverlayWindow? _cropOverlay;
     private ClipWindow? _clipWindow;
+    private HideWindow? _hideWindow;
     private ImageEditWindow? _imageEdit;
 
     internal ClipWindow? ClipWindow => _clipWindow;
+    internal HideWindow? HideWindow => _hideWindow;
     internal ImageEditWindow? ImageEdit => _imageEdit;
     private readonly HashSet<SpreadsheetPrintStudioWindow> _spreadsheetStudios = [];
 
@@ -123,13 +125,15 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
     public MainWindow? Main => _main;
 
     /// <summary>
-    /// Opens the window of a tool preset (crop, cut a clip, edit pictures, the spreadsheet print studio: one per workbook,
-    /// the PDF page editor) on the files. A tool this version doesn't know opens nothing.
+    /// Opens the window of a tool preset (crop, cut a clip, edit pictures, pixelate / blur, the spreadsheet print studio:
+    /// one per workbook, the PDF page editor) on the files. A tool this version doesn't know opens nothing.
     /// </summary>
     public void ShowTool(IReadOnlyList<string> files, Preset preset, PixelPoint? near = null)
     {
         if (preset.IsClipTool)
             ShowClipWindow(files, preset, near);
+        else if (preset.IsHideTool)
+            ShowHideWindow(files, preset, near);
         else if (preset.IsImageEditTool)
             ShowImageEditWindow(files, preset);
         // Before the crop: the print studio and the PDF page tools have no Tool of their own, which reads as a crop
@@ -204,6 +208,38 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
                 _imageEdit = null;
         };
         _imageEdit = win;
+        win.Show();
+        win.Activate();
+    }
+
+    /// <summary>
+    /// Opens the "Pixelate / blur" window on the pictures among the files. Each picture is written by an ordinary
+    /// conversion, shown in the toast.
+    /// </summary>
+    public void ShowHideWindow(IReadOnlyList<string> files, Preset preset, PixelPoint? near = null)
+    {
+        var pictures = files.Where(f => FormatRegistry.Detect(f) is { } format && HideService.CanOpen(format.Id)).ToList();
+        if (pictures.Count == 0)
+            return;
+        _hideWindow?.Close();
+        var store = services.GetRequiredService<UserDataStore>();
+        var catalog = services.GetRequiredService<ConverterCatalog>();
+        var conversions = services.GetRequiredService<ConversionService>();
+        var log = services.GetService<ILogger<HideWindowViewModel>>();
+        var planner = catalog.CreatePlanner();
+        var vm = new HideWindowViewModel(pictures, preset, loc, store,
+            path => HideTool.TargetFor(FormatRegistry.Detect(path)?.Id ?? "", planner),
+            (path, conversion) => conversions.Start([path], conversion), log);
+        var win = new HideWindow { DataContext = vm };
+        PrepareWindow(win);
+        win.PositionOnScreen(near);
+        win.Closed += (_, _) =>
+        {
+            if (_hideWindow == win)
+                _hideWindow = null;
+            trimmer.Request();
+        };
+        _hideWindow = win;
         win.Show();
         win.Activate();
     }

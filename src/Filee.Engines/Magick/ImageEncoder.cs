@@ -293,6 +293,10 @@ internal static class ImageEncoder
         var turned = options.TurnsOrMirrors || image.Orientation is not (OrientationType.TopLeft or OrientationType.Undefined);
         image.AutoOrient();
 
+        // "Pixelate / blur": the parts were drawn on the picture as it is seen, before it is turned or resized. It also
+        // drops the small previews of the uncovered picture a file can carry.
+        AreaHider.Apply(image, options);
+
         // After AutoOrient, so a phone photo turns the way it looks, not the way its pixels are stored.
         Turn(image, options);
         // The small preview kept in the EXIF data still shows the picture as it was: Explorer and photo apps that
