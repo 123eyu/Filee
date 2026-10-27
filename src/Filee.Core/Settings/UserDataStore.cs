@@ -900,9 +900,12 @@ internal static class SettingsMigrations
         if (from < 48)
             changed |= LearnExtensions(profiles, out _, ["m4s"]);
         // v49: SQL (#607, which came without a migration), AutoHotkey, INI, RouterOS exports and .cmd batch scripts learn
-        //      the text donut; custom claims stay put. (Schema 49 may be renumbered if another change takes it first.)
+        //      the text donut; custom claims stay put.
         if (from < 49)
             changed |= LearnExtensions(profiles, out _, ["sql", "ahk", "ini", "rsc", "cmd"]);
+        // v50: Dahua DVR recordings (.dav) learn the video donut; custom claims stay put.
+        if (from < 50)
+            changed |= LearnExtensions(profiles, out _, ["dav"]);
         return changed;
     }
 
