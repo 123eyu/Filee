@@ -163,11 +163,12 @@
       <Setter Property="Opacity" Value="1" />
     </Style>
 
-    <!-- A narrow window (or long names): the toolbar's buttons show their icons only, their names in the tooltips -->
-    <Style Selector="Window.compact TextBlock.named, Window.compact Border.named">
+    <!-- A narrow window (or long names, or wide fonts): the toolbar gives up names in two steps (HideWindow.FitToolbar),
+         first those of Clear all and Skip and the keycaps, then those of Pixelate and Blur; the tooltips keep them -->
+    <Style Selector="Window.tight TextBlock.minor, Window.tight Border.minor, Window.compact TextBlock.major">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="Window.compact Button.tool:not(.round)">
+    <Style Selector="Window.tight Button.tool:not(.round)">
       <Setter Property="Padding" Value="10,8" />
     </Style>
     <Style Selector="Slider#StrengthSlider">
@@ -302,7 +303,7 @@
                     ToolTip.Tip="{DynamicResource hide.pixelate_hint}" AutomationProperties.Name="{DynamicResource hide.pixelate}">
               <StackPanel Orientation="Horizontal" Spacing="7">
                 <PathIcon Width="13" Height="13" Data="{StaticResource Icon.Pixelate}" Foreground="{DynamicResource AccentBrush}" />
-                <TextBlock Classes="named" Text="{DynamicResource hide.pixelate}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Classes="major" Text="{DynamicResource hide.pixelate}" FontSize="13" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
             <Button x:Name="BlurButton" Classes="tool" Classes.open="{Binding IsBlur}" Padding="10,8,12,8"
@@ -310,7 +311,7 @@
                     ToolTip.Tip="{DynamicResource hide.blur_hint}" AutomationProperties.Name="{DynamicResource hide.blur}">
               <StackPanel Orientation="Horizontal" Spacing="7">
                 <PathIcon Width="13" Height="13" Data="{StaticResource Hide.Blur}" Foreground="{DynamicResource AccentBrush}" />
-                <TextBlock Classes="named" Text="{DynamicResource hide.blur}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Classes="major" Text="{DynamicResource hide.blur}" FontSize="13" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
 
@@ -343,14 +344,14 @@
                     ToolTip.Tip="{DynamicResource hide.clear}" AutomationProperties.Name="{DynamicResource hide.clear}">
               <StackPanel Orientation="Horizontal" Spacing="7">
                 <PathIcon Width="13" Height="13" Data="{StaticResource Icon.Refresh}" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Classes="named" Text="{DynamicResource hide.clear}" FontSize="13" VerticalAlignment="Center" />
-                <Border Classes="key named"><TextBlock Text="R" /></Border>
+                <TextBlock Classes="minor" Text="{DynamicResource hide.clear}" FontSize="13" VerticalAlignment="Center" />
+                <Border Classes="key minor"><TextBlock Text="R" /></Border>
               </StackPanel>
             </Button>
             <Button Classes="tool" Command="{Binding SkipCommand}" IsVisible="{Binding HasMultipleFiles}"
                     ToolTip.Tip="{DynamicResource crop.skip}" AutomationProperties.Name="{DynamicResource crop.skip}">
               <StackPanel Orientation="Horizontal" Spacing="5">
-                <TextBlock Classes="named" Text="{DynamicResource crop.skip}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Classes="minor" Text="{DynamicResource crop.skip}" FontSize="13" VerticalAlignment="Center" />
                 <PathIcon Width="11" Height="11" Data="{StaticResource Icon.ChevronRight}" Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </Button>
@@ -359,7 +360,7 @@
                     AutomationProperties.Name="{Binding SaveText}">
               <StackPanel Orientation="Horizontal" Spacing="9">
                 <TextBlock Text="{Binding SaveText}" FontSize="13" VerticalAlignment="Center" />
-                <Border Classes="key onaccent named"><TextBlock Text="Enter" /></Border>
+                <Border Classes="key onaccent minor"><TextBlock Text="Enter" /></Border>
               </StackPanel>
             </Button>
           </StackPanel>

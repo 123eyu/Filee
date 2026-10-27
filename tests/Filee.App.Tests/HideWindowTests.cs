@@ -315,14 +315,43 @@ public class HideWindowTests
                 var bounds = new Rect(a, b).Normalize();
                 Assert.True(bounds.Left >= 12 && bounds.Right <= window.Bounds.Width - 12, $"{button.Name}: {bounds} outside {window.Bounds}");
             }
-            Assert.Contains("compact", window.Classes); // the names don't fit next to each other here
+            AssertFittedLevel(window);
+            Assert.NotNull(window.ToolbarLevel); // two files' names never fit 680 px, in any font
             Save(window, $"hide-narrow-{suffix}.png");
 
-            // Wide again: the names come back.
+            // The window as it opens: as many names as fit there with this system's fonts.
             window.Width = 1040;
             Settle(window);
+            AssertFittedLevel(window);
+
+            // Wide: every name is back.
+            window.Width = 1900;
+            Settle(window);
+            AssertFittedLevel(window);
+            Assert.Null(window.ToolbarLevel);
+            Assert.DoesNotContain("tight", window.Classes);
             Assert.DoesNotContain("compact", window.Classes);
         });
+    }
+
+    /// <summary>
+    /// The toolbar gave up no more names than it had to: every level before the one in use is wider than the room, and the
+    /// one in use fits (the last fits by giving up all it can). Measured, not assumed: fonts differ between systems.
+    /// </summary>
+    private static void AssertFittedLevel(HideWindow window)
+    {
+        var level = window.ToolbarLevel;
+        var room = window.ToolbarRoom;
+        var at = Array.IndexOf(HideWindow.ToolbarLevels, level);
+        var widths = HideWindow.ToolbarLevels.Select(window.ToolbarWidthAt).ToList();
+        window.FitToolbar();
+        Assert.Equal(level, window.ToolbarLevel);
+        var detail = $"room {room:0}, widths {string.Join(" / ", widths.Select(w => w.ToString("0")))}, level {level ?? "none"}";
+        for (var i = 0; i < at; i++)
+            Assert.True(widths[i] > room, detail);
+        Assert.True(at == HideWindow.ToolbarLevels.Length - 1 || widths[at] <= room, detail);
+        Assert.Equal(level is "tight" or "compact", window.Classes.Contains("tight"));
+        Assert.Equal(level == "compact", window.Classes.Contains("compact"));
     }
 
     // ───────────────────────── Helpers ─────────────────────────

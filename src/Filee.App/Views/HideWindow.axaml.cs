@@ -3,7 +3,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Filee.App.Controls;
 using Filee.App.Services;
 using Filee.App.ViewModels;
@@ -45,40 +47,60 @@ public partial class HideWindow : Window
         Closed += (_, _) => Motion.Changed -= OnMotionChanged;
     }
 
-    /// <summary>The toolbar's width with its buttons' names, measured when it last had to give them up.</summary>
-    private double _namedWidth;
+    /// <summary>
+    /// How much of the toolbar's names it gives up, in turn, until it fits the window: none; <c>tight</c> drops the names
+    /// of Clear all and Skip and the keycaps (the tooltips and the line of keys below keep them); <c>compact</c> also
+    /// the names of Pixelate and Blur, with a shorter strength slider.
+    /// </summary>
+    internal static readonly string?[] ToolbarLevels = [null, "tight", "compact"];
+
+    /// <summary>The level in use (see <see cref="ToolbarLevels"/>).</summary>
+    internal string? ToolbarLevel { get; private set; }
+
+    /// <summary>Room for the toolbar: the stage less the pill's margin.</summary>
+    internal double ToolbarRoom => Stage.Bounds.Width - 32;
 
     /// <summary>
-    /// Shows the toolbar's buttons with their icons only (<c>compact</c>) when their names don't fit the window, and with
-    /// the names again once there is room.
+    /// The width the toolbar asks for at <paramref name="level"/>, measured with the fonts in use (they differ from one
+    /// system to another, so no width is assumed).
     /// </summary>
-    private void FitToolbar()
+    internal double ToolbarWidthAt(string? level)
     {
-        var available = Stage.Bounds.Width - 32; // the pill's margin
-        if (available <= 0)
+        SetToolbarLevel(level);
+        // Measured afresh all the way down: a button keeps the size it measured before its name was hidden or shown.
+        foreach (var part in ToolbarContent.GetVisualDescendants().OfType<Layoutable>())
+            part.InvalidateMeasure();
+        ToolbarContent.InvalidateMeasure();
+        ToolbarContent.Measure(Size.Infinity);
+        return ToolbarContent.DesiredSize.Width + Toolbar.Padding.Left + Toolbar.Padding.Right + Toolbar.BorderThickness.Left
+            + Toolbar.BorderThickness.Right;
+    }
+
+    /// <summary>The first level, from all the names to icons only, at which the toolbar fits the window.</summary>
+    internal void FitToolbar()
+    {
+        var room = ToolbarRoom;
+        if (room <= 0)
             return;
-        if (!Classes.Contains("compact"))
+        foreach (var level in ToolbarLevels)
         {
-            ToolbarContent.Measure(Size.Infinity);
-            var wanted = ToolbarContent.DesiredSize.Width + Toolbar.Padding.Left + Toolbar.Padding.Right + 2;
-            if (wanted > available)
+            if (level == ToolbarLevels[^1] || ToolbarWidthAt(level) <= room)
             {
-                _namedWidth = wanted;
-                Classes.Set("compact", true);
+                SetToolbarLevel(level);
+                return;
             }
-        }
-        else if (available >= _namedWidth)
-        {
-            Classes.Set("compact", false);
         }
     }
 
-    /// <summary>The names changed (language, "Hide & Next" → "Hide & Save", Skip shown): measured again with them.</summary>
-    private void RefitToolbar()
+    private void SetToolbarLevel(string? level)
     {
-        Classes.Set("compact", false);
-        Dispatcher.UIThread.Post(FitToolbar, DispatcherPriority.Render);
+        ToolbarLevel = level;
+        foreach (var each in ToolbarLevels.OfType<string>())
+            Classes.Set(each, each == level || (each == "tight" && level == "compact"));
     }
+
+    /// <summary>The names changed (language, "Hide & Next" → "Hide & Save", Skip shown): fitted again once they show.</summary>
+    private void RefitToolbar() => Dispatcher.UIThread.Post(FitToolbar, DispatcherPriority.Render);
 
     internal HideCanvas HideCanvas => Canvas;
 
