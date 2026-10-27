@@ -3,7 +3,8 @@
 // The drag gestures themselves live in the view (ToolbarPage.axaml.cs); this class only mutates the model.
 // A profile is either normal (extension chips, ExtensionTagsViewModel) or for mixed selections (check list,
 // MixedExtensionsViewModel). Normal profiles are kept before the mixed ones, so a new mixed profile never takes over
-// the catch-all role of the built-in "Mixed files" donut (see ProfileSelector).
+// the catch-all role of the built-in "Mixed files" donut (see ProfileSelector). Move up / Move down (Alt+↑ / Alt+↓)
+// reorder a profile among its own kind, which decides the profile that opens for a shared extension (#522).
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -235,7 +236,11 @@ public sealed partial class ToolbarPageViewModel : ObservableObject, IDisposable
     [ObservableProperty] private PaletteTabItem? _selectedTab;
     [ObservableProperty] private bool _showTabRow;
 
-    partial void OnProfileSearchChanged(string value) => VisibleProfiles.Query = value;
+    partial void OnProfileSearchChanged(string value)
+    {
+        VisibleProfiles.Query = value;
+        NotifyMoveChanged();
+    }
     partial void OnPaletteSearchChanged(string value)
     {
         _pendingTabRestore = null;
@@ -309,6 +314,7 @@ public sealed partial class ToolbarPageViewModel : ObservableObject, IDisposable
         // The list box briefly drops its selection while the selected profile is moved (see Reposition).
         if (_repositioning)
             return;
+        NotifyMoveChanged();
         _loading = true;
         ProfileName = value is null ? "" : _loc.DisplayName(value.Profile);
         _loading = false;
@@ -369,6 +375,54 @@ public sealed partial class ToolbarPageViewModel : ObservableObject, IDisposable
         {
             _repositioning = false;
         }
+        NotifyMoveChanged();
+    }
+
+    /// <summary>The profile the selected one would pass going <paramref name="direction"/>, among those the search shows.</summary>
+    private ToolbarProfile? MoveNeighbor(int direction) =>
+        Profile is { } profile
+            ? ProfileOrder.Neighbor(_store.Profiles, profile, direction, p => VisibleProfiles.Any(v => v.Profile == p))
+            : null;
+
+    private bool CanMoveProfileUp() => MoveNeighbor(-1) is not null;
+    private bool CanMoveProfileDown() => MoveNeighbor(1) is not null;
+
+    /// <summary>
+    /// Moves the selected profile above the profile of its kind shown above it: the higher of two profiles with the
+    /// same extension opens for it (#522). With a search, it passes the one the list shows, not a hidden one.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanMoveProfileUp))]
+    private void MoveProfileUp() => MoveProfile(-1);
+
+    /// <summary>Moves the selected profile below the profile of its kind shown below it.</summary>
+    [RelayCommand(CanExecute = nameof(CanMoveProfileDown))]
+    private void MoveProfileDown() => MoveProfile(1);
+
+    private void MoveProfile(int direction)
+    {
+        if (SelectedProfile is not { } item
+            || ProfileOrder.Move(_store.Profiles, item.Profile, direction, p => VisibleProfiles.Any(v => v.Profile == p)) is not { } move)
+            return;
+        _repositioning = true;
+        try
+        {
+            Profiles.Move(move.From, move.To);
+            SelectedProfile = item;
+        }
+        finally
+        {
+            _repositioning = false;
+        }
+        SaveOwnLibrary();
+        // The remarks under the extensions say which profile comes first; that just changed.
+        RebuildProfileEditor();
+        NotifyMoveChanged();
+    }
+
+    private void NotifyMoveChanged()
+    {
+        MoveProfileUpCommand.NotifyCanExecuteChanged();
+        MoveProfileDownCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>Shows the chips or the check list for the selected profile.</summary>
@@ -523,6 +577,7 @@ public sealed partial class ToolbarPageViewModel : ObservableObject, IDisposable
         var item = new ProfileItemViewModel(profile, _loc);
         Profiles.Insert(index, item);
         SelectedProfile = item;
+        NotifyMoveChanged();
     }
 
     [RelayCommand]
@@ -539,6 +594,7 @@ public sealed partial class ToolbarPageViewModel : ObservableObject, IDisposable
         SaveOwnLibrary();
         Profiles.Remove(SelectedProfile!);
         SelectedProfile = Profiles.FirstOrDefault();
+        NotifyMoveChanged();
     }
 
     [RelayCommand]
@@ -580,6 +636,7 @@ public sealed partial class ToolbarPageViewModel : ObservableObject, IDisposable
         foreach (var other in Profiles)
             other.Refresh(_loc);
         RebuildProfileEditor();
+        NotifyMoveChanged();
         ForgetJudgements(item.Profile.Id);
         Rebuild();
     }
