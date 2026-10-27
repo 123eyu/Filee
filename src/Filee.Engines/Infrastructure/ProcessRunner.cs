@@ -1,7 +1,9 @@
-// Runs command line engines (LibreOffice, rhwp, ...) with a timeout, cancellation and captured output.
+// Runs command line engines (LibreOffice, rhwp, ...) with a timeout, cancellation and captured output. Engines that
+// report their progress while they work (calibre) can be stopped when they go silent instead (see StallWatch).
 
 using System.Diagnostics;
 using System.Text;
+using Filee.Core.Conversion;
 
 namespace Filee.Engines.Infrastructure;
 
@@ -11,14 +13,24 @@ public sealed record ProcessResult(int ExitCode, string StandardOutput, string S
 /// <summary>Helper for starting external tools safely.</summary>
 public static class ProcessRunner
 {
+    /// <summary>The reason shown when a program stopped writing anything for the stall limit and was stopped.</summary>
+    public const string StalledErrorKey = "error.engine_stalled";
+
     /// <summary>
     /// Starts <paramref name="executable"/> with the given arguments (no shell, arguments are escaped),
     /// waits for it to exit and kills the whole process tree on timeout or cancellation.
     /// </summary>
-    /// <exception cref="Filee.Core.Conversion.ConversionRefusedException">
-    /// Windows could not start the program because a DLL is missing (see <see cref="AppLocalRuntime"/>).
+    /// <exception cref="ConversionRefusedException">
+    /// Windows could not start the program because a DLL is missing (see <see cref="AppLocalRuntime"/>), or it stalled
+    /// (<see cref="StalledErrorKey"/>).
     /// </exception>
+    /// <exception cref="TimeoutException">The program did not exit within <paramref name="timeout"/>; it was killed.</exception>
+    /// <param name="timeout">The longest the program may run; <see cref="Timeout.InfiniteTimeSpan"/> for no limit.</param>
     /// <param name="onOutput">Called with every line of standard output and error as it arrives (e.g. to parse progress).</param>
+    /// <param name="stallTimeout">
+    /// When set, the program is also killed once it has written nothing (no line on either stream) for this long: for
+    /// engines that keep reporting progress, so a long run that does goes on and a hung one stops early.
+    /// </param>
     public static async Task<ProcessResult> RunAsync(
         string executable,
         IEnumerable<string> arguments,
@@ -26,7 +38,8 @@ public static class ProcessRunner
         CancellationToken cancellationToken,
         string? workingDirectory = null,
         IDictionary<string, string>? environment = null,
-        Action<string>? onOutput = null)
+        Action<string>? onOutput = null,
+        TimeSpan? stallTimeout = null)
     {
         var psi = new ProcessStartInfo(executable)
         {
@@ -47,8 +60,9 @@ public static class ProcessRunner
         using var process = new Process { StartInfo = psi };
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();
-        process.OutputDataReceived += (_, e) => { if (e.Data is not null) { lock (stdout) stdout.AppendLine(e.Data); onOutput?.Invoke(e.Data); } };
-        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) { lock (stderr) stderr.AppendLine(e.Data); onOutput?.Invoke(e.Data); } };
+        var watch = stallTimeout is { } limit ? new StallWatch(limit) : null;
+        process.OutputDataReceived += (_, e) => { if (e.Data is not null) { watch?.Touch(); lock (stdout) stdout.AppendLine(e.Data); onOutput?.Invoke(e.Data); } };
+        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) { watch?.Touch(); lock (stderr) stderr.AppendLine(e.Data); onOutput?.Invoke(e.Data); } };
 
         if (!process.Start())
             throw new InvalidOperationException($"Could not start {executable}.");
@@ -59,7 +73,14 @@ public static class ProcessRunner
         timeoutCts.CancelAfter(timeout);
         try
         {
-            await process.WaitForExitAsync(timeoutCts.Token);
+            var exited = process.WaitForExitAsync(timeoutCts.Token);
+            if (watch is null)
+                await exited;
+            else if (!await watch.WaitAsync(exited, timeoutCts.Token))
+            {
+                TryKill(process);
+                throw new ConversionRefusedException(StalledErrorKey, $"{Path.GetFileName(executable)}, {Describe(watch.Limit)}");
+            }
         }
         catch (OperationCanceledException)
         {
@@ -73,6 +94,10 @@ public static class ProcessRunner
         AppLocalRuntime.ThrowIfMissing(executable, process.ExitCode);
         return new ProcessResult(process.ExitCode, stdout.ToString(), stderr.ToString());
     }
+
+    /// <summary>"10 min", or "30 s" below a minute.</summary>
+    internal static string Describe(TimeSpan limit) =>
+        limit >= TimeSpan.FromMinutes(1) ? $"{limit.TotalMinutes:0} min" : $"{limit.TotalSeconds:0} s";
 
     private static void TryKill(Process process)
     {

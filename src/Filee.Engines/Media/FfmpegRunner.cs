@@ -1,6 +1,6 @@
 // Runs ffmpeg.exe and turns its machine-readable progress output into a position in seconds. Unlike ProcessRunner
 // there is no overall timeout (a feature film legitimately encodes for an hour); a process that stops reporting
-// for a long time is treated as hung and killed, and cancellation always kills the whole process tree.
+// for a long time is treated as hung and killed (StallWatch), and cancellation always kills the whole process tree.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -18,7 +18,6 @@ internal static class FfmpegRunner
     /// </summary>
     public static readonly TimeSpan DefaultStallTimeout = TimeSpan.FromMinutes(10);
 
-    private static readonly TimeSpan WatchInterval = TimeSpan.FromSeconds(1);
     private const int KeptErrorLines = 40;
 
     /// <summary>Key of the per-frame stats line the GIF palette pass writes (seconds, see MediaEncoding).</summary>
@@ -54,13 +53,14 @@ internal static class FfmpegRunner
         psi.Environment["SVT_LOG"] = "1";
 
         using var process = new Process { StartInfo = psi };
-        var lastActivity = Stopwatch.GetTimestamp();
+        var limit = stallTimeout ?? DefaultStallTimeout;
+        var watch = new StallWatch(limit);
         var errors = new Queue<string>();
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data is null)
                 return;
-            Volatile.Write(ref lastActivity, Stopwatch.GetTimestamp());
+            watch.Touch();
             if (ParsePosition(e.Data) is { } seconds)
                 onPosition?.Invoke(seconds);
         };
@@ -68,7 +68,7 @@ internal static class FfmpegRunner
         {
             if (e.Data is null)
                 return;
-            Volatile.Write(ref lastActivity, Stopwatch.GetTimestamp());
+            watch.Touch();
             lock (errors)
             {
                 errors.Enqueue(e.Data);
@@ -84,21 +84,13 @@ internal static class FfmpegRunner
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        var limit = stallTimeout ?? DefaultStallTimeout;
         try
         {
-            var exited = process.WaitForExitAsync(cancellationToken);
-            while (!exited.IsCompleted)
+            if (!await watch.WaitAsync(process.WaitForExitAsync(cancellationToken), cancellationToken))
             {
-                await Task.WhenAny(exited, Task.Delay(WatchInterval, cancellationToken));
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!exited.IsCompleted && Stopwatch.GetElapsedTime(Volatile.Read(ref lastActivity)) > limit)
-                {
-                    Kill(process);
-                    throw new TimeoutException($"FFmpeg stopped responding (no progress for {limit.TotalMinutes:0} minutes) and was stopped.");
-                }
+                Kill(process);
+                throw new TimeoutException($"FFmpeg stopped responding (no progress for {limit.TotalMinutes:0} minutes) and was stopped.");
             }
-            await exited;
         }
         catch (OperationCanceledException)
         {
