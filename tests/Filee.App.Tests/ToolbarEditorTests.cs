@@ -400,6 +400,132 @@ public class ToolbarPageTests
     }
 
     [AvaloniaFact]
+    public void Moving_a_profile_up_lets_it_open_a_shared_extension_and_is_saved()
+    {
+        TestServices.EnsureInitialized("en");
+        var store = AppHost.Get<UserDataStore>();
+        var profiles = store.Profiles.Select(p => p.Clone()).ToList();
+        try
+        {
+            using var vm = new ToolbarPageViewModel(store, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<WindowService>(),
+                AppHost.Get<PresetAvailability>(), AppHost.Get<ConverterCatalog>(), NullLogger<ToolbarPageViewModel>.Instance);
+            vm.AddProfileCommand.Execute(null);
+            var mine = vm.SelectedProfile!;
+            vm.ExtensionTags!.AddCommand.Execute("jpg");
+            Assert.StartsWith(".jpg: also in “Images”, which comes first in the list", Assert.Single(vm.ExtensionTags.Notes).Text);
+            Assert.Equal("images", ProfileSelector.Select(store.Profiles, ["a.jpg"])!.Id);
+            // The last normal profile: it can go up, not down among the mixed ones.
+            Assert.True(vm.MoveProfileUpCommand.CanExecute(null));
+            Assert.False(vm.MoveProfileDownCommand.CanExecute(null));
+
+            // #522: a search for the extension shows Images right above it, so one step up passes it.
+            vm.ProfileSearch = "jpg";
+            Assert.Equal(["images", mine.Profile.Id], vm.VisibleProfiles.Select(p => p.Profile.Id));
+            vm.MoveProfileUpCommand.Execute(null);
+
+            Assert.Same(mine, vm.SelectedProfile);
+            Assert.Equal([mine.Profile.Id, "images"], vm.VisibleProfiles.Select(p => p.Profile.Id));
+            Assert.Equal(store.Profiles.Select(p => p.Id), vm.Profiles.Select(p => p.Profile.Id));
+            Assert.Equal(store.Profiles.FindIndex(p => p.Id == "images") - 1, store.Profiles.IndexOf(mine.Profile));
+            Assert.Equal(mine.Profile.Id, ProfileSelector.Select(store.Profiles, ["a.jpg"])!.Id);
+            // The remark under the chips follows the new order.
+            Assert.StartsWith(".jpg: also in “Images”.\nThis profile comes first", Assert.Single(vm.ExtensionTags!.Notes).Text);
+            Assert.False(vm.MoveProfileUpCommand.CanExecute(null)); // nothing shown above it any more
+            Assert.True(vm.MoveProfileDownCommand.CanExecute(null));
+            vm.ProfileSearch = "";
+            Assert.Same(mine.Profile, store.Profiles[0]); // Images heads the built-in list
+            Assert.False(vm.MoveProfileUpCommand.CanExecute(null));
+
+            // Saved as the order of profiles.json, no schema change needed.
+            var reloaded = new UserDataStore(store.Directory);
+            reloaded.Load();
+            Assert.Equal(store.Profiles.Select(p => p.Id), reloaded.Profiles.Select(p => p.Id));
+
+            // Down again, one step at a time: Images opens .jpg once more.
+            vm.MoveProfileDownCommand.Execute(null);
+            Assert.Equal(store.Profiles.FindIndex(p => p.Id == "images") + 1, store.Profiles.IndexOf(mine.Profile));
+            Assert.Equal("images", ProfileSelector.Select(store.Profiles, ["a.jpg"])!.Id);
+
+            // A mixed profile moves among the mixed ones only.
+            vm.SelectedProfile = vm.Profiles.Single(p => p.Profile.Id == "mixed");
+            Assert.False(vm.MoveProfileUpCommand.CanExecute(null));
+            vm.SelectedProfile = vm.Profiles.Single(p => p.Profile.Id == "images");
+            vm.IsMixed = true; // now the last mixed profile
+            Assert.False(vm.MoveProfileDownCommand.CanExecute(null));
+            vm.MoveProfileUpCommand.Execute(null);
+            Assert.Equal("images", store.Profiles.First(p => p.IsFallback).Id);
+            Assert.Equal("mixed", ProfileSelector.CatchAll(store.Profiles)!.Id); // limited to images: not the catch-all
+            Assert.False(vm.MoveProfileUpCommand.CanExecute(null));
+        }
+        finally
+        {
+            store.Profiles.Clear();
+            store.Profiles.AddRange(profiles);
+            store.SaveLibrary();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Profiles_move_with_the_arrow_buttons_and_alt_arrows_and_keep_focus()
+    {
+        TestServices.EnsureInitialized("en");
+        var store = AppHost.Get<UserDataStore>();
+        var profiles = store.Profiles.Select(p => p.Clone()).ToList();
+        Window? window = null;
+        try
+        {
+            using var vm = new ToolbarPageViewModel(store, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<WindowService>(),
+                AppHost.Get<PresetAvailability>(), AppHost.Get<ConverterCatalog>(), NullLogger<ToolbarPageViewModel>.Instance);
+            var page = new ToolbarPage { DataContext = vm };
+            window = new Window { Content = page, Width = 1100, Height = 900 };
+            window.Show();
+            vm.SelectedProfile = vm.Profiles[1];
+            Dispatcher.UIThread.RunJobs();
+
+            var up = page.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "MoveProfileUp");
+            var down = page.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "MoveProfileDown");
+            Assert.Equal("Move profile up", AutomationProperties.GetName(up));
+            Assert.Equal("Move profile up", ToolTip.GetTip(up));
+            Assert.Equal("Move profile down", AutomationProperties.GetName(down));
+            Assert.Same(vm.MoveProfileUpCommand, up.Command);
+            Assert.Same(vm.MoveProfileDownCommand, down.Command);
+
+            var second = vm.Profiles[1].Profile.Id;
+            up.Command!.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(second, store.Profiles[0].Id);
+            Assert.False(up.IsEffectivelyEnabled); // at the top
+
+            // From the list itself: Alt+↓ moves the selected profile, and the keyboard stays on it.
+            var list = page.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "ProfileList");
+            Assert.Equal("1. Choose a profile", AutomationProperties.GetName(list));
+            ((ListBoxItem)list.ContainerFromIndex(0)!).Focus(NavigationMethod.Tab);
+            Dispatcher.UIThread.RunJobs();
+            window.KeyPress(Key.Down, RawInputModifiers.Alt, PhysicalKey.ArrowDown, null);
+            window.KeyRelease(Key.Down, RawInputModifiers.Alt, PhysicalKey.ArrowDown, null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(second, store.Profiles[1].Id);
+            Assert.Equal(second, vm.SelectedProfile!.Profile.Id);
+            Assert.True(up.IsEffectivelyEnabled);
+            var focused = window.FocusManager!.GetFocusedElement() as Visual;
+            Assert.NotNull(focused);
+            Assert.True(focused == list || list.IsVisualAncestorOf(focused), $"focus on {focused}");
+
+            window.KeyPress(Key.Up, RawInputModifiers.Alt, PhysicalKey.ArrowUp, null);
+            window.KeyRelease(Key.Up, RawInputModifiers.Alt, PhysicalKey.ArrowUp, null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(second, store.Profiles[0].Id);
+        }
+        finally
+        {
+            window?.Close();
+            store.Profiles.Clear();
+            store.Profiles.AddRange(profiles);
+            store.SaveLibrary();
+        }
+    }
+
+    [AvaloniaFact]
     public void The_last_mixed_profile_stays_mixed()
     {
         TestServices.EnsureInitialized("en");

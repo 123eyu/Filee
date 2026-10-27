@@ -1709,6 +1709,61 @@ public class RenderTests
         });
     }
 
+    /// <summary>
+    /// #522: the profile list's Move up / Move down arrows beside "New profile", the hint under them, and the remark under
+    /// the chips before and after a new profile with .jpg moves above "Images".
+    /// </summary>
+    [AvaloniaTheory]
+    [InlineData("en", false)]
+    [InlineData("en", true)]
+    [InlineData("de", false)]
+    [InlineData("de", true)]
+    [InlineData("ar", false)]
+    [InlineData("ar", true)]
+    public void Toolbar_profile_order_renders(string language, bool dark)
+    {
+        var photos = new ToolbarProfile
+        {
+            Id = "render-photos",
+            Name = language == "de" ? "Fotos" : language == "ar" ? "صوري" : "Photos",
+            Extensions = ["jpg", "heic"],
+            PresetIds = ["to-jpg", "to-webp", "half-size", "to-pdf"],
+        };
+        WithProfiles(language, dark, 1240, profiles => profiles.Insert(profiles.FindIndex(p => p.IsFallback), photos), (window, vm) =>
+        {
+            var item = vm.Profiles.Single(p => p.Profile == photos);
+            vm.SelectedProfile = item;
+            Pump();
+            var up = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "MoveProfileUp");
+            var down = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "MoveProfileDown");
+            var hint = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "ProfileOrderHint");
+            Assert.True(up.IsEffectivelyEnabled);
+            Assert.False(down.IsEffectivelyEnabled); // the last normal profile
+            Assert.True(hint.IsEffectivelyVisible && hint.Bounds.Height > 0);
+            // The arrows sit between the list and "New profile", which keeps the column's width and shows its whole name.
+            var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "ProfileList");
+            var add = window.GetVisualDescendants().OfType<Button>().Single(b => b.Command == vm.AddProfileCommand);
+            var name = add.GetVisualDescendants().OfType<TextBlock>().Single();
+            Assert.Equal(list.Bounds.Width, add.Bounds.Width, 0.5);
+            Assert.True(name.DesiredSize.Width <= add.Bounds.Width - 30, $"{name.DesiredSize.Width} in {add.Bounds.Width}");
+            Assert.True(Avalonia.VisualExtensions.TranslatePoint(up, default, list)!.Value.Y > list.Bounds.Height - 1);
+            Assert.True(Avalonia.VisualExtensions.TranslatePoint(add, default, up)!.Value.Y > up.Bounds.Height - 1);
+            Assert.Contains(vm.ExtensionTags!.Notes, n => n.IsWarning);
+            Save(window, $"toolbar-profile-order-before-{language}{(dark ? "-dark" : "")}.png");
+
+            vm.ProfileSearch = "jpg";
+            Pump();
+            vm.MoveProfileUpCommand.Execute(null);
+            vm.ProfileSearch = "";
+            Pump();
+            var store = AppHost.Get<UserDataStore>();
+            Assert.Equal(store.Profiles.FindIndex(p => p.Id == "images") - 1, store.Profiles.IndexOf(photos));
+            Assert.Same(item, vm.SelectedProfile);
+            Assert.True(down.IsEffectivelyEnabled);
+            Save(window, $"toolbar-profile-order-after-{language}{(dark ? "-dark" : "")}.png");
+        });
+    }
+
     /// <summary>A second mixed-selection donut limited to images and PDF, two groups expanded.</summary>
     [AvaloniaTheory]
     [InlineData("en", false, "render-scans")]
