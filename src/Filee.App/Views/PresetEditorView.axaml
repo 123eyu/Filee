@@ -142,6 +142,11 @@
             <NumericUpDown Value="{Binding CustomHeight}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Center" AutomationProperties.Name="{DynamicResource presets.height}" />
             <CheckBox Content="{DynamicResource presets.lock_aspect}" IsChecked="{Binding LockAspect}" Margin="0,8,0,0" AutomationProperties.Name="{DynamicResource presets.lock_aspect}" />
           </StackPanel>
+          <StackPanel Grid.Column="2" IsVisible="{Binding ShowMinShortEdge}">
+            <TextBlock Classes="label" Text="{DynamicResource presets.min_short_edge}" />
+            <NumericUpDown Value="{Binding MinShortEdge}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Center"
+                           ToolTip.Tip="{DynamicResource presets.min_short_edge_hint}" AutomationProperties.Name="{DynamicResource presets.min_short_edge}" />
+          </StackPanel>
         </Grid>
         <Grid ColumnDefinitions="*,12,*">
           <StackPanel>

@@ -459,6 +459,115 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void Min_short_edge_enlarges_a_small_picture_in_proportion()
+    {
+        // The case from the issue (#652): a site wants at least 1080 px on the short side.
+        var options = new ImageOptions { MinShortEdge = 1080 };
+
+        using var landscape = new MagickImage(MagickColors.White, 400, 300);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(landscape, options, "png");
+        Assert.Equal((1440u, 1080u), (landscape.Width, landscape.Height));
+
+        using var portrait = new MagickImage(MagickColors.White, 300, 500);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+        Assert.Equal((1080u, 1800u), (portrait.Width, portrait.Height));
+
+        // An uneven factor still lands the short edge exactly on the minimum, never a pixel under it.
+        using var uneven = new MagickImage(MagickColors.White, 333, 500);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(uneven, new ImageOptions { MinShortEdge = 1000 }, "png");
+        Assert.Equal((1000u, 1502u), (uneven.Width, uneven.Height));
+    }
+
+    [Fact]
+    public void Min_short_edge_never_shrinks_a_picture_that_already_reaches_it()
+    {
+        var options = new ImageOptions { MinShortEdge = 1080 };
+
+        using var large = new MagickImage(MagickColors.White, 4000, 3000);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(large, options, "png");
+        Assert.Equal((4000u, 3000u), (large.Width, large.Height));
+
+        using var exact = new MagickImage(MagickColors.White, 1080, 1920);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(exact, options, "png");
+        Assert.Equal((1080u, 1920u), (exact.Width, exact.Height));
+
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(4000, 3000, options), 3);
+    }
+
+    [Fact]
+    public void A_min_short_edge_read_from_a_file_is_skipped_at_zero_or_below_and_kept_in_the_editors_range()
+    {
+        // The editor writes 16-16384; a hand-edited presets.json or an imported bundle can carry anything.
+        foreach (var edge in new[] { 0, -5 })
+        {
+            using var image = new MagickImage(MagickColors.White, 250, 444);
+            Filee.Engines.Magick.ImageEncoder.ApplyOptions(image, new ImageOptions { MinShortEdge = edge }, "png");
+            Assert.Equal((250u, 444u), (image.Width, image.Height));
+            Assert.Null(new ImageOptions { MinShortEdge = edge }.ClampedMinShortEdge);
+        }
+
+        // Under 16 comes up to it...
+        using var tiny = new MagickImage(MagickColors.White, 8, 10);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(tiny, new ImageOptions { MinShortEdge = 5 }, "png");
+        Assert.Equal((16u, 20u), (tiny.Width, tiny.Height));
+
+        // ...and a hand-edited 200000 stops at 16384 (planned here: the picture itself would be 268 megapixels).
+        Assert.Equal(16384, new ImageOptions { MinShortEdge = 200000 }.ClampedMinShortEdge);
+        Assert.Equal(40.96, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 400, new ImageOptions { MinShortEdge = 200000 }), 3);
+    }
+
+    [Fact]
+    public void Min_short_edge_does_not_enlarge_a_hairline_strip_past_the_largest_custom_size()
+    {
+        // 16 x 4000 to a short edge of 4000 would be 4000 x 1,000,000 px: it stops at as many pixels as the largest
+        // custom size (16384 x 16384) holds.
+        var scale = Filee.Engines.Magick.ImageEncoder.MinShortEdgeScale(16, 4000, 4000);
+        Assert.Equal(16384.0 * 16384, 16 * scale * 4000 * scale, 0);
+        Assert.True(scale > 1);
+    }
+
+    [Fact]
+    public void Min_short_edge_still_fits_the_format_after_enlarging()
+    {
+        // WebP holds 16,383 px a side: a tall 100 x 2000 strip enlarged to a 1080 short edge (21,600 px tall) is
+        // brought back inside it, as after any other resize.
+        using var strip = new MagickImage(MagickColors.White, 100, 2000);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(strip, new ImageOptions { MinShortEdge = 1080 }, "webp");
+        Assert.InRange(strip.Height, 16300u, 16383u);
+        Assert.Equal(20.0, strip.Height / (double)strip.Width, 1);
+    }
+
+    [Fact]
+    public async Task Min_short_edge_enlarges_in_a_conversion_and_an_icon_keeps_its_256_px_cap()
+    {
+        var dir = fx.NewFolder();
+        var source = EngineFixture.MakeImage(dir, "small.png", MagickFormat.Png, 300, 200);
+
+        var jpg = await fx.ConvertAsync([source], new Preset { TargetFormat = "jpg", Image = { MinShortEdge = 1080 } });
+        AssertDone(jpg);
+        using (var picture = new MagickImage(jpg.Outputs.Single()))
+            Assert.Equal((1620u, 1080u), (picture.Width, picture.Height));
+
+        var ico = await fx.ConvertAsync([source], new Preset { TargetFormat = "ico", Image = { MinShortEdge = 1080 } });
+        AssertDone(ico);
+        using var icons = new MagickImageCollection(ico.Outputs.Single());
+        Assert.Equal(256u, icons.Max(i => i.Width));
+    }
+
+    [Fact]
+    public void Min_short_edge_plans_pdf_page_runs_at_the_scale_the_resize_will_use()
+    {
+        // How PdfiumConverter.Split plans runs: the factor the stacked strip is scaled by.
+        Assert.Equal(2.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions { MinShortEdge = 1000 }), 3);
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions { MinShortEdge = 300 }), 3);
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions { MinShortEdge = 0 }), 3);
+
+        // Custom sizing comes first when a hand-edited file carries both.
+        var both = new ImageOptions { MinShortEdge = 1000, CustomSize = new() { Width = 200, Height = 400 } };
+        Assert.Equal(0.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, both), 3);
+    }
+
+    [Fact]
     public void A_long_image_splits_between_pages_into_parts_the_format_holds()
     {
         // Five 6,000 px pages: a WebP holds 16,383 px, so two pages per part; at half width (Width 50 px) all fit.

@@ -116,7 +116,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
 
         _name = string.IsNullOrWhiteSpace(_edit.Name) ? loc.DisplayName(_edit) : _edit.Name;
         _target = Targets.FirstOrDefault(t => t.Value == _edit.TargetFormat) ?? Targets[1];
-        _resize = ResizeModes.First(r => r.Value == (_edit.Image.CustomSize is null ? _edit.Image.Resize : ResizeMode.Custom));
+        _resize = ResizeModes.First(r => r.Value == (_edit.Image.CustomSize is not null ? ResizeMode.Custom
+            : _edit.Image.ClampedMinShortEdge is not null ? ResizeMode.MinShortEdge
+            : _edit.Image.Resize));
         _rotation = Rotations.FirstOrDefault(r => r.Value == _edit.Image.Rotation) ?? Rotations[0];
         _flip = Flips.FirstOrDefault(f => f.Value == _edit.Image.Flip) ?? Flips[0];
         _pageSize = PageSizes.First(p => p.Value == _edit.Pdf.PageSize);
@@ -169,6 +171,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _customWidth = _edit.Image.CustomSize?.Width ?? 1920;
         _customHeight = _edit.Image.CustomSize?.Height ?? 1080;
         _lockAspect = _edit.Image.CustomSize?.LockAspect ?? false;
+        _minShortEdge = _edit.Image.ClampedMinShortEdge ?? 1080;
         _setDpi = _edit.Image.Dpi.HasValue;
         _dpi = _edit.Image.Dpi ?? 300;
         _keepMetadata = _edit.Image.KeepMetadata;
@@ -375,7 +378,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         }
     }
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowPercent), nameof(ShowLongEdge), nameof(ShowWidth), nameof(ShowCustom))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowPercent), nameof(ShowLongEdge), nameof(ShowWidth), nameof(ShowCustom), nameof(ShowMinShortEdge))]
     private Choice<ResizeMode> _resize;
 
     [ObservableProperty] private Choice<ImageRotation> _rotation;
@@ -405,6 +408,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     [ObservableProperty] private int _customHeight;
     /// <summary>With Custom: keep each file's shape and fit inside, instead of stretching (ImageOptions.LockAspect).</summary>
     [ObservableProperty] private bool _lockAspect;
+    /// <summary>With MinShortEdge: the shortest the shorter edge may be (ImageOptions.MinShortEdge).</summary>
+    [ObservableProperty] private int _minShortEdge;
     [ObservableProperty] private bool _setDpi;
     [ObservableProperty] private int _dpi;
     [ObservableProperty]
@@ -666,6 +671,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     public bool ShowLongEdge => Resize.Value == ResizeMode.LongEdge;
     public bool ShowWidth => Resize.Value == ResizeMode.Width;
     public bool ShowCustom => Resize.Value == ResizeMode.Custom;
+    public bool ShowMinShortEdge => Resize.Value == ResizeMode.MinShortEdge;
     public bool ShowMargin => PageSize.Value != PdfPageSize.FitImage;
     public bool ShowSubfolder => Location.Value == OutputLocation.Subfolder;
     public bool ShowCustomFolder => Location.Value == OutputLocation.CustomFolder;
@@ -698,11 +704,20 @@ public sealed partial class PresetEditorViewModel : ObservableObject
             // write those over the user's own; issue #576).
             image.Resize = ResizeMode.None;
             image.CustomSize = new CustomImageSize { Width = Math.Clamp(CustomWidth, CustomImageSize.MinSide, CustomImageSize.MaxSide), Height = Math.Clamp(CustomHeight, CustomImageSize.MinSide, CustomImageSize.MaxSide), LockAspect = LockAspect };
+            image.MinShortEdge = null;
+        }
+        else if (Resize.Value == ResizeMode.MinShortEdge)
+        {
+            // Stored the same way, as MinShortEdge with Resize None (issue #652).
+            image.Resize = ResizeMode.None;
+            image.CustomSize = null;
+            image.MinShortEdge = Math.Clamp(MinShortEdge, CustomImageSize.MinSide, CustomImageSize.MaxSide);
         }
         else
         {
             image.Resize = Resize.Value;
             image.CustomSize = null;
+            image.MinShortEdge = null;
         }
         // Only images and PDFs are turned; for any other target a rotation left over from an earlier target would make
         // every file fail ("can only turn images") with nothing on screen to turn it off.

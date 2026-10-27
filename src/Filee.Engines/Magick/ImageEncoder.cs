@@ -208,13 +208,32 @@ internal static class ImageEncoder
             ? custom.LockAspect
                 ? Math.Min(custom.ClampedWidth / width, custom.ClampedHeight / height)
                 : custom.ClampedHeight / height
-            : options.Resize switch
-            {
-                ResizeMode.Percent when options.ResizePercent > 0 => options.ResizePercent / 100.0,
-                ResizeMode.LongEdge when options.LongEdge > 0 => Math.Min(1, options.LongEdge / Math.Max(width, height)),
-                ResizeMode.Width when options.Width > 0 => Math.Min(1, options.Width / width),
-                _ => 1,
-            };
+            : options.ClampedMinShortEdge is { } minShortEdge
+                ? MinShortEdgeScale(width, height, minShortEdge)
+                : options.Resize switch
+                {
+                    ResizeMode.Percent when options.ResizePercent > 0 => options.ResizePercent / 100.0,
+                    ResizeMode.LongEdge when options.LongEdge > 0 => Math.Min(1, options.LongEdge / Math.Max(width, height)),
+                    ResizeMode.Width when options.Width > 0 => Math.Min(1, options.Width / width),
+                    _ => 1,
+                };
+
+    /// <summary>
+    /// The most pixels a minimum short edge enlarges a picture to: as many as the largest custom size holds. Without
+    /// it a hairline strip (16 x 4000 px, short edge to 4000) would ask for a picture of 4 billion pixels.
+    /// </summary>
+    internal const double MaxEnlargedPixels = (double)CustomImageSize.MaxSide * CustomImageSize.MaxSide;
+
+    /// <summary>
+    /// The factor that brings the shorter edge of a width x height picture up to <paramref name="minShortEdge"/>
+    /// (issue #652): 1 when it already reaches it (never below 1, so nothing shrinks), and at most what keeps the
+    /// result within <see cref="MaxEnlargedPixels"/>.
+    /// </summary>
+    public static double MinShortEdgeScale(double width, double height, int minShortEdge)
+    {
+        var scale = minShortEdge / Math.Min(width, height);
+        return scale <= 1 ? 1 : Math.Max(1, Math.Min(scale, Math.Sqrt(MaxEnlargedPixels / (width * height))));
+    }
 
     /// <summary>Turns and mirrors an image as <paramref name="options"/> say (part of <see cref="ApplyOptions"/>).</summary>
     public static void Turn(IMagickImage<byte> image, ImageOptions options)
@@ -306,6 +325,16 @@ internal static class ImageEncoder
                 // fits inside a box and keeps the aspect on its own, so the flag is what makes this a real stretch.
                 image.Resize(new MagickGeometry((uint)customWidth, (uint)customHeight) { IgnoreAspectRatio = true });
             }
+        }
+        else if (options.ClampedMinShortEdge is { } minShortEdge)
+        {
+            // Only ever up, in proportion; a picture whose shorter edge already reaches the minimum is not touched
+            // (issue #652). The default filter, as for Percent above 100 % and the locked custom size, which enlarge
+            // the same way. Both sides come from one scale, so ignoring the aspect only stops ImageMagick from
+            // rounding the shorter side one pixel under the minimum while it fits the box.
+            var scale = MinShortEdgeScale(image.Width, image.Height, minShortEdge);
+            if (scale > 1)
+                image.Resize(new MagickGeometry((uint)Math.Max(1, Math.Round(image.Width * scale)), (uint)Math.Max(1, Math.Round(image.Height * scale))) { IgnoreAspectRatio = true });
         }
         else switch (options.Resize)
             {

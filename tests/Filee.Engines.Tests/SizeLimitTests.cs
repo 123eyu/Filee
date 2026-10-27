@@ -85,6 +85,24 @@ public class SizeLimitTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task The_limit_still_wins_after_a_minimum_short_edge_enlarged_the_picture()
+    {
+        // As after any other resize (#652): the enlarged picture is made smaller again when it breaks the limit.
+        var dir = fx.NewFolder();
+        var source = Path.Combine(dir, "noise.png");
+        using (var image = Noisy(400, 300))
+            image.Write(source, MagickFormat.Png);
+
+        var job = await fx.ConvertAsync([source], new Preset { TargetFormat = "jpg", Image = { MinShortEdge = 1080, MaxSizeMb = 0.1 } });
+
+        Assert.True(job.State == JobState.Completed, string.Join("; ", job.Files.Select(f => $"{f.ErrorKey} {f.ErrorDetail}")));
+        var output = job.Outputs.Single();
+        Assert.InRange(new FileInfo(output).Length, 1, SizeLimit.Bytes(0.1));
+        using var fitted = new MagickImage(output);
+        Assert.InRange(Math.Max(fitted.Width, fitted.Height), (uint)ImageEncoder.MinFittedLongEdge, 1439u);
+    }
+
+    [Fact]
     public void Megabytes_are_a_million_bytes_as_the_services_count_them()
     {
         Assert.Equal(18_000_000, SizeLimit.Bytes(18));
