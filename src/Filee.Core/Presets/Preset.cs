@@ -61,15 +61,16 @@ public sealed class PresetKindJsonConverter : LenientEnumJsonConverter<PresetKin
 }
 
 /// <summary>
-/// Reads like the lenient converter and, when writing, never emits <see cref="ResizeMode.Custom"/> (an editor-only
-/// choice): a preset with custom sizing stores Resize None plus CustomSize, so a version without the mode keeps
+/// Reads like the lenient converter and, when writing, never emits <see cref="ResizeMode.Custom"/> or
+/// <see cref="ResizeMode.MinShortEdge"/> (editor-only choices): a preset with custom sizing stores Resize None plus
+/// CustomSize, one with a minimum short edge Resize None plus MinShortEdge, so a version without the mode keeps
 /// reading presets.json instead of rejecting it as broken and overwriting the user's presets with the built-in
-/// ones (issue #576).
+/// ones (issues #576, #652).
 /// </summary>
 public sealed class ResizeModeJsonConverter : LenientEnumJsonConverter<ResizeMode>
 {
     public override void Write(Utf8JsonWriter writer, ResizeMode value, JsonSerializerOptions options) =>
-        writer.WriteStringValue((value == ResizeMode.Custom ? ResizeMode.None : value).ToString());
+        writer.WriteStringValue((value is ResizeMode.Custom or ResizeMode.MinShortEdge ? ResizeMode.None : value).ToString());
 }
 
 /// <summary>
@@ -284,6 +285,12 @@ public enum ResizeMode
     /// <see cref="ImageOptions.CustomSize"/>, so a version without the mode still reads the file.
     /// </summary>
     Custom,
+    /// <summary>
+    /// Scale up so the shorter edge is at least <see cref="ImageOptions.MinShortEdge"/>, in proportion; a picture
+    /// that already reaches it is left as it is (never shrinks; issue #652). An editor choice only, stored like
+    /// <see cref="Custom"/>: <see cref="ImageOptions.Resize"/> None plus <see cref="ImageOptions.MinShortEdge"/>.
+    /// </summary>
+    MinShortEdge,
 }
 
 /// <summary>How an image is turned, after its EXIF orientation is applied.</summary>
@@ -337,10 +344,10 @@ public sealed class ImageOptions
     public double MaxSizeMb { get; set; }
 
     /// <summary>
-    /// How the picture is scaled. A preset with <see cref="CustomSize"/> set stores None here (custom sizing wins),
-    /// so a version without custom sizing simply does not resize instead of rejecting a name it does not know. The
-    /// lenient converter also reads a name a future version might add as None, and the writer maps Custom down to
-    /// None (see <see cref="ResizeModeJsonConverter"/>).
+    /// How the picture is scaled. A preset with <see cref="CustomSize"/> or <see cref="MinShortEdge"/> set stores None
+    /// here (that sizing wins), so a version without it simply does not resize instead of rejecting a name it does
+    /// not know. The lenient converter also reads a name a future version might add as None, and the writer maps
+    /// Custom and MinShortEdge down to None (see <see cref="ResizeModeJsonConverter"/>).
     /// </summary>
     [JsonConverter(typeof(ResizeModeJsonConverter))]
     public ResizeMode Resize { get; set; } = ResizeMode.None;
@@ -359,7 +366,7 @@ public sealed class ImageOptions
 
     /// <summary>Whether the preset edits picture content, size, or playback speed.</summary>
     [JsonIgnore]
-    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed || CustomSize is not null;
+    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed || CustomSize is not null || MinShortEdge is not null;
 
     /// <summary>Scale in percent when <see cref="Resize"/> is <see cref="ResizeMode.Percent"/>.</summary>
     public int ResizePercent { get; set; } = 50;
@@ -378,6 +385,23 @@ public sealed class ImageOptions
     /// the unknown property and simply do not resize.
     /// </summary>
     public CustomImageSize? CustomSize { get; set; }
+
+    /// <summary>
+    /// The shortest the shorter edge may be, in pixels (issue #652): a smaller picture is scaled up in proportion
+    /// until its shorter edge reaches this, a picture that already does is left as it is. When set it wins over
+    /// <see cref="Resize"/> (only <see cref="CustomSize"/> comes first); null leaves <see cref="Resize"/> in charge.
+    /// A separate field for the same reason as <see cref="CustomSize"/>: older versions skip it and do not resize.
+    /// </summary>
+    public int? MinShortEdge { get; set; }
+
+    /// <summary>
+    /// <see cref="MinShortEdge"/> as it is used: within the editor's range (<see cref="CustomImageSize.MinSide"/> to
+    /// <see cref="CustomImageSize.MaxSide"/>), or null when it is unset or, from a hand-edited file, 0 or below.
+    /// </summary>
+    [JsonIgnore]
+    public int? ClampedMinShortEdge => MinShortEdge is > 0 and var edge
+        ? Math.Clamp(edge, CustomImageSize.MinSide, CustomImageSize.MaxSide)
+        : null;
 
     /// <summary>Output DPI written into the file. <c>null</c> keeps the source value.</summary>
     public int? Dpi { get; set; }

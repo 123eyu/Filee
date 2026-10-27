@@ -175,6 +175,12 @@ internal static class SvgRenderer
                 ? Math.Min(custom.ClampedWidth / bounds.Width, custom.ClampedHeight / bounds.Height)
                 : Math.Max(custom.ClampedWidth / bounds.Width, custom.ClampedHeight / bounds.Height);
         }
+        else if (image.ClampedMinShortEdge is { } minShortEdge)
+        {
+            // The usual render size, or larger where that leaves the shorter edge under the minimum: drawn at that
+            // size instead of enlarging a default-size bitmap afterwards, which comes out soft (issue #652).
+            scale = Math.Max(scale, minShortEdge / Math.Min(bounds.Width, bounds.Height));
+        }
         else switch (image.Resize)
             {
                 case ResizeMode.LongEdge when image.LongEdge > 0:

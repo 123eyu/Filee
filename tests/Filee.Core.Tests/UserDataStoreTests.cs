@@ -106,6 +106,53 @@ public class UserDataStoreTests
     }
 
     [Fact]
+    public void A_preset_with_a_minimum_short_edge_never_writes_a_resize_name_an_older_version_rejects()
+    {
+        using var dir = new TempDir();
+        var store = new UserDataStore(dir.Path);
+        store.Load();
+        var preset = store.Presets[0];
+        preset.Image.Resize = ResizeMode.None;
+        preset.Image.MinShortEdge = 1080;
+        store.SaveLibrary();
+
+        // What Filee 2.1.0 reads: every resize stays a name it knows, and the unknown minShortEdge is skipped (#652).
+        var stored = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir.Path, "presets.json")));
+        foreach (var p in stored.RootElement.EnumerateArray())
+        {
+            var name = p.GetProperty("image").GetProperty("resize").GetString();
+            Assert.Contains(name, new[] { "None", "Percent", "LongEdge", "Width" });
+        }
+        var image = stored.RootElement.EnumerateArray().Single(p => p.GetProperty("id").GetString() == preset.Id).GetProperty("image");
+        Assert.Equal(1080, image.GetProperty("minShortEdge").GetInt32());
+        // Presets without it keep the shape they had: no "minShortEdge": null written into each one.
+        Assert.All(stored.RootElement.EnumerateArray().Where(p => p.GetProperty("id").GetString() != preset.Id),
+            p => Assert.False(p.GetProperty("image").TryGetProperty("minShortEdge", out _)));
+
+        // And this version reads it back.
+        var reloaded = new UserDataStore(dir.Path);
+        reloaded.Load();
+        var back = reloaded.Presets.Single(p => p.Id == preset.Id);
+        Assert.Equal(ResizeMode.None, back.Image.Resize);
+        Assert.Equal(1080, back.Image.MinShortEdge);
+        Assert.True(back.Image.EditsPicture);
+        Assert.Equal(1080, back.Image.Clone().MinShortEdge);
+    }
+
+    [Fact]
+    public void A_resize_mode_of_MinShortEdge_is_never_written_to_presets_json()
+    {
+        using var dir = new TempDir();
+        var store = new UserDataStore(dir.Path);
+        store.Load();
+        store.Presets[0].Image.Resize = ResizeMode.MinShortEdge;
+        store.SaveLibrary();
+
+        var stored = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir.Path, "presets.json")));
+        Assert.Equal("None", stored.RootElement[0].GetProperty("image").GetProperty("resize").GetString());
+    }
+
+    [Fact]
     public void A_resize_name_this_version_does_not_know_reads_as_no_resize()
     {
         using var dir = new TempDir();

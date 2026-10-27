@@ -1276,6 +1276,96 @@ public class RenderTests
 
     [AvaloniaTheory]
     [InlineData("en", false)]
+    [InlineData("en", true)]
+    [InlineData("de", false)]
+    [InlineData("de", true)]
+    [InlineData("ar", false)]
+    [InlineData("ar", true)]
+    public void Min_short_edge_shows_its_field_and_never_writes_a_name_older_versions_reject(string language, bool dark)
+    {
+        TestServices.EnsureInitialized(language);
+        var theme = AppHost.Get<ThemeService>();
+        if (dark)
+            theme.Apply(new ThemeSettings { Mode = ThemeMode.Dark }, language);
+        try
+        {
+            var loc = AppHost.Get<ILocalizer>();
+            var preset = Filee.Core.Presets.BuiltInData.CreatePresets().Single(p => p.Id == "jpg-70");
+            var vm = new PresetEditorViewModel(preset, loc);
+            Assert.False(vm.ShowMinShortEdge);
+
+            var raised = new List<string>();
+            vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+            vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.MinShortEdge);
+            Assert.True(vm.ShowMinShortEdge);
+            Assert.False(vm.ShowCustom);
+            Assert.Contains(nameof(vm.ShowMinShortEdge), raised);   // the box appears without reopening the editor
+            Assert.Equal(1080, vm.MinShortEdge);
+
+            var window = new PresetEditorWindow { DataContext = vm, Height = 900 };
+            window.Show();
+            Pump();
+            var box = window.GetVisualDescendants().OfType<NumericUpDown>()
+                .Single(n => n.IsEffectivelyVisible && Avalonia.Automation.AutomationProperties.GetName(n) == loc["presets.min_short_edge"]);
+            Assert.False(box.ShowButtonSpinner);
+            box.BringIntoView();
+            Pump();
+            Save(window, $"preset-min-short-edge-{language}-{(dark ? "dark" : "light")}.png");
+            window.Close();
+
+            Assert.True(vm.Apply());
+            // Stored as minShortEdge with resize None, so Filee 2.1.0 keeps reading presets.json (#652).
+            Assert.Equal(Filee.Core.Presets.ResizeMode.None, preset.Image.Resize);
+            Assert.Equal(1080, preset.Image.MinShortEdge);
+        }
+        finally
+        {
+            if (dark)
+                theme.Apply(new ThemeSettings(), language);
+        }
+    }
+
+    [AvaloniaFact]
+    public void Min_short_edge_is_stored_clamped_and_switching_the_mode_clears_it()
+    {
+        TestServices.EnsureInitialized("en");
+        var loc = AppHost.Get<ILocalizer>();
+        var preset = Filee.Core.Presets.BuiltInData.CreatePresets().Single(p => p.Id == "jpg-70");
+        var vm = new PresetEditorViewModel(preset, loc);
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.MinShortEdge);
+        vm.MinShortEdge = 50000;
+        Assert.True(vm.Apply());
+        Assert.Equal(16384, preset.Image.MinShortEdge);
+        Assert.Null(preset.Image.CustomSize);
+
+        vm.MinShortEdge = 720;
+        Assert.True(vm.Apply());
+        var reloaded = new PresetEditorViewModel(preset, loc);
+        Assert.Equal(Filee.Core.Presets.ResizeMode.MinShortEdge, reloaded.Resize.Value);
+        Assert.Equal(720, reloaded.MinShortEdge);
+
+        // Custom replaces it rather than leaving both behind...
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.Custom);
+        Assert.True(vm.Apply());
+        Assert.Null(preset.Image.MinShortEdge);
+        Assert.NotNull(preset.Image.CustomSize);
+
+        // ...and so does any other mode.
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.MinShortEdge);
+        Assert.True(vm.Apply());
+        Assert.Null(preset.Image.CustomSize);
+        vm.Resize = vm.ResizeModes.Single(r => r.Value == Filee.Core.Presets.ResizeMode.Percent);
+        Assert.True(vm.Apply());
+        Assert.Null(preset.Image.MinShortEdge);
+        Assert.Equal(Filee.Core.Presets.ResizeMode.Percent, preset.Image.Resize);
+
+        // A minimum of 0 or below from a hand-edited file does nothing, so the editor shows the preset's own resize.
+        preset.Image.MinShortEdge = -5;
+        Assert.Equal(Filee.Core.Presets.ResizeMode.Percent, new PresetEditorViewModel(preset, loc).Resize.Value);
+    }
+
+    [AvaloniaTheory]
+    [InlineData("en", false)]
     [InlineData("ru", false)]
     [InlineData("ar", true)]
     public void Preset_editor_offers_the_subfolder_only_for_several_files_with_a_subfolder(string language, bool dark)

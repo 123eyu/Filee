@@ -482,6 +482,11 @@ public class DonutGroupTests
         Assert.Equal("Works on images only", availability.Check(customSize, [mp3]));
         Assert.Null(availability.Check(customSize, [png]));
 
+        // A minimum short edge is stored the same way, as Resize None plus MinShortEdge (#652).
+        var minShortEdge = new Preset { TargetFormat = BuiltInData.SameAsSource, Image = { MinShortEdge = 1080 } };
+        Assert.Equal("Works on images only", availability.Check(minShortEdge, [mp3]));
+        Assert.Null(availability.Check(minShortEdge, [png]));
+
         var mixedOptions = new Preset
         {
             TargetFormat = BuiltInData.SameAsSource,
