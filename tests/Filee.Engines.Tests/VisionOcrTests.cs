@@ -218,6 +218,22 @@ public class VisionConverterTests(EngineFixture fx) : IClassFixture<EngineFixtur
     }
 
     [Fact]
+    public async Task A_black_and_white_scan_is_recognized_into_a_pdf()
+    {
+        // #605: the page picture used to stay a 1-bit PNG, which PDFsharp refuses.
+        var folder = fx.NewFolder();
+        var fax = ImageAndPdfTests.MakeScan(folder, "fax.tif");
+        var recognizer = new VisionFakes.Recognizer();
+        var output = Path.Combine(folder, "fax.pdf");
+
+        await new VisionConverter(recognizer, new VisionFakes.Tesseract(available: false))
+            .ConvertAsync(Step(fax, "tiff", output, Ocr()), null, TestContext.Current.CancellationToken);
+
+        Assert.False(Filee.Engines.Pdf.PdfPictures.NeedsReencoding(Assert.Single(recognizer.Calls).Picture));
+        Assert.Equal(VisionFakes.Text, PageText(output, 1));
+    }
+
+    [Fact]
     public async Task Only_the_scanned_pages_of_a_pdf_are_recognized()
     {
         var folder = fx.NewFolder();
