@@ -140,9 +140,10 @@ public static class FormatRegistry
         new("sda", "SDA", FormatCategory.Presentation, ["sda", "sdd"], Writable: false),
 
         // Plain text / markup
-        // Text logs, source/proxy scripts and style sheets are read as plain text, never executed (issues #273, #284, #254,
-        // #388, #368, #607).
-        new("txt", "TXT", FormatCategory.Text, ["txt", "log", "py", "pac", "bat", "command", "lua", "css", "ps1", "sql"]),
+        // Text logs, source/proxy scripts, style sheets and settings files are read as plain text, never executed (issues
+        // #273, #284, #254, #388, #368, #607, #536, #630, #661, #660).
+        new("txt", "TXT", FormatCategory.Text,
+            ["txt", "log", "py", "pac", "bat", "cmd", "command", "lua", "css", "ps1", "sql", "ahk", "ini", "rsc"]),
         new("md", "Markdown", FormatCategory.Text, ["md", "markdown"]),
         new("html", "HTML", FormatCategory.Text, ["html", "htm", "xhtml"]),
         // A web page saved with its pictures in one MIME file (Chrome, Edge, Word); read as the page it holds.
@@ -229,6 +230,9 @@ public static class FormatRegistry
         // Fragmented MP4 (#354): an .m4s with its own moov (ftyp + moov, then styp / sidx / moof / mdat) is read by FFmpeg;
         // a DASH media segment that needs a separate init segment is refused (DashSegment).
         new("m4s", "M4S", FormatCategory.Video, ["m4s"], Writable: false),
+        // Dahua and similar DVR / NVR recordings (#594): FFmpeg's dhav demuxer reads them (H.264 / H.265 video, often
+        // with G.711 or AAC sound).
+        new("dav", "DAV", FormatCategory.Video, ["dav"], Writable: false),
         // Raw H.265 / H.264 streams with no container, as security cameras and VMS software export them (issue #301).
         new("h265", "H.265", FormatCategory.Video, ["h265", "265", "hevc"], Writable: false),
         new("h264", "H.264", FormatCategory.Video, ["h264", "264"], Writable: false),

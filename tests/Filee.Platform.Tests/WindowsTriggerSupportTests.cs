@@ -20,6 +20,15 @@ public sealed class WindowsTriggerSupportTests
     public void The_desktop_is_told_from_folder_windows(string? windowClass, bool desktop) =>
         Assert.Equal(desktop, WindowsPlatformServices.IsDesktop(windowClass));
 
+    [Theory]
+    [InlineData(10, 20, "Progman", true)]        // a desktop icon layer, owned by the desktop
+    [InlineData(10, 20, "WorkerW", true)]
+    [InlineData(10, 20, "CabinetWClass", false)] // a dialog owned by a folder window
+    [InlineData(20, 20, "Progman", false)]       // the desktop itself is its own root owner: nothing to map
+    [InlineData(10, 0, null, false)]             // no owner
+    public void A_window_the_desktop_owns_stands_for_the_desktop(long window, long rootOwner, string? rootOwnerClass, bool desktop) =>
+        Assert.Equal(desktop, WindowsPlatformServices.StandsForDesktop((nint)window, (nint)rootOwner, rootOwnerClass));
+
     [Fact]
     public void The_startup_entry_read_back_must_be_the_one_written()
     {

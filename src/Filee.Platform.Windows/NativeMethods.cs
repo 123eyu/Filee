@@ -8,6 +8,7 @@ internal static partial class NativeMethods
 {
     public const int SM_CXDRAG = 68;
     public const uint GA_ROOT = 2;
+    public const uint GA_ROOTOWNER = 3;
     public const uint SPI_GETCLIENTAREAANIMATION = 0x1042;
 
     [StructLayout(LayoutKind.Sequential)]

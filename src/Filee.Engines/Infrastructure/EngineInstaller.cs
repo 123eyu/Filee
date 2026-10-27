@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using Filee.Core.Conversion;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpCompress.Compressors.Xz;
@@ -338,11 +339,17 @@ public sealed class EngineInstaller
         return libreOffice;
     }
 
-    private static async Task UnpackMsiAsync(string id, string msi, string target, string log, CancellationToken cancellationToken)
+    private async Task UnpackMsiAsync(string id, string msi, string target, string log, CancellationToken cancellationToken)
     {
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException($"The {id} package is a Windows installer.");
         Directory.CreateDirectory(target);
+        // The Installer service won't follow a junction a user made (#527); Filee keeps using its own paths.
+        // The log too: through a link it can't be written (1622), as when %TEMP% has moved with AppData\Local.
+        msi = RealPath.Of(msi);
+        target = RealPath.Of(target);
+        log = Path.Combine(RealPath.Of(Path.GetDirectoryName(log)!), Path.GetFileName(log));
+        _logger.LogInformation("Unpacking {Component} with msiexec: {Msi} to {Target}, log {Log}", id, msi, target, log);
         // msiexec parses its own command line: the property value must be quoted as TARGETDIR="...", so the
         // argument list escaping of ProcessRunner cannot be used here.
         using var process = Process.Start(new ProcessStartInfo("msiexec.exe", $"/a \"{msi}\" /qn /l*v \"{log}\" TARGETDIR=\"{target}\"")
@@ -362,14 +369,16 @@ public sealed class EngineInstaller
             throw;
         }
         if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(process.ExitCode switch
-            {
-                1618 => "Another installation is running. Try again when it has finished.",
-                _ => $"Unpacking {id} failed (msiexec exit code {process.ExitCode}, log: {log}).",
-            });
-        }
+            throw MsiFailure(id, process.ExitCode, log);
     }
+
+    /// <summary>What the Engines card shows: the reasons a user can act on in their language (error.* keys).</summary>
+    internal static Exception MsiFailure(string id, int exitCode, string log) => exitCode switch
+    {
+        1618 => new ConversionRefusedException("error.msi_busy"),
+        1620 => new ConversionRefusedException("error.msi_link", $"msiexec 1620, log: {log}"),
+        _ => new InvalidOperationException($"Unpacking {id} failed (msiexec exit code {exitCode}, log: {log})."),
+    };
 
     /// <summary>
     /// Removes what headless conversion never uses (~500 MB): help, readmes, the MSI copy, the gallery and spelling

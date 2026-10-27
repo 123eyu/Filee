@@ -12,7 +12,7 @@ Filee chooses engines automatically. Settings → *Engines* shows their status, 
 | PDFsharp | built in (library) | images → PDF, merge, split, page ranges, page organising, lossless rotate and crop-box edits, spreadsheet print-studio assembly, **compression** (smaller PDFs, see below), PDFs without their metadata |
 | PDFium | built in (library) | PDF → images (multi-page TIFF/GIF supported) |
 | Unhwp | built in (library) | HWP/HWPX → TXT, Markdown, HTML (pictures in a `<name>_files` folder next to the Markdown, embedded in the HTML) |
-| Text & Markdown (Markdig) | built in (library) | **Markdown → HTML, TXT**; **TXT, LOG, PY, PAC, BAT, COMMAND, LUA, CSS, PS1, SQL → UTF-8 TXT**, preserving source text without running scripts (and → PDF / DOCX through the HWPX writer, rhwp or LibreOffice) |
+| Text & Markdown (Markdig) | built in (library) | **Markdown → HTML, TXT**; **TXT, LOG, PY, PAC, BAT, CMD, COMMAND, LUA, CSS, PS1, SQL, AHK, INI, RSC → UTF-8 TXT**, preserving source text without running scripts (and → PDF / DOCX through the HWPX writer, rhwp or LibreOffice) |
 | Spreadsheets (ExcelDataReader for XLS) | built in (library) | **XLSX, XLS, ODS, CSV, TSV → XLSX, ODS, CSV, TSV** (one CSV / TSV per sheet) |
 | Office Open XML | built in | **DOCM / DOTX / DOTM ↔ DOCX, XLSM / XLTX ↔ XLSX, PPTM / POTX / POTM / PPSX ↔ PPTX** (macros removed for macro-free types) |
 | Fonts | built in | **TTF, OTF, WOFF, WOFF2, EOT ↔ each other**; **FON (NE monochrome FNT v2/v3, supported single-byte charsets) → TTF, OTF, WOFF, WOFF2, EOT only**; CFF (PostScript) outlines become TrueType for TTF and EOT |
@@ -96,7 +96,8 @@ they can be installed or removed later in Settings → *Engines*. A conversion t
   install root, so uninstalling removes them.
 - LibreOffice and calibre come as MSIs and are unpacked with an administrative install (`msiexec /a`): files only,
   no registry entries, no admin rights. LibreOffice's help, gallery and most dictionaries are removed afterwards
-  (~500 MB).
+  (~500 MB). msiexec gets the real paths of the package, the target and its log: the Windows Installer service won't
+  follow a junction a user made (error 1620 or 1622, #527), as when `AppData\Local` was moved to another drive.
 - Ghostscript comes from conda-forge (Artifex publishes only an NSIS installer): a `.conda` package is a zip with a
   zstd tarball, of which only `Library/bin` is unpacked (SharpCompress; `fetch-engines.ps1` uses Windows' `tar.exe`).
   Its fonts and resources are compiled into `gsdll64.dll`. The Microsoft C++ runtime it was built against
@@ -1463,6 +1464,11 @@ A self-contained `.m4s` (read only, #354), a fragmented MP4 that starts with `ft
 and goes to every video and audio target. A DASH media segment, whose top-level boxes reach a `moof` before any
 `moov`, plays only with a separate init segment; Filee refuses it before FFmpeg runs, with its own message
 (`error.m4s_needs_init`), instead of FFmpeg's demuxer error.
+Dahua DVR / NVR recordings (`.dav`, read only, #594) are read by FFmpeg's `dhav` demuxer, which finds them by the
+`DHAV` chunks they are made of, and go to every video and audio target. Their H.264 / H.265 video is copied where
+the target and preset allow it (`CanCopyVideo`), like any other container's; G.711 sound is encoded for targets that
+can't hold it. The chunks carry the camera's wall-clock time, so FFmpeg reports the recording date as the start time;
+the output starts at zero.
 A Video CD's `MPEGAV/AVSEQ01.DAT` (MPEG-1 in a RIFF/CDXA wrapper) counts as MPEG: `.dat` is an extension of that
 format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fails instead of making a file.
 

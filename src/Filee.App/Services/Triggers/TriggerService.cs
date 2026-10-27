@@ -20,22 +20,28 @@ public sealed class TriggerService : IDisposable
     private readonly ILogger<TriggerService> _log;
     private readonly GestureDetector _detector = new();
     private readonly string _ownProcess = Process.GetCurrentProcess().ProcessName;
-    private EventLoopGlobalHook? _hook;
+    private QueuedGlobalHook? _hook;
     private Thread? _hookThread;
-    private readonly Func<EventLoopGlobalHook> _createHook;
+    private readonly Func<QueuedGlobalHook> _createHook;
     private GnomePointerBridge? _gnomeBridge;
     private GnomePointerInput? _gnomeInput;
     private HashSet<string> _excluded = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>FILEE_TRACE_GESTURES=1 logs each mouse press and scope decision, to find why a gesture doesn't fire.</summary>
+    /// <summary>
+    /// FILEE_TRACE_GESTURES=1 logs each mouse press and scope decision, to find why a gesture doesn't fire, and on
+    /// Windows each mouse move that reached Filee late (a stuck cursor, #511).
+    /// </summary>
     private static readonly bool Trace = Environment.GetEnvironmentVariable("FILEE_TRACE_GESTURES") == "1";
 
+    /// <summary>A mouse move this late (ms) goes to the trace: the clock itself is only 16 ms exact.</summary>
+    private const long LateMove = 50;
+
     public TriggerService(IPlatformServices platform, ILogger<TriggerService> log)
-        : this(platform, log, () => new EventLoopGlobalHook(useBackgroundThreadForEventLoop: true))
+        : this(platform, log, () => new QueuedGlobalHook())
     {
     }
 
-    internal TriggerService(IPlatformServices platform, ILogger<TriggerService> log, Func<EventLoopGlobalHook> createHook)
+    internal TriggerService(IPlatformServices platform, ILogger<TriggerService> log, Func<QueuedGlobalHook> createHook)
     {
         _platform = platform;
         _log = log;
@@ -221,7 +227,8 @@ public sealed class TriggerService : IDisposable
                     NotifyStatus();
                 }
             })
-            { IsBackground = true, Name = "Filee global input" };
+            // Highest: Windows holds every mouse move until this thread has queued it (#511). It does nothing else.
+            { IsBackground = true, Name = "Filee global input", Priority = ThreadPriority.Highest };
             _hookThread.Start();
         }
         catch (Exception ex)
@@ -307,6 +314,10 @@ public sealed class TriggerService : IDisposable
 
     private void OnMove(MouseHookEventArgs e)
     {
+        // How long Windows held the cursor for Filee (#511): the event's time is in Unix milliseconds there.
+        if (Trace && OperatingSystem.IsWindows()
+            && DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (long)e.RawEvent.Time is > LateMove and var late)
+            _log.LogInformation("Trace: a mouse move reached Filee {Late} ms late", late);
         (_estX, _estY) = (e.Data.X, e.Data.Y);
         LastCursor = (e.Data.X, e.Data.Y);
         _detector.MouseMove(e.Data.X, e.Data.Y, Map(e.RawEvent.Mask), HeldButton(e.RawEvent.Mask));

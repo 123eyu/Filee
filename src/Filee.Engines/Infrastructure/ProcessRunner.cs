@@ -66,6 +66,7 @@ public static class ProcessRunner
 
         if (!process.Start())
             throw new InvalidOperationException($"Could not start {executable}.");
+        Lower(process);
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
@@ -98,6 +99,22 @@ public static class ProcessRunner
     /// <summary>"10 min", or "30 s" below a minute.</summary>
     internal static string Describe(TimeSpan limit) =>
         limit >= TimeSpan.FromMinutes(1) ? $"{limit.TotalMinutes:0} min" : $"{limit.TotalSeconds:0} s";
+
+    /// <summary>
+    /// Below normal priority, so a long conversion on every core leaves room for the desktop and Filee's own input
+    /// hook (#511); on an idle machine it is as fast. Programs it starts inherit it. A process that is already gone
+    /// or not ours to change stays as it is.
+    /// </summary>
+    internal static void Lower(Process process)
+    {
+        try
+        {
+            process.PriorityClass = ProcessPriorityClass.BelowNormal;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+        {
+        }
+    }
 
     private static void TryKill(Process process)
     {
