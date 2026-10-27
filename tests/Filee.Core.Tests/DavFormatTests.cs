@@ -19,16 +19,16 @@ public class DavFormatTests
     }
 
     [Fact]
-    public void Version_48_libraries_learn_dav_once()
+    public void Version_49_libraries_learn_dav_once()
     {
         var presets = BuiltInData.CreatePresets();
         var profiles = BuiltInData.CreateProfiles();
         var video = profiles.Single(p => p.Id == "video");
         video.Extensions.Remove("dav");
 
-        Assert.True(SettingsMigrations.ApplyToLibrary(48, presets, profiles));
+        Assert.True(SettingsMigrations.ApplyToLibrary(49, presets, profiles));
 
         Assert.Contains("dav", video.Extensions);
-        Assert.False(SettingsMigrations.ApplyToLibrary(48, presets, profiles));
+        Assert.False(SettingsMigrations.ApplyToLibrary(49, presets, profiles));
     }
 }
