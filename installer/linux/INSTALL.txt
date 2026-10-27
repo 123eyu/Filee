@@ -81,6 +81,8 @@ libwayland-client0 on Ubuntu). To turn it on:
    distribution; use whichever one you have.
    After updating Filee, upgrade the installed script the same way, with
    --upgrade instead of --install, then run the reconfigure line again.
+   If KWin still runs the old script, turn "Filee donut" off and on again in
+   System Settings > Window Management > KWin Scripts, or sign out and back in.
    For Hyprland: Add the floating and placement window rules in ~/.config/hypr/hyprland.conf (or hyprland.lua):
      windowrulev2 = float, title:^(Filee Donut)$
      windowrulev2 = move cursor -50% -50%, title:^(Filee Donut)$

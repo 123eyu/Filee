@@ -900,9 +900,12 @@ internal static class SettingsMigrations
         if (from < 48)
             changed |= LearnExtensions(profiles, out _, ["m4s"]);
         // v49: SQL (#607, which came without a migration), AutoHotkey, INI, RouterOS exports and .cmd batch scripts learn
-        //      the text donut; custom claims stay put. (Schema 49 may be renumbered if another change takes it first.)
+        //      the text donut; custom claims stay put.
         if (from < 49)
             changed |= LearnExtensions(profiles, out _, ["sql", "ahk", "ini", "rsc", "cmd"]);
+        // v50: Dahua DVR recordings (.dav) learn the video donut; custom claims stay put.
+        if (from < 50)
+            changed |= LearnExtensions(profiles, out _, ["dav"]);
         // v51: "Edit pictures" (size, format, turn and colour chosen each time, #584), after "Crop" as in a new library,
         //      and on the front of the images donut after "Half size" when that is there, the user hasn't put the tool
         //      elsewhere on the donut and the face has room.

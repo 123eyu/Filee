@@ -45,6 +45,14 @@
       <Setter Property="BoxShadow" Value="0 6 18 0 #33000000" />
     </Style>
 
+    <!-- Move up / Move down at the end of the list: a dimmed arrow, not a grey box, where the profile can't go further. -->
+    <Style Selector="StackPanel#ProfileOrderButtons > Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="StackPanel#ProfileOrderButtons > Button:disabled">
+      <Setter Property="Opacity" Value="0.4" />
+    </Style>
+
     <!-- Remarks under the extension editors -->
     <Style Selector="PathIcon.note">
       <Setter Property="Width" Value="13" />
@@ -245,7 +253,13 @@
               <PathIcon Width="14" Height="14" Margin="10,0,0,0" Data="{StaticResource Icon.Search}" Foreground="{DynamicResource TextSecondaryBrush}" />
             </TextBox.InnerLeftContent>
           </TextBox>
-          <ListBox Classes="soft" ItemsSource="{Binding VisibleProfiles}" SelectedItem="{Binding SelectedProfile}">
+          <!-- The order decides which profile opens for an extension two share (#522): Alt+↑ / Alt+↓ or the arrows below. -->
+          <ListBox x:Name="ProfileList" Classes="soft" ItemsSource="{Binding VisibleProfiles}" SelectedItem="{Binding SelectedProfile}"
+                   AutomationProperties.Name="{DynamicResource toolbar.step_profile}">
+            <ListBox.KeyBindings>
+              <KeyBinding Gesture="Alt+Up" Command="{Binding MoveProfileUpCommand}" />
+              <KeyBinding Gesture="Alt+Down" Command="{Binding MoveProfileDownCommand}" />
+            </ListBox.KeyBindings>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:ProfileItemViewModel">
                 <DockPanel>
@@ -260,12 +274,24 @@
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
+          <!-- Under the list, at its end: a row of their own, so "New profile" keeps the column's whole width. -->
+          <StackPanel x:Name="ProfileOrderButtons" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" Margin="0,-4,0,0">
+            <Button x:Name="MoveProfileUp" Classes="icon" Command="{Binding MoveProfileUpCommand}"
+                    ToolTip.Tip="{DynamicResource toolbar.profile_up}" AutomationProperties.Name="{DynamicResource toolbar.profile_up}">
+              <PathIcon Width="14" Height="14" Data="{StaticResource Icon.ArrowUp}" />
+            </Button>
+            <Button x:Name="MoveProfileDown" Classes="icon" Command="{Binding MoveProfileDownCommand}"
+                    ToolTip.Tip="{DynamicResource toolbar.profile_down}" AutomationProperties.Name="{DynamicResource toolbar.profile_down}">
+              <PathIcon Width="14" Height="14" Data="{StaticResource Icon.ArrowDown}" />
+            </Button>
+          </StackPanel>
           <Button HorizontalAlignment="Stretch" Command="{Binding AddProfileCommand}">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <PathIcon Width="12" Height="12" Data="{StaticResource Icon.Plus}" />
               <TextBlock Text="{DynamicResource toolbar.add_profile}" />
             </StackPanel>
           </Button>
+          <TextBlock x:Name="ProfileOrderHint" Classes="caption" TextWrapping="Wrap" Text="{DynamicResource toolbar.profile_order_hint}" />
         </StackPanel>
 
         <!-- 2. Donut -->
