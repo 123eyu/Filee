@@ -32,7 +32,23 @@ public enum ConflictPolicy
 /// <summary>Output placement and naming rules.</summary>
 public sealed class OutputRule
 {
+    /// <summary>A name this version doesn't know (from a newer Filee) reads as <see cref="OutputLocation.Default"/>.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(LenientEnumJsonConverter<OutputLocation>))]
     public OutputLocation Location { get; set; } = OutputLocation.Default;
+
+    /// <summary>
+    /// "Ask every time" (#521): the donut asks where to save first, once per batch, in the source's folder
+    /// (<see cref="AskedLocation"/>). Where nothing can ask (the command line, files from a browser, other tools),
+    /// <see cref="Location"/> applies. A bool of its own, so a Filee from before it keeps the preset and uses Location.
+    /// </summary>
+    public bool AskEveryTime { get; set; }
+
+    /// <summary>
+    /// The one path the user picked and confirmed in the save dialog: it may replace a file there whatever
+    /// <see cref="Conflict"/> says. Set per job, never saved with a preset.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string? ConfirmedPath { get; set; }
 
     public string SubfolderName { get; set; } = "converted";
 

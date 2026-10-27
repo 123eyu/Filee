@@ -13,10 +13,14 @@
      SHA-256 sums;
   3. installs the signed Setup into a sandbox (nothing on the PC is touched) and checks that Filee.exe and
      uninstall.exe come out signed, then uninstalls it;
-  4. uploads Filee-<version>-win-Setup.exe, the portable zip and Filee-<version>-SHA256SUMS.txt to the draft, and
-     with -Publish publishes the release.
+  4. uploads Filee-<version>-win-Setup.exe, the portable zip and Filee-<version>-SHA256SUMS.txt to the draft;
+  5. copies the same three files to the download mirror, Cloudflare R2 behind https://dl.filee.sh/<version>/, and
+     checks that each one is served there as is (no redirect, the same size). The Microsoft Store takes Setup.exe
+     from that address, because GitHub's download links redirect;
+  6. with -Publish, publishes the release.
 
-  Needs gh (signed in), git and the .NET SDK. Output: build/.cache/release-<version>/out.
+  Needs gh (signed in), git, the .NET SDK, and Node.js with Wrangler signed in to Filee's Cloudflare account
+  (npx wrangler login, once) unless -NoMirror. Output: build/.cache/release-<version>/out.
 
 .EXAMPLE
   pwsh build/sign-release.ps1 -Version 2.1.0 -CertificateThumbprint <sha1>
@@ -28,7 +32,9 @@ param(
     [string]$Version,
     # Defaults to $env:FILEE_SIGNING_CERT (see sign-windows.ps1).
     [string]$CertificateThumbprint = $env:FILEE_SIGNING_CERT,
-    [switch]$Publish
+    [switch]$Publish,
+    # Skips the copy to the download mirror (dl.filee.sh).
+    [switch]$NoMirror
 )
 
 $ErrorActionPreference = 'Stop'
@@ -93,6 +99,27 @@ Remove-Item $sandbox -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "upload to the draft of $tag"
 Invoke-Checked 'gh release upload' { gh release upload $tag @files --clobber }
+
+# The download mirror: R2 bucket filee-downloads, served at dl.filee.sh. Wrangler is pinned like the engines.
+if (-not $NoMirror) {
+    $bucket = 'filee-downloads'
+    $mirror = "https://dl.filee.sh/$Version"
+    $types = @{ '.exe' = 'application/vnd.microsoft.portable-executable'; '.zip' = 'application/zip'; '.txt' = 'text/plain; charset=utf-8' }
+    foreach ($file in $files) {
+        $name = Split-Path $file -Leaf
+        Write-Host "copy $name to $mirror"
+        Invoke-Checked 'wrangler r2 object put' {
+            npx --yes wrangler@4.143.1 r2 object put "$bucket/$Version/$name" --file $file --remote `
+                --content-type $types[[IO.Path]::GetExtension($name)]
+        }
+        # One byte is enough: Content-Range says the whole size (a HEAD of a text file has no Content-Length there).
+        $response = Invoke-WebRequest "$mirror/$name" -Headers @{ Range = 'bytes=0-0' } -MaximumRedirection 0 -SkipHttpErrorCheck
+        $served = "$($response.Headers['Content-Range'])" -replace '^.*/'
+        if ($response.StatusCode -ne 206 -or $served -ne "$((Get-Item $file).Length)") {
+            throw "$mirror/$name answers $($response.StatusCode) with $served bytes, not the $((Get-Item $file).Length) uploaded."
+        }
+    }
+}
 if ($Publish) {
     Invoke-Checked 'gh release edit' { gh release edit $tag --draft=false --latest }
     Write-Host "published $tag"

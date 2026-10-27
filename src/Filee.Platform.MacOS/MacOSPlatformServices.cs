@@ -34,6 +34,8 @@ public sealed class MacOSPlatformServices : IPlatformServices
 
     public TrashRefusal? MoveToTrash(string path) => NativeMethods.MoveToTrash(path);
 
+    public string? ShortcutTarget(string path) => NativeMethods.AliasTarget(path);
+
     public bool IsFileManagerAt(int x, int y) =>
         string.Equals(ProcessNameAt(x, y), "Finder", StringComparison.OrdinalIgnoreCase);
 

@@ -141,8 +141,8 @@ public static class FormatRegistry
 
         // Plain text / markup
         // Text logs, source/proxy scripts and style sheets are read as plain text, never executed (issues #273, #284, #254,
-        // #388, #368).
-        new("txt", "TXT", FormatCategory.Text, ["txt", "log", "py", "pac", "bat", "command", "lua", "css", "ps1"]),
+        // #388, #368, #607).
+        new("txt", "TXT", FormatCategory.Text, ["txt", "log", "py", "pac", "bat", "command", "lua", "css", "ps1", "sql"]),
         new("md", "Markdown", FormatCategory.Text, ["md", "markdown"]),
         new("html", "HTML", FormatCategory.Text, ["html", "htm", "xhtml"]),
         // A web page saved with its pictures in one MIME file (Chrome, Edge, Word); read as the page it holds.
@@ -226,6 +226,9 @@ public static class FormatRegistry
         new("cavs", "CAVS", FormatCategory.Video, ["cavs"], Writable: false),
         // CRI Middleware's video for game cutscenes (#485): FFmpeg's usm demuxer reads unencrypted ones.
         new("usm", "USM", FormatCategory.Video, ["usm"], Writable: false),
+        // Fragmented MP4 (#354): an .m4s with its own moov (ftyp + moov, then styp / sidx / moof / mdat) is read by FFmpeg;
+        // a DASH media segment that needs a separate init segment is refused (DashSegment).
+        new("m4s", "M4S", FormatCategory.Video, ["m4s"], Writable: false),
         // Raw H.265 / H.264 streams with no container, as security cameras and VMS software export them (issue #301).
         new("h265", "H.265", FormatCategory.Video, ["h265", "265", "hevc"], Writable: false),
         new("h264", "H.264", FormatCategory.Video, ["h264", "264"], Writable: false),
@@ -304,6 +307,7 @@ public static class FormatRegistry
         new("woff", "WOFF", FormatCategory.Font, ["woff"]),
         new("woff2", "WOFF2", FormatCategory.Font, ["woff2"]),
         new("eot", "EOT", FormatCategory.Font, ["eot"]),
+        new("fon", "FON", FormatCategory.Font, ["fon"], Writable: false),
 
         // Subtitles (text)
         new("srt", "SRT", FormatCategory.Subtitle, ["srt"]),
@@ -331,6 +335,8 @@ public static class FormatRegistry
         new("kmz", "KMZ", FormatCategory.Geo, ["kmz"]),
         new("gpx", "GPX", FormatCategory.Geo, ["gpx"]),
         new("shp", "Shapefile", FormatCategory.Geo, ["shp"]),
+        // Activity files read by the geo engine (issue #451); .fits/.fts stay FITS.
+        new("fit", "Garmin FIT", FormatCategory.Geo, ["fit"], Writable: false),
     ];
 
     private static readonly Dictionary<string, FileFormat> ById =

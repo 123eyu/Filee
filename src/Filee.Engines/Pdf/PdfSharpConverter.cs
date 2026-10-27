@@ -391,12 +391,7 @@ public sealed class PdfSharpConverter : IConverter, IPdfMerger, IPdfFinisher, II
         }
         else
         {
-            // No palette PNGs: PDFsharp's decoder rejects them with transparency, and ImageMagick writes them for
-            // pictures with few colours (charts, metafiles, pixel art). Grayscale stays grayscale.
-            var format = frame.HasAlpha ? MagickFormat.Png32
-                : frame.ColorType is ColorType.Grayscale or ColorType.Bilevel ? MagickFormat.Png
-                : MagickFormat.Png24;
-            frame.Write(stream, format);
+            PdfPictures.WritePng(frame, stream);
         }
         stream.Position = 0;
         return stream;

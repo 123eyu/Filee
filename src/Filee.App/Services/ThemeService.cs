@@ -171,6 +171,11 @@ public sealed class ThemeService(IPlatformServices platform)
         foreach (var (name, value) in colors ?? new Dictionary<string, string>())
             if (CustomBrushKeys.TryGetValue(name, out var key) && Color.TryParse(value, out var color))
                 dictionary[key] = new SolidColorBrush(color);
+        // Plain buttons are the surface they sit on (#524): also under Material You and a theme.json's own surface.
+        if (dictionary.TryGetValue("SurfaceBrush", out var surface))
+            dictionary["ButtonBackground"] = surface;
+        if (dictionary.TryGetValue("SurfaceAltBrush", out var surfaceAlt))
+            dictionary["ButtonBackgroundPointerOver"] = surfaceAlt;
     }
 
     /// <summary>Replaces (or, with no colours, removes) the user's colours for one variant.</summary>

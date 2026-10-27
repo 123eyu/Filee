@@ -12,10 +12,10 @@ Filee chooses engines automatically. Settings → *Engines* shows their status, 
 | PDFsharp | built in (library) | images → PDF, merge, split, page ranges, page organising, lossless rotate and crop-box edits, spreadsheet print-studio assembly, **compression** (smaller PDFs, see below), PDFs without their metadata |
 | PDFium | built in (library) | PDF → images (multi-page TIFF/GIF supported) |
 | Unhwp | built in (library) | HWP/HWPX → TXT, Markdown, HTML (pictures in a `<name>_files` folder next to the Markdown, embedded in the HTML) |
-| Text & Markdown (Markdig) | built in (library) | **Markdown → HTML, TXT**; **TXT, LOG, PY, PAC, BAT, COMMAND, LUA, CSS, PS1 → UTF-8 TXT**, preserving source text without running scripts (and → PDF / DOCX through the HWPX writer, rhwp or LibreOffice) |
+| Text & Markdown (Markdig) | built in (library) | **Markdown → HTML, TXT**; **TXT, LOG, PY, PAC, BAT, COMMAND, LUA, CSS, PS1, SQL → UTF-8 TXT**, preserving source text without running scripts (and → PDF / DOCX through the HWPX writer, rhwp or LibreOffice) |
 | Spreadsheets (ExcelDataReader for XLS) | built in (library) | **XLSX, XLS, ODS, CSV, TSV → XLSX, ODS, CSV, TSV** (one CSV / TSV per sheet) |
 | Office Open XML | built in | **DOCM / DOTX / DOTM ↔ DOCX, XLSM / XLTX ↔ XLSX, PPTM / POTX / POTM / PPSX ↔ PPTX** (macros removed for macro-free types) |
-| Fonts | built in | **TTF, OTF, WOFF, WOFF2, EOT ↔ each other**; CFF (PostScript) outlines become TrueType for TTF and EOT |
+| Fonts | built in | **TTF, OTF, WOFF, WOFF2, EOT ↔ each other**; **FON (NE monochrome FNT v2/v3, supported single-byte charsets) → TTF, OTF, WOFF, WOFF2, EOT only**; CFF (PostScript) outlines become TrueType for TTF and EOT |
 | **HWPX writer** | built in | **DOCX (+ DOCM/DOTX/DOTM), XLSX (+ XLSM/XLTX), XLS, ODS, CSV, TSV, PPTX (+ PPTM/POTX/POTM/PPSX), PDF, OFD, HTML, MHTML, EPUB, MOBI/AZW3, FB2, HWPX, TXT, Markdown → HWPX** (and with rhwp → PDF and images); ODT, RTF, reStructuredText, LaTeX → HWPX with Pandoc |
 | **DOCX writer** | built in | **HWPX (and HWP through rhwp), PDF, OFD, HTML, MHTML, EPUB, MOBI/AZW3, FB2, Markdown, TXT, XLSX, XLS, ODS, CSV, PPTX (+ variants) → DOCX** |
 | PDF text | built in (PdfPig) | **PDF → TXT, Markdown** (reading order, also two columns; Markdown keeps headings, emphasis, links and the pictures; no OCR) |
@@ -27,7 +27,7 @@ Filee chooses engines automatically. Settings → *Engines* shows their status, 
 | CAD (ACadSharp + built-in renderer) | built in (library) | **DWG ↔ DXF**; DWG/DXF → **PDF** (vector), **SVG**, PNG, JPG, WEBP, TIFF, BMP, GIF, ICO, AVIF |
 | **Subtitles** | built in | **SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC → SRT, ASS, WebVTT, SAMI, LRC, TTML, MicroDVD**, always UTF-8 (Korean CP949 / EUC-KR files read correctly) |
 | 3D models (SharpGLTF for glTF) | built in (library) | **GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY ↔ each other**; FBX → each of them; → PNG, JPG, … (an isometric preview) |
-| **Geospatial vector data** | built in | **GeoJSON, KML, KMZ, GPX, Shapefile ↔ each other and CSV** (longitude / latitude or WKT); projected Shapefiles (UTM, Web Mercator, Lambert, Albers) are converted to WGS 84; through CSV to XLSX, JSON, … (see below) |
+| **Geospatial vector data** | built in | **GeoJSON, KML, KMZ, GPX, Shapefile ↔ each other and CSV** (longitude / latitude or WKT); Garmin FIT (activities, read only) → each of them and CSV; projected Shapefiles (UTM, Web Mercator, Lambert, Albers) are converted to WGS 84; through CSV to XLSX, JSON, … (see below) |
 | rhwp | bundled with the installer (`engines/rhwp`, with the Microsoft C++ runtime, see below) | HWP/HWPX → PDF, **HWP → HWPX, HWPX → HWP** |
 | Archives (7-Zip) | bundled with the installer (`engines/7zip`, ~2.5 MB) + built-in readers | ZIP (including ANSYS Workbench WBPZ), 7Z, RAR, TAR (+ GZ/BZ2/XZ/Z/7Z/LZ), CAB, ISO, DMG, … **→ folder, ZIP, 7Z, TAR, TAR.GZ/BZ2/XZ**; ALZ, EGG, lzip read in-process; "Compress into one archive" for any files |
 | LibreOffice + H2Orestart + Java | **optional download** (~420 MB, 1.3 GB on disk) | older and rare formats only: DOC, XLS, PPT, RTF and OpenDocument → PDF and to each other, output as DOCX/ODT/ODS/ODP; HWP/HWPX → DOCX/ODT; read-only formats (see below) → PDF and their kind's editable formats; FODT, OpenDocument templates (OTT, OTS, OTP) and XLT out; SVG → EMF/WMF/ODG, a PDF page → SVG |
@@ -196,7 +196,8 @@ pinned source in `build/build-linux-native.py` like rhwp (PR #113 did this for S
     still picture through PNG.
 - **More raster formats** through ImageMagick's own coders, each checked against `MagickNET.SupportedFormats` and
   converted there and back in `ImageFormatTests`: QOI, MNG (animated), DDS (DXT block compression, which is lossy; of
-  a texture with mipmaps the largest image is read), PCX, CUR (at most 256 × 256, larger pictures are scaled down), XPM,
+  a texture with mipmaps the largest image is read; uncompressed 32-bit pixels stored R, G, B, A, which ImageMagick
+  reads with red and blue swapped, are swapped back when converting and in the crop tool), PCX, CUR (at most 256 × 256, larger pictures are scaled down), XPM,
   XBM and WBMP (1-bit), PAM, PFM, SGI (`.sgi`, `.rgb`, `.rgba`, `.bw`, always read as SGI; ImageMagick would take
   `.rgb` for headerless pixels), Sun Raster (`.ras`, `.sun`) and MIFF. XBM, WBMP, PFM, PCX and Sun Raster are written
   without transparency (flattened onto the preset's background): PFM has none, and the alpha planes ImageMagick can
@@ -461,7 +462,8 @@ built-in XLSX route reads the workbook into Filee's document model.
 ## Fonts
 
 Fonts are converted in-process (`Filee.Engines/Fonts`); zlib and Brotli come with .NET. The input format is
-recognised by content, so a mislabelled file still converts.
+recognised by content, so a mislabelled file still converts. FON is the exception: it is chosen by its `.fon`
+extension, and the file must then have an NE header with FNT resources.
 
 - **WOFF 1.0**: every table zlib-compressed (stored as-is when that isn't smaller). Lossless both ways.
 - **WOFF2**: one Brotli stream at the highest quality with the glyf/loca transform and, where it applies, the hmtx
@@ -481,12 +483,28 @@ recognised by content, so a mislabelled file still converts.
   CID fonts) are built; head, hhea, hmtx and, from VORG, vmtx are updated; CFF, VORG and DSIG are dropped; every
   other table (cmap, name, OS/2, GSUB, GPOS, kern, ...) is kept. PostScript hints are not converted: the font gets a
   gasp table (smoothing at every size) and a prep that switches on dropout control instead.
+- **FON → TTF, OTF, WOFF, WOFF2, EOT** (input only): Filee reads the monochrome FNT v2/v3 bitmap resources of an NE
+  executable and turns each lit pixel into a straight, grid-aligned TrueType outline. The result retains the
+  original pixel shape, per-glyph advance, ascent and baseline; there is no smoothing or curve tracing. A FON with a
+  single font resource produces `Name.ttf` (or the corresponding OTF/WOFF/WOFF2/EOT extension). Several resources
+  produce one file per strike, such as `Name-13px.ttf`, `Name-13px-Bold.ttf`, `Name-13px-2.ttf` and
+  `Name-14px.ttf`; the font family names distinguish heights, group different styles at the same height, and number
+  only repeated styles at the same height. Existing output files follow the usual Skip, Rename and Overwrite
+  policies independently for each strike. Invalid resources fail the whole input before output files are allocated.
+  Character mapping uses the Windows single-byte code page indicated by the resource charset, not the computer's
+  locale. Undefined bytes (including those that Windows decodes to Private Use code points in the Greek, Hebrew,
+  Baltic and Thai code pages), non-round-tripping bytes and Unicode control characters retain their glyphs and
+  spacing but receive no text mapping; charset hints cannot recover the meaning of custom glyphs. PE resources, vector or
+  externally stored bitmaps, color FNT, standalone `.fnt` files and double-byte or unrecognized charsets are not
+  supported. FON cannot be an output format.
 - Not supported: CFF2 (variable) outlines to TTF or EOT (to WOFF, WOFF2 and OTF they convert), writing font
   collections, and WOFF/WOFF2 extended metadata (dropped).
 
 `tests/Filee.Engines.Tests/FontTests.cs` checks every conversion with small OFL fonts in
 `tests/Filee.Engines.Tests/Fonts` (see `OFL.txt` there): round trips keep every table byte for byte, a WOFF2 made
 by Google's encoder decodes to the source font, and converted CFF glyphs are compared with the originals in Skia.
+`tests/Filee.Engines.Tests/FonTests.cs` builds synthetic FON samples in code (`FonBuilder`) and compares every
+rendered glyph with its source bitmap.
 
 ## DOCX writer
 
@@ -1052,7 +1070,7 @@ binary 7.4 and 7.5, plain and compressed arrays, ASCII): a cube under a moved pa
 templated material and an embedded or neighbouring texture, Z-up files in metres, rotation orders, concave polygons and
 materials by polygon, and every cut or flipped byte of a file, which must read or fail with a clear message.
 
-## Geospatial data (GeoJSON, KML / KMZ, GPX, Shapefile, CSV)
+## Geospatial data (GeoJSON, KML / KMZ, GPX, Shapefile, CSV, FIT)
 
 `Filee.Engines/Geo` converts geospatial **vector** data between GeoJSON, KML, KMZ, GPX, Shapefile and CSV in managed
 code, with no GDAL and no download. Every reader fills one in-memory model (`GeoModel`: features, each with an optional
@@ -1084,6 +1102,36 @@ What each format keeps:
 | GPX | 1.0 and 1.1; waypoints (Point), routes (LineString), tracks (LineString, or MultiLineString for several segments); `name`, `cmt`, `desc`, `src`, `sym`, `type`, `number`, `time`; `ele` as the height; `gpx_type` says which of the three a feature was | points as waypoints, lines as one track (several lines are its segments) or, with `gpx_type` = route, as routes; polygon outlines as tracks; only the fields on the left survive |
 | Shapefile | Point, MultiPoint, PolyLine, Polygon and their Z types; rings sorted into polygons and holes by direction and containment; `.dbf` text, numbers, true / false, dates; deleted rows skipped; MultiPatch is refused | one Shapefile per kind of geometry present; Z types when any height is present; WGS 84 `.prj`; `.dbf` in UTF-8 with a `.cpg` |
 | CSV | a `wkt` / `geom` / `geometry` / `the_geom` column (WKT or EWKT), or longitude and latitude columns (`lon`, `lng`, `long`, `longitude`, `x`; `lat`, `latitude`, `y`; a decimal comma is fine), and `elevation` / `alt` / `z`; other columns become attributes, typed; rows without a usable location are kept without a geometry | `longitude`, `latitude` (+ `elevation`) when every geometry is a point, else a `wkt` column; then the attributes. A dataset that already has a longitude or latitude attribute gets `wkt` so the file reads back unchanged |
+| FIT | Garmin activity files: the positions of the `record` messages (with their time and height) as one LineString, or a Point when there is only one, with the sport as the feature's type | not written |
+
+**FIT activities.** A Garmin FIT activity (from a watch or bike computer) is read only. Its recorded positions become
+one track (a single point when only one position was recorded); a time or a height is kept on the points that have one
+and never made up for the others. The feature gets the sport as its `type` attribute and the start as its `time`
+attribute: the earliest session start, else the first record time (for a single point, that point's time). Each target
+keeps what it can:
+
+- **GPX**: a track (a waypoint for a single position) with `<time>` and `<ele>` on the points that have them, and the
+  sport as `<type>`. A track has no start time of its own, but its points keep their times: only when no point has a
+  time and the activity has a start does a notice say the start was left out.
+- **KML / KMZ**: a Point for a single position. A track is a `gx:Track` when every point has a time and a height;
+  otherwise a LineString, with the point times in a `coordTimes` `Data` entry when any point has one. `type` and `time`
+  are `ExtendedData`.
+- **GeoJSON**: a Point or a LineString, with the point times in a `coordTimes` property when any point has one, beside
+  `type` and `time`.
+- **Shapefile**: the point times are left out; `type` and `time` are `.dbf` columns. When only some points have a
+  height, the heights are dropped with a notice.
+- **CSV**: one row per record that has a time, a position or a sensor value, nine columns: `time` (UTC, ISO 8601),
+  `longitude` and `latitude` (degrees), `elevation` (m), `heart_rate` (bpm), `cadence` (rpm), `power` (W), `speed`
+  (m/s), `distance` (m). An empty cell means the value wasn't recorded or was marked invalid, or the position was out of
+  range.
+
+Left out: heart rate sent in its own messages outside the records, developer fields, laps and pauses (the track isn't
+split at them), pace, FIT files that aren't activities (courses, settings, monitoring), chained FIT files (several FIT
+files joined into one), and files with a bad CRC, which are refused. A file may be up to 64 MiB and 2,000,000
+records.
+
+**Privacy.** The outputs carry positions, times and health values such as heart rate exactly as the watch recorded them.
+Check what you share.
 
 **Coordinate systems.** Geographic systems (degrees) and the projections most projected data uses, read from a `.prj`
 (ESRI or OGC WKT 1), a GeoJSON `crs` name or an EPSG code: Transverse Mercator (UTM, Gauss-Krüger, state plane, via
@@ -1410,6 +1458,11 @@ or slower; its frames are all kept.
 CRI USM (`.usm`, read only, #485), the video of many games' cutscenes, is read by FFmpeg's `usm` demuxer and goes to
 every video and audio target like the other read-only containers. Encrypted USM files (common in recent games) can't
 be read and fail with FFmpeg's error.
+A self-contained `.m4s` (read only, #354), a fragmented MP4 that starts with `ftyp` + `moov` and then holds
+`styp` / `sidx` / `moof` / `mdat` fragments (GPAC and some downloaders save them), is read by FFmpeg's mp4 demuxer
+and goes to every video and audio target. A DASH media segment, whose top-level boxes reach a `moof` before any
+`moov`, plays only with a separate init segment; Filee refuses it before FFmpeg runs, with its own message
+(`error.m4s_needs_init`), instead of FFmpeg's demuxer error.
 A Video CD's `MPEGAV/AVSEQ01.DAT` (MPEG-1 in a RIFF/CDXA wrapper) counts as MPEG: `.dat` is an extension of that
 format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fails instead of making a file.
 

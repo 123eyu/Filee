@@ -198,6 +198,35 @@ public class MaterialYouThemeTests
 
             var darkSurface = Assert.IsType<SolidColorBrush>(darkDict["SurfaceBrush"]);
             Assert.Equal(Color.Parse("#654321"), darkSurface.Color);
+
+            // Plain buttons follow the theme's surface (#524), not the Soft look's white.
+            Assert.Same(lightSurface, lightDict["ButtonBackground"]);
+            Assert.Same(darkSurface, darkDict["ButtonBackground"]);
+            Assert.Same(lightDict["SurfaceAltBrush"], lightDict["ButtonBackgroundPointerOver"]);
+        }
+        finally
+        {
+            themeService.Apply(new ThemeSettings(), "en");
+        }
+    }
+
+    [AvaloniaFact]
+    public void Plain_buttons_are_the_surface_with_a_border_unlike_a_disabled_box()
+    {
+        TestServices.EnsureInitialized("en");
+        var themeService = AppHost.Get<ThemeService>();
+        try
+        {
+            foreach (var style in new[] { ThemeStyle.Soft, ThemeStyle.MaterialYou })
+            {
+                themeService.Apply(new ThemeSettings { Style = style }, "en");
+                foreach (var variant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+                {
+                    Assert.Equal(ResolveBrush("SurfaceBrush", variant).Color, ResolveBrush("ButtonBackground", variant).Color);
+                    Assert.Equal(ResolveBrush("SurfaceAltBrush", variant).Color, ResolveBrush("ButtonBackgroundPointerOver", variant).Color);
+                    Assert.True(ResolveBrush("ButtonBorderBrush", variant).Color.A > 0);
+                }
+            }
         }
         finally
         {

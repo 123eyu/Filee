@@ -43,6 +43,7 @@
   <a href="README.ru.md">Русский</a> ·
   <a href="README.ar.md">العربية</a> ·
   <b>Português (Brasil)</b> ·
+  <a href="README.pt-PT.md">Português (Portugal)</a> ·
   <a href="README.fr.md">Français</a> ·
   <a href="README.th.md">ไทย</a>
 </p>
@@ -55,7 +56,7 @@
       Os formatos aparecem onde você já está, só os que fazem sentido para os arquivos que você arrasta.
     </td>
     <td width="33%" valign="top">
-      <b>263 formatos, sem outro programa</b><br>
+      <b>266 formatos, sem outro programa</b><br>
       Imagens, PDF, Word, Excel, PowerPoint, HWP, e-books, arquivos compactados, fontes, CAD, modelos 3D e dados geoespaciais funcionam sem Office, Hancom Office ou LibreOffice.
     </td>
     <td width="33%" valign="top">
@@ -127,7 +128,7 @@ Para desfazer, remova essas entradas em Segurança do Windows → Controle de ap
 - **Pastas monitoradas** convertem cada arquivo que chega nelas.
 - **Conversões recentes** no Início, cada uma com uma miniatura: abra o resultado, ou abra com outro aplicativo.
 - **Outras entradas**: o menu do botão direito, um atalho de teclado, a área de soltar e o [comando `filee`](#linha-de-comando).
-- Temas claro e escuro, com sua cor de destaque e a opacidade do menu circular, em English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (da direita para a esquerda), Português (Brasil), Français, नेपाली, ไทย, Türkçe e Português (Portugal).
+- Temas claro e escuro, com sua cor de destaque e a opacidade do menu circular, em English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (da direita para a esquerda), Português (Brasil), Français, नेपाली, ไทย, Türkçe, Português (Portugal) e Deutsch.
 
 ## Capturas de tela
 
@@ -160,10 +161,10 @@ Para desfazer, remova essas entradas em Segurança do Windows → Controle de ap
 | **Legendas**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | entre si, em UTF-8 (arquivos coreanos em CP949 são lidos corretamente) |
 | **Arquivos compactados**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | extrair, ZIP, 7Z, TAR, TAR.GZ;<br>quaisquer arquivos → um ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **Fontes**: TTF, OTF, WOFF, WOFF2, EOT | entre si |
+| **Fontes**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (fontes bitmap do Windows) somente leitura | conversão entre si;<br>FON → um arquivo por tamanho |
 | **Dados**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | entre si, CSV e XLSX (tabelas);<br>vCard, iCalendar ↔ CSV |
 | **Modelos 3D**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>leitura de FBX | entre si, prévia em PNG |
-| **Vetores geoespaciais**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV com coordenadas | entre si e CSV / XLSX / JSON;<br>dados projetados (UTM, Web Mercator, Lambert, Albers) saem como longitude / latitude em WGS 84 |
+| **Vetores geoespaciais**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV com coordenadas;<br>leitura de Garmin FIT | entre si e CSV / XLSX / JSON;<br>dados projetados (UTM, Web Mercator, Lambert, Albers) saem como longitude / latitude em WGS 84 |
 
 Formatos sem marca funcionam na hora, sem Office, Hancom Office ou LibreOffice.
 Os marcados precisam de um motor opcional, baixado só quando necessário: ¹ Ghostscript, ² LibreOffice, ³ Pandoc, ⁴ calibre, ⁵ FFmpeg ([detalhes](docs/ENGINES.md)).

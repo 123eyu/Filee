@@ -47,6 +47,7 @@ public sealed partial class PresetsPageViewModel : ObservableObject, IFitsWindow
         foreach (var preset in store.Presets.Where(p => !p.IsGroup && !p.IsTool))
             Presets.Add(new PresetListItem(preset, loc));
         SelectedPreset = Presets.FirstOrDefault();
+        PlacePresets = [.. BuiltInData.PlacePresets().Select(p => new PresetListItem(p, loc))];
     }
 
     public ObservableCollection<PresetListItem> Presets { get; } = [];
@@ -83,6 +84,18 @@ public sealed partial class PresetsPageViewModel : ObservableObject, IFitsWindow
 
     [RelayCommand]
     private void Add() => AddPreset(new Preset { Name = _loc["toolbar.new_preset"], TargetFormat = "png" });
+
+    /// <summary>The ready-made presets Add offers besides an empty one (<see cref="BuiltInData.PlacePresets"/>).</summary>
+    public IReadOnlyList<PresetListItem> PlacePresets { get; }
+
+    /// <summary>Adds a copy of a ready-made preset under a new id, so it can be added again and changed freely.</summary>
+    [RelayCommand]
+    private void AddPlace(Preset template)
+    {
+        var copy = template.Clone();
+        copy.Id = Preset.NewId();
+        AddPreset(copy);
+    }
 
     [RelayCommand]
     private void Duplicate()

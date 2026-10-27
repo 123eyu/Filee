@@ -43,6 +43,7 @@
   <a href="README.ru.md">Русский</a> ·
   <a href="README.ar.md">العربية</a> ·
   <a href="README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="README.pt-PT.md">Português (Portugal)</a> ·
   <b>Français</b> ·
   <a href="README.th.md">ไทย</a>
 </p>
@@ -55,7 +56,7 @@
       Les formats apparaissent là où vous êtes déjà, et seulement ceux qui ont un sens pour les fichiers que vous faites glisser.
     </td>
     <td width="33%" valign="top">
-      <b>263 formats, sans autre logiciel</b><br>
+      <b>266 formats, sans autre logiciel</b><br>
       Images, PDF, Word, Excel, PowerPoint, HWP, livres numériques, archives, polices, CAO, modèles 3D et données géospatiales fonctionnent sans Office, Hancom Office ni LibreOffice.
     </td>
     <td width="33%" valign="top">
@@ -127,7 +128,7 @@ Pour annuler, supprimez ces entrées dans Sécurité Windows → Contrôle des a
 - **Des dossiers surveillés** convertissent chaque fichier qui y arrive.
 - **Conversions récentes** dans l'Accueil, chacune avec sa miniature : ouvrez le résultat, ou ouvrez-le avec une autre application.
 - **D'autres points d'entrée** : le menu contextuel, un raccourci clavier, la zone de dépôt et la [commande `filee`](#ligne-de-commande).
-- Thèmes clair et sombre avec votre propre couleur d'accentuation et l'opacité du menu circulaire, en English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (de droite à gauche), Português (Brasil), Français, नेपाली, ไทย, Türkçe et Português (Portugal).
+- Thèmes clair et sombre avec votre propre couleur d'accentuation et l'opacité du menu circulaire, en English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (de droite à gauche), Português (Brasil), Français, नेपाली, ไทย, Türkçe, Português (Portugal) et Deutsch.
 
 ## Captures d'écran
 
@@ -160,10 +161,10 @@ Pour annuler, supprimez ces entrées dans Sécurité Windows → Contrôle des a
 | **Sous-titres** : SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | entre eux, en UTF-8 (les fichiers coréens en CP949 sont lus correctement) |
 | **Archives** : ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | extraire, ZIP, 7Z, TAR, TAR.GZ ;<br>n'importe quels fichiers → un seul ZIP |
 | **CAO** : DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **Polices** : TTF, OTF, WOFF, WOFF2, EOT | entre elles |
+| **Polices** : TTF, OTF, WOFF, WOFF2, EOT ;<br>FON (polices bitmap Windows) en lecture | conversion entre elles ;<br>FON → un fichier par taille |
 | **Données** : JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | entre eux, CSV et XLSX (tableaux) ;<br>vCard, iCalendar ↔ CSV |
 | **Modèles 3D** : GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY ;<br>FBX en lecture | entre eux, aperçu PNG |
-| **Données géospatiales vectorielles** : Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV avec coordonnées | entre eux et CSV / XLSX / JSON ;<br>les données projetées (UTM, Web Mercator, Lambert, Albers) sortent en longitude / latitude WGS 84 |
+| **Données géospatiales vectorielles** : Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV avec coordonnées ;<br>Garmin FIT en lecture | entre eux et CSV / XLSX / JSON ;<br>les données projetées (UTM, Web Mercator, Lambert, Albers) sortent en longitude / latitude WGS 84 |
 
 Les formats sans marque fonctionnent d'emblée, sans Office, Hancom Office ni LibreOffice.
 Les formats marqués nécessitent un moteur facultatif, téléchargé seulement en cas de besoin : ¹ Ghostscript, ² LibreOffice, ³ Pandoc, ⁴ calibre, ⁵ FFmpeg ([détails](docs/ENGINES.md)).

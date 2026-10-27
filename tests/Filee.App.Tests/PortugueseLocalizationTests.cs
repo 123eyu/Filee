@@ -61,7 +61,7 @@ public class PortugueseLocalizationTests
     [InlineData("PT-br", "pt-PT", "pt-BR")]
     [InlineData("en", "pt-BR", "en")]
     [InlineData("invalid", "pt-BR", "pt-BR")]
-    [InlineData("auto", "de-DE", "en")]
+    [InlineData("auto", "it-IT", "en")]
     [InlineData("auto", "", "en")]
     [InlineData("auto", "ptx", "en")]
     [InlineData("auto", "ja-JP", "ja")]

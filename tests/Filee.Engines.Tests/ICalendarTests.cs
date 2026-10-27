@@ -79,6 +79,26 @@ public class ICalendarTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task Duration_crossing_daylight_saving_time_keeps_calendar_days_and_elapsed_hours()
+    {
+        var customZone = string.Join("\r\n", "BEGIN:VTIMEZONE", "TZID:Custom/Spring", "BEGIN:DAYLIGHT",
+            "DTSTART:20260308T020000", "TZOFFSETFROM:-0500", "TZOFFSETTO:-0400", "END:DAYLIGHT", "END:VTIMEZONE");
+        var rows = await ReadCalendar(Calendar(customZone,
+            Event("spring-clock", "DTSTART;TZID=America/New_York:20260308T013000", "DURATION:PT2H"),
+            Event("spring-day", "DTSTART;TZID=America/New_York:20260308T013000", "DURATION:P1D"),
+            Event("spring-24h", "DTSTART;TZID=America/New_York:20260308T013000", "DURATION:PT24H"),
+            Event("spring-mixed", "DTSTART;TZID=America/New_York:20260307T013000", "DURATION:P1DT2H"),
+            Event("fall-clock", "DTSTART;TZID=America/New_York:20261101T003000", "DURATION:PT2H"),
+            Event("custom", "DTSTART;TZID=Custom/Spring:20260308T013000", "DURATION:PT2H")));
+        Assert.Equal("2026-03-08T04:30:00-04:00", Cell(rows, 1, "End"));
+        Assert.Equal("2026-03-09T01:30:00-04:00", Cell(rows, 2, "End"));
+        Assert.Equal("2026-03-09T02:30:00-04:00", Cell(rows, 3, "End"));
+        Assert.Equal("2026-03-08T04:30:00-04:00", Cell(rows, 4, "End"));
+        Assert.Equal("2026-11-01T01:30:00-05:00", Cell(rows, 5, "End"));
+        Assert.Equal("2026-03-08T04:30:00-04:00", Cell(rows, 6, "End"));
+    }
+
+    [Fact]
     public async Task Outlook_windows_zone_custom_zone_unknown_rules_and_recurrence_instance()
     {
         var fixedZone = string.Join("\r\n", "BEGIN:VTIMEZONE", "TZID:Customized Time Zone", "BEGIN:STANDARD",

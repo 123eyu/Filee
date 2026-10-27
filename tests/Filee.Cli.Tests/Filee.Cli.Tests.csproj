@@ -18,4 +18,8 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Filee.Engines.Tests\FonBuilder.cs" Link="FonBuilder.cs" />
+  </ItemGroup>
 </Project>

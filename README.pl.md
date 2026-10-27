@@ -43,6 +43,7 @@
   <a href="README.ru.md">Русский</a> ·
   <a href="README.ar.md">العربية</a> ·
   <a href="README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="README.pt-PT.md">Português (Portugal)</a> ·
   <a href="README.fr.md">Français</a> ·
   <a href="README.th.md">ไทย</a>
 </p>
@@ -55,7 +56,7 @@
       Formaty pojawiają się tam, gdzie już jesteś, i tylko te, które pasują do przeciąganych plików.
     </td>
     <td width="33%" valign="top">
-      <b>263 formatów bez dodatkowych programów</b><br>
+      <b>266 formatów bez dodatkowych programów</b><br>
       Obrazy, PDF, Word, Excel, PowerPoint, HWP, e-booki, archiwa, czcionki, CAD, modele 3D i dane geoprzestrzenne działają bez pakietu Office, Hancom Office i LibreOffice.
     </td>
     <td width="33%" valign="top">
@@ -127,7 +128,7 @@ Aby to cofnąć, usuń te wpisy w Zabezpieczenia Windows → Kontrola aplikacji 
 - **Obserwowane foldery** konwertują każdy plik, który do nich trafi.
 - **Ostatnie konwersje** na ekranie Start, każda z miniaturą: otwórz wynik albo otwórz go za pomocą innej aplikacji.
 - **Inne sposoby**: menu kontekstowe, skrót klawiszowy, strefa upuszczania i [polecenie `filee`](#wiersz-poleceń).
-- Jasny i ciemny motyw z własnym kolorem akcentu i kryciem pierścienia, w językach English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (od prawej do lewej), Português (Brasil), Français, नेपाली, ไทย, Türkçe i Português (Portugal).
+- Jasny i ciemny motyw z własnym kolorem akcentu i kryciem pierścienia, w językach English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (od prawej do lewej), Português (Brasil), Français, नेपाली, ไทย, Türkçe, Português (Portugal) i Deutsch.
 
 ## Zrzuty ekranu
 
@@ -160,10 +161,10 @@ Aby to cofnąć, usuń te wpisy w Zabezpieczenia Windows → Kontrola aplikacji 
 | **Napisy**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | między sobą, w UTF-8 (koreańskie pliki CP949 są odczytywane poprawnie) |
 | **Archiwa**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | rozpakowanie, ZIP, 7Z, TAR, TAR.GZ;<br>dowolne pliki → jeden ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **Czcionki**: TTF, OTF, WOFF, WOFF2, EOT | między sobą |
+| **Czcionki**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (bitmapowe czcionki Windows) tylko odczyt | konwersja między sobą;<br>FON → plik na rozmiar |
 | **Dane**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | między sobą, CSV i XLSX (tabele);<br>vCard, iCalendar ↔ CSV |
 | **Modele 3D**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>FBX tylko odczyt | między sobą, podgląd PNG |
-| **Dane geoprzestrzenne (wektorowe)**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV ze współrzędnymi | między sobą oraz CSV / XLSX / JSON;<br>dane w odwzorowaniach (UTM, Web Mercator, Lambert, Albers) wychodzą jako długość / szerokość geograficzna WGS 84 |
+| **Dane geoprzestrzenne (wektorowe)**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV ze współrzędnymi;<br>Garmin FIT tylko odczyt | między sobą oraz CSV / XLSX / JSON;<br>dane w odwzorowaniach (UTM, Web Mercator, Lambert, Albers) wychodzą jako długość / szerokość geograficzna WGS 84 |
 
 Formaty bez oznaczenia działają od razu, bez pakietu Office, Hancom Office i LibreOffice.
 Oznaczone wymagają opcjonalnego silnika, pobieranego tylko wtedy, gdy jest potrzebny: ¹ Ghostscript, ² LibreOffice, ³ Pandoc, ⁴ calibre, ⁵ FFmpeg ([szczegóły](docs/ENGINES.md)).

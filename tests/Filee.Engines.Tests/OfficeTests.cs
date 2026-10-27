@@ -145,6 +145,75 @@ public class OfficeTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void Csv_rows_that_fail_part_way_or_meet_a_read_only_file_leave_it_as_it_was()
+    {
+        var dir = fx.NewFolder();
+        var csv = Path.Combine(dir, "rows.csv");
+        File.WriteAllText(csv, "kept");
+
+        Assert.Throws<IOException>(() => CsvFormat.WriteRows(FailingRows(), csv));
+        Assert.Equal("kept", File.ReadAllText(csv));
+        Assert.Equal([csv], Directory.GetFiles(dir));
+
+        File.SetAttributes(csv, FileAttributes.ReadOnly);
+        try
+        {
+            Assert.Throws<UnauthorizedAccessException>(() => CsvFormat.WriteRows([["a"]], csv));
+            Assert.Equal("kept", File.ReadAllText(csv));
+            Assert.Equal([csv], Directory.GetFiles(dir));
+        }
+        finally
+        {
+            File.SetAttributes(csv, FileAttributes.Normal);
+        }
+
+        CsvFormat.WriteRows([["a", "b,c"]], csv);
+        Assert.Equal([0xEF, 0xBB, 0xBF, .. Encoding.UTF8.GetBytes("a,\"b,c\"\r\n")], File.ReadAllBytes(csv));
+        Assert.Equal([csv], Directory.GetFiles(dir));
+
+        static IEnumerable<IEnumerable<string>> FailingRows()
+        {
+            yield return ["a", "b"];
+            throw new IOException("the second row failed");
+        }
+    }
+
+    [Fact]
+    public void Csv_rows_that_fail_keep_their_error_when_the_partial_file_cannot_be_deleted()
+    {
+        var dir = fx.NewFolder();
+        var csv = Path.Combine(dir, "rows.csv");
+        File.WriteAllText(csv, "kept");
+        FileStream? held = null;
+        try
+        {
+            var error = Assert.Throws<IOException>(() => CsvFormat.WriteRows(Rows(), csv));
+            Assert.Equal("the second row failed", error.Message);
+            Assert.Equal("kept", File.ReadAllText(csv));
+        }
+        finally
+        {
+            held?.Dispose();
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            foreach (var partial in Directory.GetFiles(dir, "*.filee-tmp"))
+                File.Delete(partial);
+        }
+
+        IEnumerable<IEnumerable<string>> Rows()
+        {
+            yield return ["a"];
+            // From here deleting the partial file fails: on Windows while a handle without delete sharing is open,
+            // on Unix in a folder that can't be written.
+            if (OperatingSystem.IsWindows())
+                held = new FileStream(Assert.Single(Directory.GetFiles(dir, "*.filee-tmp")), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            else
+                File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            throw new IOException("the second row failed");
+        }
+    }
+
+    [Fact]
     public async Task Xlsx_to_hwpx_makes_a_table_per_sheet()
     {
         var hwpx = Assert.Single(await ConvertAsync(SalesWorkbook(fx.NewFolder()), "hwpx"));

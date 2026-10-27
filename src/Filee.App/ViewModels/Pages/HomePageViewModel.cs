@@ -18,17 +18,22 @@ namespace Filee.App.ViewModels.Pages;
 public sealed partial class HistoryItemViewModel : ObservableObject
 {
     private readonly HistoryEntry _entry;
+    private readonly ILocalizer _loc;
     private readonly IPlatformServices _platform;
     private readonly ConversionService? _conversions;
+    private readonly UserDataStore? _store;
 
     /// <summary>The first output still on disk (the one the buttons open), or null.</summary>
     private readonly string? _output;
 
-    public HistoryItemViewModel(HistoryEntry entry, ILocalizer loc, IPlatformServices platform, ConversionService? conversions = null)
+    public HistoryItemViewModel(HistoryEntry entry, ILocalizer loc, IPlatformServices platform, ConversionService? conversions = null,
+        UserDataStore? store = null)
     {
         _entry = entry;
+        _loc = loc;
         _platform = platform;
         _conversions = conversions;
+        _store = store;
         Title = entry.PresetName;
         Subtitle = entry.Sources.Count == 1 ? Path.GetFileName(entry.Sources[0]) : loc.Format("home.files", entry.Sources.Count);
         Time = entry.FinishedAt.Date == DateTime.Today ? entry.FinishedAt.ToString("t") : entry.FinishedAt.ToString("d");
@@ -52,7 +57,16 @@ public sealed partial class HistoryItemViewModel : ObservableObject
         ThumbnailSource = picture is not null && HistoryThumbnails.CanShow(picture) ? picture : null;
         // Only entries that remember their preset (Filee 1.8 and later) and still have a failed file to convert.
         CanRetry = conversions is not null && entry.Preset is not null && entry.Failures.Any(f => ConversionService.Exists(f.Source));
+        CanUndo = store is not null && UndoLeft();
+        UndoneText = entry.Undone ? loc[entry.OriginalsInTrash ? "home.undone_original" : "home.undone"] : "";
     }
+
+    /// <summary>
+    /// Undo (#553) is offered while the results not moved yet are all as the job left them, so a file changed since is
+    /// never moved; after an Undo that stopped half-way, for the ones it didn't get to.
+    /// </summary>
+    private bool UndoLeft() =>
+        !_entry.Undone && _entry.Undoable.Where(o => !o.Trashed).ToList() is { Count: > 0 } left && left.All(o => o.Unchanged());
 
     public string Title { get; }
     public string Subtitle { get; }
@@ -99,6 +113,62 @@ public sealed partial class HistoryItemViewModel : ObservableObject
     {
         if (_conversions is not null && _entry.Preset is not null)
             _conversions.Retry(_entry.Failures.Select(f => f.Source), _entry.Preset, _entry.WatchRuleId);
+    }
+
+    [ObservableProperty] private bool _canUndo;
+
+    /// <summary>"Undone: the results are in the Recycle Bin / Trash", or empty.</summary>
+    public string UndoneText { get; }
+
+    public bool IsUndone => UndoneText.Length > 0;
+
+    /// <summary>Why a result couldn't be moved to the Recycle Bin / Trash, or empty.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasUndoError))] private string _undoError = "";
+
+    public bool HasUndoError => UndoError.Length > 0;
+
+    /// <summary>
+    /// Moves the job's results to the Recycle Bin / Trash, off the UI thread (Windows' Recycle Bin takes a moment per
+    /// file); the button is disabled meanwhile. Every result is checked first, so a changed one stops it with nothing
+    /// moved. Each result moved is saved as such, so an Undo the Trash stops half-way can be tried again for the rest.
+    /// "Replace the original" sent the originals there already: they stay, and the card says so.
+    /// </summary>
+    [RelayCommand]
+    private async Task UndoAsync()
+    {
+        if (!CanUndo || _store is null)
+            return;
+        UndoError = "";
+        var left = _entry.Undoable.Where(o => !o.Trashed).ToList();
+        if (left.FirstOrDefault(o => !o.Unchanged()) is { } changed)
+        {
+            Refused(changed, new TrashRefusal("trash.changed"));
+            return;
+        }
+        var refused = await Task.Run(() =>
+        {
+            foreach (var output in left)
+            {
+                if (_platform.MoveToTrash(output.Path) is { } refusal)
+                    return (output, refusal);
+                output.Trashed = true;
+            }
+            return default((HistoryOutput, TrashRefusal)?);
+        });
+        if (refused is { } stop)
+        {
+            _store.SaveHistory(notify: false); // the moved ones stay moved; this card says why it stopped
+            Refused(stop.Item1, stop.Item2);
+            return;
+        }
+        _entry.Undone = true;
+        _store.SaveHistory();
+    }
+
+    private void Refused(HistoryOutput output, TrashRefusal refusal)
+    {
+        UndoError = _loc.Format("home.undo_failed", Path.GetFileName(output.Path), _loc[refusal.ReasonKey]);
+        CanUndo = UndoLeft();
     }
 
     [RelayCommand]
@@ -223,7 +293,7 @@ public sealed partial class HomePageViewModel : ObservableObject, IDisposable
             .ToList();
         History.Clear();
         foreach (var entry in entries)
-            History.Add(new HistoryItemViewModel(entry, _loc, _platform, _conversions));
+            History.Add(new HistoryItemViewModel(entry, _loc, _platform, _conversions, _store));
         IsEmpty = _store.History.Count == 0;
         NoMatches = !IsEmpty && History.Count == 0;
         LoadThumbnails();

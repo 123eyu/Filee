@@ -10,11 +10,14 @@ on:
 permissions:
   contents: read
 
-# A newer push to a pull request cancels the run it replaces. Every push to main runs to the end (its own group), so
-# a docs-only merge can't cancel the run that checks the code merged before it, macOS included.
+# A newer push cancels the run it replaces, on pull requests and on main. Main cancels too because macOS runners are
+# few and queue: when several PRs are merged in a row, the older main runs would keep them busy for hours. Only the
+# last commit on main runs to the end, and since it contains all the commits before it, nothing goes untested. A
+# docs-only push can't hide a code push it cancelled: the changes job compares a push to main with the last main run
+# whose build passed, so the cancelled code is still in the file list and gets built.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Decides what the change needs. The workflow always runs, so the required build check always reports: a job
@@ -29,6 +32,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
     outputs:
       code: ${{ steps.files.outputs.code }}
       macos: ${{ steps.files.outputs.macos }}
@@ -40,19 +44,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
-          BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
         run: |
           everything() { echo "code=true" >> "$GITHUB_OUTPUT"; echo "macos=true" >> "$GITHUB_OUTPUT"; echo "$1"; exit 0; }
 
           if [ -n "$PR" ]; then
             files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename') || everything "File list unreadable"
-          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
-            # The compare API lists at most 300 files.
-            files=$(gh api "repos/$REPO/compare/$BEFORE...$AFTER" \
-              --jq 'if (.files | length) >= 300 then "(too many)" else .files[].filename end') || everything "File list unreadable"
           else
-            everything "No earlier commit to compare with"
+            # A push to main can cancel the run of an earlier push. So compare with the last main run whose build
+            # passed, not only with the previous commit: a docs-only push then still builds the code that was cancelled.
+            base=""
+            runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?branch=main&event=push&status=completed&per_page=30" \
+              --jq '.workflow_runs[] | select(.conclusion == "success") | "\(.id) \(.head_sha)"') || everything "Run list unreadable"
+            while read -r id sha; do
+              [ -z "$id" ] && continue
+              built=$(gh api "repos/$REPO/actions/runs/$id/jobs" \
+                --jq '[.jobs[] | select(.name == "build" and .conclusion == "success")] | length') || built=0
+              if [ "$built" != 0 ]; then base=$sha; break; fi
+            done <<< "$runs"
+            if [ -z "$base" ]; then everything "No earlier main run that built"; fi
+            # The compare API lists at most 300 files.
+            files=$(gh api "repos/$REPO/compare/$base...$AFTER" \
+              --jq 'if (.files | length) >= 300 then "(too many)" else .files[].filename end') || everything "File list unreadable"
           fi
           if [ "$files" = "(too many)" ]; then everything "Too many files to list"; fi
 
@@ -68,7 +81,7 @@ jobs:
           while IFS= read -r f; do
             [ -z "$f" ] && continue
             case "$f" in
-              *.md|docs/*|LICENSE|.mailmap|.github/CODEOWNERS|.github/ISSUE_TEMPLATE/*|.github/labeler.yml|.github/FUNDING.yml)
+              *.md|docs/*|LICENSE|.mailmap|.github/CODEOWNERS|.github/ISSUE_TEMPLATE/*|.github/labeler.yml|.github/FUNDING.yml|.github/release.yml|.github/PULL_REQUEST_TEMPLATE*|.github/workflows/label-issue.yml|.github/workflows/label-pr.yml)
                 continue ;;
             esac
             if [ "$code" = false ]; then echo "Needs the build: $f"; fi

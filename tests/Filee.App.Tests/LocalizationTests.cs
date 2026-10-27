@@ -52,6 +52,22 @@ public partial class LocalizationTests
     }
 
 
+    [Fact]
+    public void The_flip_hint_leaves_its_arrow_to_the_donut()
+    {
+        // The hub draws the arrow itself (#554): as a character, fonts without "↻" (Linux's bundled Noto Sans) showed
+        // a box. The key stays first, so every language still reads "Tab back".
+        foreach (var code in LocalizationService.Languages.Select(l => l.Code))
+        {
+            var strings = Load(code);
+            foreach (var key in new[] { "donut.flip_to_back", "donut.flip_to_front" })
+            {
+                Assert.DoesNotContain("↻", strings[key]);
+                Assert.StartsWith("{0} ", strings[key]);
+            }
+        }
+    }
+
     [Theory]
     [MemberData(nameof(Languages))]
     public void Every_language_has_exactly_the_english_keys(string code)
@@ -151,13 +167,19 @@ public partial class LocalizationTests
     [InlineData("new-NP", "en")]
     [InlineData("th-TH", "th")]
     [InlineData("thl-NP", "en")]
-    [InlineData("de-DE", "en")]
+    [InlineData("de-DE", "de")]
+    [InlineData("de-AT", "de")]
+    [InlineData("de-CH", "de")]
+    [InlineData("de", "de")]
+    [InlineData("den-CA", "en")]
+    [InlineData("it-IT", "en")]
     [InlineData("", "en")] // Linux without LANG: the invariant culture
     public void Auto_follows_the_language_the_user_reads_the_os_in(string os, string expected) =>
         Assert.Equal(expected, LocalizationService.Resolve("auto", () => os));
 
     [Theory]
     [InlineData("ko")]
+    [InlineData("de")]
     [InlineData("ar")]
     [InlineData("ne")]
     [InlineData("en")]
@@ -204,6 +226,13 @@ public partial class LocalizationTests
     {
         Assert.Contains(("ja", "日本語"), LocalizationService.Languages);
         Assert.Equal("ja", LocalizationService.Resolve("JA"));
+    }
+
+    [Fact]
+    public void German_is_offered_under_its_own_name()
+    {
+        Assert.Contains(("de", "Deutsch"), LocalizationService.Languages);
+        Assert.Equal("de", LocalizationService.Resolve("DE"));
     }
 
     [Fact]

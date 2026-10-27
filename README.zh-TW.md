@@ -43,6 +43,7 @@
   <a href="README.ru.md">Русский</a> ·
   <a href="README.ar.md">العربية</a> ·
   <a href="README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="README.pt-PT.md">Português (Portugal)</a> ·
   <a href="README.fr.md">Français</a> ·
   <a href="README.th.md">ไทย</a>
 </p>
@@ -55,7 +56,7 @@
       只顯示適合當前拖曳檔案的格式，就在你所在的位置。
     </td>
     <td width="33%" valign="top">
-      <b>263 種格式，無需其他軟體</b><br>
+      <b>266 種格式，無需其他軟體</b><br>
       圖片、PDF、Word、Excel、PowerPoint、HWP、電子書、壓縮檔、字型、CAD、3D 模型和地理資訊資料，無需 Office、韓文文書軟體或 LibreOffice。
     </td>
     <td width="33%" valign="top">
@@ -127,7 +128,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 - **監視資料夾**，放入的檔案自動轉換。
 - **最近的轉換**顯示在首頁上，每項都有縮圖，可以直接「開啟檔案」，也可以用「開啟方式」換個應用程式開啟。
 - **其他方式** 右鍵選單、鍵盤快速鍵、拖放區域和 [`filee` 命令](#命令列)。
-- 淺色和深色主題，可自選強調色和環形工具列不透明度，支援 English、Español、日本語、한국어、简体中文、繁體中文、Polski、हिन्दी、Русский、العربية（從右到左）、Português (Brasil)、Français、नेपाली、ไทย、Türkçe、Português (Portugal)。
+- 淺色和深色主題，可自選強調色和環形工具列不透明度，支援 English、Español、日本語、한국어、简体中文、繁體中文、Polski、हिन्दी、Русский、العربية（從右到左）、Português (Brasil)、Français、नेपाली、ไทย、Türkçe、Português (Portugal)、Deutsch。
 
 ## 截圖
 
@@ -160,10 +161,10 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **字幕** SRT、ASS/SSA、WebVTT、SAMI（SMI）、LRC、TTML、MicroDVD、SCC | 互相轉換，儲存為 UTF-8（也能讀取 CP949 韓文字幕） |
 | **壓縮檔** ZIP、ANSYS Workbench（WBPZ）、7Z、RAR、TAR、TAR.GZ、TAR.BZ2、TAR.XZ、GZ、ISO、CAB、DMG、ALZ、EGG 等 | 解壓縮、ZIP、7Z、TAR、TAR.GZ，<br>多個檔案 → 一個 ZIP |
 | **CAD** DWG、DXF | PDF、SVG、PNG、DWG ↔ DXF |
-| **字型** TTF、OTF、WOFF、WOFF2、EOT | 互相轉換 |
+| **字型**：TTF、OTF、WOFF、WOFF2、EOT；<br>FON（Windows 點陣字型）僅讀取 | 相互轉換；<br>FON → 每個尺寸一個檔案 |
 | **資料** JSON、JSON Lines、YAML、TOML、XML<br>vCard、iCalendar | 互相轉換、CSV 和 XLSX（表格資料）、<br>vCard、iCalendar ↔ CSV |
 | **3D 模型** GLB、glTF、STL、OBJ（+ MTL）、3MF、PLY，<br>FBX 僅讀取 | 互相轉換、PNG 預覽 |
-| **地理資訊（向量）** Shapefile、GeoJSON、KML、KMZ、GPX<br>帶座標的 CSV | 互相轉換、CSV / XLSX / JSON，<br>投影座標系統（UTM、Web 麥卡托、蘭伯特、阿爾伯斯）會轉換為 WGS 84 經緯度 |
+| **地理資訊（向量）** Shapefile、GeoJSON、KML、KMZ、GPX<br>帶座標的 CSV，<br>Garmin FIT 僅讀取 | 互相轉換、CSV / XLSX / JSON，<br>投影座標系統（UTM、Web 麥卡托、蘭伯特、阿爾伯斯）會轉換為 WGS 84 經緯度 |
 
 未標註的格式裝好即用，無需 Office、韓文文書軟體或 LibreOffice。
 標註的格式需要可選引擎，只在需要時下載，分別是 ¹ Ghostscript、² LibreOffice、³ Pandoc、⁴ calibre、⁵ FFmpeg（[詳情](docs/ENGINES.md)）。

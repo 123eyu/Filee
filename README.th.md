@@ -43,6 +43,7 @@
   <a href="README.ru.md">Русский</a> ·
   <a href="README.ar.md">العربية</a> ·
   <a href="README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="README.pt-PT.md">Português (Portugal)</a> ·
   <a href="README.fr.md">Français</a> ·
   <b>ไทย</b>
 </p>
@@ -55,7 +56,7 @@
       ฟอร์แมตที่เหมาะสมจะแสดงขึ้นตรงจุดที่คุณทำงานอยู่ โดยแสดงเฉพาะฟอร์แมตที่ใช้ได้กับไฟล์ที่คุณลากเท่านั้น
     </td>
     <td width="33%" valign="top">
-      <b>263 ฟอร์แมต โดยไม่ต้องลงโปรแกรมอื่นเพิ่ม</b><br>
+      <b>266 ฟอร์แมต โดยไม่ต้องลงโปรแกรมอื่นเพิ่ม</b><br>
       รูปภาพ, PDF, Word, Excel, PowerPoint, HWP, อีบุ๊ก, ไฟล์บีบอัด, ฟอนต์, CAD, โมเดล 3D และข้อมูลเชิงพื้นที่ ทำงานได้โดยไม่ต้องมี Microsoft Office, Hancom Office หรือ LibreOffice
     </td>
     <td width="33%" valign="top">
@@ -127,7 +128,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 - **ประวัติการแปลงล่าสุด**: แสดงในหน้าแรกพร้อมรูปตัวอย่าง เปิดดูผลลัพธ์หรือเปิดด้วยแอปอื่นได้ทันที
 - **ช่องทางอื่นในการแปลง**: เมนูคลิกขวา, ปุ่มลัดแป้นพิมพ์, พื้นที่วางไฟล์ในหน้าแรก และคำสั่ง [`filee`](#การใช้งานผ่านบรรทัดคำสั่ง-command-line)
 - รองรับธีมสว่างและมืด ปรับสีเน้น (accent colour) และความโปร่งใสของโดนัทได้ตามใจ
-  รองรับภาษา English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (จากขวาไปซ้าย), Português (Brasil), Français, नेपाली, ไทย, Türkçe และ Português (Portugal)
+  รองรับภาษา English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (จากขวาไปซ้าย), Português (Brasil), Français, नेपाली, ไทย, Türkçe, Português (Portugal) และ Deutsch
 
 ## ภาพหน้าจอ
 
@@ -160,10 +161,10 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **คำบรรยาย**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | แปลงสลับกันเป็น UTF-8 (อ่านไฟล์ SMI/SRT เกาหลีรหัส CP949 ได้ถูกต้อง) |
 | **ไฟล์บีบอัด**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | แตกไฟล์, บีบอัดเป็น ZIP, 7Z, TAR, TAR.GZ;<br>รวมทุกไฟล์เป็นหนึ่ง ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **ฟอนต์**: TTF, OTF, WOFF, WOFF2, EOT | แปลงสลับกันได้ |
+| **ฟอนต์**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (ฟอนต์บิตแมปของ Windows) อ่านอย่างเดียว | แปลงระหว่างกัน;<br>FON → หนึ่งไฟล์ต่อขนาด |
 | **ข้อมูล**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | แปลงสลับกันได้, CSV และ XLSX (ตาราง);<br>vCard, iCalendar ↔ CSV |
 | **โมเดล 3D**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>อ่าน FBX | แปลงสลับกันได้, แสดงภาพตัวอย่าง PNG |
-| **ข้อมูลเวกเตอร์เชิงพื้นที่**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV พร้อมพิกัด | แปลงสลับกันได้ และเป็น CSV / XLSX / JSON<br>โดยพิกัดโปรเจกชัน (UTM, Web Mercator, Lambert, Albers) จะถูกแปลงเป็น WGS 84 ลองจิจูด/ละติจูด |
+| **ข้อมูลเวกเตอร์เชิงพื้นที่**: Shapefile, GeoJSON, KML, KMZ, GPX<br>CSV พร้อมพิกัด;<br>อ่าน Garmin FIT | แปลงสลับกันได้ และเป็น CSV / XLSX / JSON<br>โดยพิกัดโปรเจกชัน (UTM, Web Mercator, Lambert, Albers) จะถูกแปลงเป็น WGS 84 ลองจิจูด/ละติจูด |
 
 ฟอร์แมตที่ไม่มีเครื่องหมายสามารถใช้งานได้ทันทีโดยไม่ต้องติดตั้งซอฟต์แวร์เสริม<br>
 ฟอร์แมตที่มีเครื่องหมายกำกับต้องการเครื่องมือเสริม ซึ่งจะดาวน์โหลดเมื่อจำเป็นเท่านั้น: ¹ Ghostscript, ² LibreOffice, ³ Pandoc, ⁴ calibre, ⁵ FFmpeg (ดู [รายละเอียด](docs/ENGINES.md))

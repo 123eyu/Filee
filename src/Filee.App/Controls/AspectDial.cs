@@ -1,5 +1,5 @@
-// The crop overlay's aspect dial: a small donut whose slices are the ratios (free, the picture's own, 1:1, 4:3, 3:2,
-// 16:9), each with a tiny outline of its shape, and a hub that swaps portrait and landscape. The slices are real
+// The crop overlay's aspect dial: a small donut whose slices are the ratios (free, the picture's own, 1:1, 5:4, 4:3,
+// 3:2, 16:9), each with a tiny outline of its shape, and a hub that swaps portrait and landscape. The slices are real
 // buttons (focus, keyboard, screen readers) that only answer inside their wedge. AspectGlyph is the dial in miniature
 // on the toolbar button that opens it.
 
@@ -17,7 +17,7 @@ namespace Filee.App.Controls;
 public sealed class AspectDial : Panel
 {
     public static readonly StyledProperty<double> OuterRadiusProperty =
-        AvaloniaProperty.Register<AspectDial, double>(nameof(OuterRadius), 118);
+        AvaloniaProperty.Register<AspectDial, double>(nameof(OuterRadius), 132); // room for eight slices' names (#542)
 
     public static readonly StyledProperty<double> InnerRadiusProperty =
         AvaloniaProperty.Register<AspectDial, double>(nameof(InnerRadius), 52);
@@ -36,12 +36,17 @@ public sealed class AspectDial : Panel
     public static readonly StyledProperty<double> OriginalRatioProperty =
         AvaloniaProperty.Register<AspectDial, double>(nameof(OriginalRatio));
 
+    /// <summary>Width / height typed for the custom slice (#542): its outline.</summary>
+    public static readonly StyledProperty<double> CustomRatioProperty =
+        AvaloniaProperty.Register<AspectDial, double>(nameof(CustomRatio));
+
     public double OuterRadius { get => GetValue(OuterRadiusProperty); set => SetValue(OuterRadiusProperty, value); }
     public double InnerRadius { get => GetValue(InnerRadiusProperty); set => SetValue(InnerRadiusProperty, value); }
     public CornerRadius CornerRadius { get => GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }
     public string? SelectedMode { get => GetValue(SelectedModeProperty); set => SetValue(SelectedModeProperty, value); }
     public bool IsPortrait { get => GetValue(IsPortraitProperty); set => SetValue(IsPortraitProperty, value); }
     public double OriginalRatio { get => GetValue(OriginalRatioProperty); set => SetValue(OriginalRatioProperty, value); }
+    public double CustomRatio { get => GetValue(CustomRatioProperty); set => SetValue(CustomRatioProperty, value); }
 
     /// <summary>Gap between slices, as on the donut.</summary>
     public const double Gap = 4;
@@ -49,7 +54,7 @@ public sealed class AspectDial : Panel
     static AspectDial()
     {
         AffectsArrange<AspectDial>(OuterRadiusProperty, InnerRadiusProperty, CornerRadiusProperty, SelectedModeProperty,
-            IsPortraitProperty, OriginalRatioProperty);
+            IsPortraitProperty, OriginalRatioProperty, CustomRatioProperty);
         AffectsMeasure<AspectDial>(OuterRadiusProperty);
     }
 
@@ -93,7 +98,7 @@ public sealed class AspectDial : Panel
         {
             var segment = segments[i];
             segment.Place(center, i, segments.Count, InnerRadius, OuterRadius, Math.Clamp(CornerRadius.TopLeft, 0, 28) * 0.5);
-            segment.Show(SelectedMode == segment.Mode, IsPortrait, OriginalRatio);
+            segment.Show(SelectedMode == segment.Mode, IsPortrait, OriginalRatio, CustomRatio);
             segment.Arrange(new Rect(finalSize));
         }
 
@@ -141,6 +146,7 @@ public sealed class RingSegment : Button, ICustomHitTest
     private Geometry? _wedge;
     private bool _portrait;
     private double _originalRatio;
+    private double _customRatio;
 
     /// <summary>Whether this slice's ratio is the one in use.</summary>
     public bool IsSelected { get; private set; }
@@ -170,12 +176,13 @@ public sealed class RingSegment : Button, ICustomHitTest
         InvalidateVisual();
     }
 
-    internal void Show(bool selected, bool portrait, double originalRatio)
+    internal void Show(bool selected, bool portrait, double originalRatio, double customRatio = 0)
     {
         var label = Label;
         IsSelected = selected;
         _portrait = portrait;
         _originalRatio = originalRatio;
+        _customRatio = customRatio;
         PseudoClasses.Set(":selected", selected);
         if (label != Label || AutomationProperties.GetName(this) is null or "")
             AutomationProperties.SetName(this, Label);
@@ -220,8 +227,7 @@ public sealed class RingSegment : Button, ICustomHitTest
         DrawShape(context, ink, new Point(labelCenter.X, labelCenter.Y - 9));
 
         var typeface = new Typeface(GetValue(TextElement.FontFamilyProperty), FontStyle.Normal, FontWeight.SemiBold);
-        // As wide as the slice is a little outside its middle; a long word gets a smaller size before it would break.
-        var width = 2 * ((_inner + _outer) / 2 + 6) * Math.Sin(Math.Min(Math.PI / 2, DonutGeometry.Span(_count) / 2)) - 12;
+        var width = LabelWidth(_inner, _outer, _count);
         var direction = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         FormattedText Text(double size) => new(Label, CultureInfo.CurrentUICulture, direction, typeface, size, ink)
         {
@@ -233,16 +239,26 @@ public sealed class RingSegment : Button, ICustomHitTest
         var text = Text(12);
         var longest = Label.Split(' ').Max(word => new FormattedText(word, CultureInfo.CurrentUICulture, direction, typeface, 12, ink).Width);
         if (longest > width)
-            text = Text(Math.Max(9.5, 12 * width / longest));
+            text = Text(Math.Max(MinLabelSize, 12 * width / longest));
         context.DrawText(text, new Point(labelCenter.X - width / 2, labelCenter.Y + 2));
     }
+
+    /// <summary>
+    /// The smallest size a long one-word label shrinks to before it breaks. The dial draws in the embedded Noto Sans, where
+    /// Ru's "Произвольные" needs about 8.7 on seven slices; with eight, the dial is wider (OuterRadius) so it still fits.
+    /// </summary>
+    internal const double MinLabelSize = 8;
+
+    /// <summary>As wide as the slice is a little outside its middle; a long word gets a smaller size before it would break.</summary>
+    internal static double LabelWidth(double inner, double outer, int count) =>
+        2 * ((inner + outer) / 2 + 6) * Math.Sin(Math.Min(Math.PI / 2, DonutGeometry.Span(count) / 2)) - 12;
 
     /// <summary>A small outline of the ratio over its name; free is a dashed square.</summary>
     private void DrawShape(DrawingContext context, IBrush? ink, Point center)
     {
         if (ink is null)
             return;
-        var ratio = Mode == "original" ? _originalRatio : CropMath.Ratio(Mode, _portrait, 0, 0);
+        var ratio = Mode == "original" ? _originalRatio : CropMath.Ratio(Mode, _portrait, 0, 0, _customRatio);
         const double box = 15;
         double w = box, h = box;
         if (ratio > 0)
@@ -258,7 +274,7 @@ public sealed class RingSegment : Button, ICustomHitTest
     }
 }
 
-/// <summary>The dial in miniature (the toolbar button): six slices, the one in use lit.</summary>
+/// <summary>The dial in miniature (the toolbar button): a slice per ratio, the one in use lit.</summary>
 public sealed class AspectGlyph : Control
 {
     public static readonly StyledProperty<int> SelectedIndexProperty =

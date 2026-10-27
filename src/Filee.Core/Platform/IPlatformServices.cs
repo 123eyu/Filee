@@ -53,9 +53,9 @@ public interface IPlatformServices
     }
 
     /// <summary>
-    /// The existing file or folder the shortcut at <paramref name="path"/> points to (a .lnk on Windows); null for
-    /// anything else, a broken shortcut, or a platform whose shortcuts Filee doesn't follow (macOS aliases and Linux
-    /// .desktop links aren't followed yet).
+    /// The existing file or folder the shortcut at <paramref name="path"/> points to (a .lnk on Windows, a Finder
+    /// alias on macOS); null for anything else, a broken shortcut, or a platform whose shortcuts Filee doesn't follow
+    /// (Linux .desktop links aren't followed yet).
     /// </summary>
     string? ShortcutTarget(string path) => null;
 

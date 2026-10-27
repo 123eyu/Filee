@@ -43,6 +43,7 @@
   <a href="README.ru.md">Русский</a> ·
   <a href="README.ar.md">العربية</a> ·
   <a href="README.pt-BR.md">Português (Brasil)</a> ·
+  <a href="README.pt-PT.md">Português (Portugal)</a> ·
   <a href="README.fr.md">Français</a> ·
   <a href="README.th.md">ไทย</a>
 </p>
@@ -55,7 +56,7 @@
       फ़ॉर्मैट वहीं दिखते हैं जहाँ आप पहले से हैं, और सिर्फ़ वही जो आपकी खींची जा रही फ़ाइलों के लिए सही हों।
     </td>
     <td width="33%" valign="top">
-      <b>263 फ़ॉर्मैट, कोई और सॉफ़्टवेयर नहीं</b><br>
+      <b>266 फ़ॉर्मैट, कोई और सॉफ़्टवेयर नहीं</b><br>
       इमेज, PDF, Word, Excel, PowerPoint, HWP, ई-बुक, आर्काइव, फ़ॉन्ट, CAD, 3D मॉडल और भू-स्थानिक डेटा Office, Hancom Office या LibreOffice के बिना काम करते हैं।
     </td>
     <td width="33%" valign="top">
@@ -127,7 +128,7 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 - **वॉच फ़ोल्डर** में आने वाली हर फ़ाइल अपने-आप कन्वर्ट हो जाती है।
 - **हाल के कन्वर्ज़न** होम पर, हर एक के थंबनेल के साथ: नतीजे को "फ़ाइल खोलें" से खोलें, या "इसके साथ खोलें" से किसी दूसरे ऐप में।
 - **दूसरे तरीके**: राइट-क्लिक मेनू, कीबोर्ड शॉर्टकट, ड्रॉप ज़ोन और [`filee` कमांड](#कमांड-लाइन)।
-- लाइट और डार्क थीम, अपने एक्सेंट रंग और डोनट की अपारदर्शिता के साथ, English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (दाएँ से बाएँ), Português (Brasil), Français, नेपाली, ไทย, Türkçe और Português (Portugal) में।
+- लाइट और डार्क थीम, अपने एक्सेंट रंग और डोनट की अपारदर्शिता के साथ, English, Español, 日本語, 한국어, 简体中文, 繁體中文, Polski, हिन्दी, Русский, العربية (दाएँ से बाएँ), Português (Brasil), Français, नेपाली, ไทย, Türkçe, Português (Portugal) और Deutsch में।
 
 ## स्क्रीनशॉट
 
@@ -160,10 +161,10 @@ Set-ProcessMitigation -Name filee-cli.exe -Disable UserShadowStack
 | **सबटाइटल**: SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC | आपस में, UTF-8 में (कोरियाई CP949 फ़ाइलें भी सही पढ़ी जाती हैं) |
 | **आर्काइव**: ZIP, ANSYS Workbench (WBPZ), 7Z, RAR, TAR, TAR.GZ, TAR.BZ2, TAR.XZ, GZ, ISO, CAB, DMG, ALZ, EGG, … | निकालना, ZIP, 7Z, TAR, TAR.GZ;<br>कोई भी फ़ाइलें → एक ZIP |
 | **CAD**: DWG, DXF | PDF, SVG, PNG, DWG ↔ DXF |
-| **फ़ॉन्ट**: TTF, OTF, WOFF, WOFF2, EOT | आपस में |
+| **फ़ॉन्ट**: TTF, OTF, WOFF, WOFF2, EOT;<br>FON (Windows बिटमैप फ़ॉन्ट) केवल पढ़ने के लिए | आपस में रूपांतरण;<br>FON → हर आकार के लिए एक फ़ॉन्ट |
 | **डेटा**: JSON, JSON Lines, YAML, TOML, XML<br>vCard, iCalendar | आपस में, CSV और XLSX (टेबल);<br>vCard, iCalendar ↔ CSV |
 | **3D मॉडल**: GLB, glTF, STL, OBJ (+ MTL), 3MF, PLY;<br>FBX सिर्फ़ पढ़ने के लिए | आपस में, PNG प्रीव्यू |
-| **भू-स्थानिक वेक्टर**: Shapefile, GeoJSON, KML, KMZ, GPX<br>निर्देशांक वाली CSV | आपस में और CSV / XLSX / JSON;<br>प्रोजेक्टेड डेटा (UTM, Web Mercator, Lambert, Albers) WGS 84 देशांतर / अक्षांश में बदलकर आता है |
+| **भू-स्थानिक वेक्टर**: Shapefile, GeoJSON, KML, KMZ, GPX<br>निर्देशांक वाली CSV;<br>Garmin FIT सिर्फ़ पढ़ने के लिए | आपस में और CSV / XLSX / JSON;<br>प्रोजेक्टेड डेटा (UTM, Web Mercator, Lambert, Albers) WGS 84 देशांतर / अक्षांश में बदलकर आता है |
 
 बिना निशान वाले फ़ॉर्मैट तुरंत काम करते हैं, Office, Hancom Office या LibreOffice की ज़रूरत नहीं।
 निशान वाले फ़ॉर्मैट के लिए एक वैकल्पिक इंजन चाहिए, जो ज़रूरत पड़ने पर ही डाउनलोड होता है: ¹ Ghostscript, ² LibreOffice, ³ Pandoc, ⁴ calibre, ⁵ FFmpeg ([विवरण](docs/ENGINES.md))।

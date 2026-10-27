@@ -133,6 +133,35 @@ public static class BuiltInData
     ];
 
     /// <summary>
+    /// Ready-made presets for where a file is sent (#553), offered only by Settings → Presets → Add: not in the library
+    /// of a new install, on no donut, and with no settings migration. Each Add makes a new copy.
+    /// Email: 18 MB, since an attachment grows by a third on the way and most providers stop at 25 MB.
+    /// </summary>
+    public static List<Preset> PlacePresets() =>
+    [
+        new()
+        {
+            Id = "for-email", NameKey = "preset.for_email", TargetFormat = "mp4",
+            Media = { MaxSizeMb = 18 }, Output = { FileNamePattern = "{name}_email" },
+        },
+        new()
+        {
+            Id = "for-discord", NameKey = "preset.for_discord", TargetFormat = "mp4",
+            Media = { MaxSizeMb = 10 }, Output = { FileNamePattern = "{name}_discord" },
+        },
+        new()
+        {
+            Id = "for-whatsapp", NameKey = "preset.for_whatsapp", TargetFormat = "mp4",
+            Media = { MaxHeight = 720, MaxSizeMb = 16 }, Output = { FileNamePattern = "{name}_whatsapp" },
+        },
+        new()
+        {
+            Id = "for-instagram", NameKey = "preset.for_instagram", TargetFormat = "jpg",
+            Image = { Resize = ResizeMode.Width, Width = 1080 }, Output = { FileNamePattern = "{name}_instagram" },
+        },
+    ];
+
+    /// <summary>
     /// The video of a Live / Motion Photo as MP4 (added in settings schema 29), on no donut: the images donut is full,
     /// so users add it in Settings → Toolbar.
     /// </summary>

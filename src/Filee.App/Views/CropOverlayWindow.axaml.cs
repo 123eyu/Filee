@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Filee.App.Controls;
 using Filee.App.Services;
 using Filee.App.ViewModels;
@@ -87,7 +88,7 @@ public partial class CropOverlayWindow : Window
         {
             _vm = vm;
             vm.CloseRequested += Close;
-            vm.ResetRequested += () => Canvas.ResetCrop();
+            vm.ResetRequested += frame => Canvas.ResetCrop(frame);
             vm.AspectRatioChanged += ratio => Canvas.SetAspectRatio(ratio);
             vm.PropertyChanged += OnViewModelChanged;
             Canvas.CropRectChanged += rect => vm.UpdateDimensions(rect);
@@ -175,7 +176,11 @@ public partial class CropOverlayWindow : Window
         if (_vm is not { } vm)
             return;
         var dialOpen = vm.IsAspectDialOpen;
-        var plain = e.KeyModifiers == KeyModifiers.None;
+        // Typing the custom ratio (#542): arrows and letters are the box's; Enter and Escape still save and close.
+        var typing = (e.Source as Visual)?.FindAncestorOfType<NumericUpDown>(includeSelf: true) is not null;
+        var plain = e.KeyModifiers == KeyModifiers.None && !typing;
+        if (typing && e.Key is Key.Left or Key.Right or Key.Up or Key.Down)
+            return;
         switch (e.Key)
         {
             case Key.Escape:

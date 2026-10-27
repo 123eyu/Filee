@@ -12,11 +12,20 @@
       <!-- List: fits the window height and scrolls on its own (the page itself does not scroll, IFitsWindowHeight) -->
       <DockPanel Grid.Row="1">
         <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-          <Button Classes="accent" Command="{Binding AddCommand}" Margin="0,0,6,6">
+          <!-- An empty preset, or a ready-made one for where the file goes (#553). -->
+          <Button x:Name="AddPresetButton" Classes="accent" Margin="0,0,6,6">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <PathIcon Width="12" Height="12" Data="{StaticResource Icon.Plus}" />
               <TextBlock Text="{DynamicResource presets.add}" />
             </StackPanel>
+            <Button.Flyout>
+              <!-- The ready-made presets are added below the heading from PlacePresets (code-behind). -->
+              <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                <MenuItem Header="{DynamicResource presets.add_empty}" Command="{Binding AddCommand}" />
+                <Separator />
+                <MenuItem Header="{DynamicResource presets.add_ready}" IsEnabled="False" />
+              </MenuFlyout>
+            </Button.Flyout>
           </Button>
           <Button x:Name="DuplicatePresetButton" Command="{Binding DuplicateCommand}" Margin="0,0,6,6"
                   ToolTip.Tip="{DynamicResource presets.duplicate}" AutomationProperties.Name="{DynamicResource presets.duplicate}">

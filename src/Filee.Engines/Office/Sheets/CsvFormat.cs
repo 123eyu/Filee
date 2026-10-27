@@ -70,13 +70,40 @@ internal static class CsvFormat
         File.WriteAllText(path, sb.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
     }
 
-    /// <summary>Writes rows of text as CSV the same way as <see cref="Write"/> (UTF-8 with BOM, CRLF).</summary>
+    /// <summary>Writes rows of text as CSV the same way as <see cref="Write"/> (UTF-8 with BOM, CRLF), one row at a
+    /// time, so a lazily made sequence is never held as text. The rows go to a file beside the target, which replaces
+    /// it only once every row is written: a row that fails to come leaves a file already at the path as it was.</summary>
     public static void WriteRows(IEnumerable<IEnumerable<string>> rows, string path, char delimiter = ',')
     {
-        var sb = new StringBuilder();
-        foreach (var row in rows)
-            sb.Append(string.Join(delimiter, row.Select(value => Quote(value, delimiter)))).Append("\r\n");
-        File.WriteAllText(path, sb.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+        // Replacing a file needs only the folder's permission on Unix: refuse what writing into the file would refuse.
+        if (File.Exists(path))
+            using (new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)) { }
+        var partial = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+            $".{Path.GetFileName(path)}.{Guid.NewGuid().ToString("N")[..8]}.filee-tmp");
+        try
+        {
+            using (var writer = new StreamWriter(partial, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true)))
+            {
+                foreach (var row in rows)
+                {
+                    writer.Write(string.Join(delimiter, row.Select(value => Quote(value, delimiter))));
+                    writer.Write("\r\n");
+                }
+            }
+            File.Move(partial, path, overwrite: true);
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(partial);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // The partial file stays behind (a scanner may hold it); the row's own error is what reaches the job.
+            }
+            throw;
+        }
     }
 
     internal static List<List<string>> Parse(string text, char delimiter)

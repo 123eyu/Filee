@@ -311,6 +311,12 @@ public sealed class ImageOptions
     /// <summary>Lossy quality 1-100 (JPG, WEBP, AVIF, HEIC).</summary>
     public int Quality { get; set; } = 90;
 
+    /// <summary>
+    /// Keep each picture under this many MB of 1,000,000 bytes; 0 = no limit. A larger one is saved again at a lower
+    /// quality, then smaller (down to a long edge of 640 px), until it fits (#553).
+    /// </summary>
+    public double MaxSizeMb { get; set; }
+
     public ResizeMode Resize { get; set; } = ResizeMode.None;
 
     /// <summary>Turns the image (after its EXIF orientation is applied).</summary>
@@ -324,6 +330,10 @@ public sealed class ImageOptions
     /// <summary>Turns or mirrors the image: only engines that do (<see cref="Conversion.IImageTransformer"/>) can run it.</summary>
     [JsonIgnore]
     public bool TurnsOrMirrors => Rotation != ImageRotation.None || Flip != ImageFlip.None;
+
+    /// <summary>Whether the preset edits picture content, size, or playback speed.</summary>
+    [JsonIgnore]
+    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed;
 
     /// <summary>Scale in percent when <see cref="Resize"/> is <see cref="ResizeMode.Percent"/>.</summary>
     public int ResizePercent { get; set; } = 50;
@@ -602,6 +612,12 @@ public sealed class MediaOptions
 
     /// <summary>Largest output height in pixels (e.g. 720); 0 keeps the source size. Never upscales.</summary>
     public int MaxHeight { get; set; }
+
+    /// <summary>
+    /// Keep each video under this many MB of 1,000,000 bytes (WhatsApp 16, Discord 10, email 18 …); 0 = no limit. Its
+    /// bitrate is capped at what its length allows, and it is encoded once more if it still misses (#553).
+    /// </summary>
+    public double MaxSizeMb { get; set; }
 
     /// <summary>Audio bitrate in kbit/s for lossy audio; 0 uses a good default for the format.</summary>
     public int AudioBitrateKbps { get; set; }

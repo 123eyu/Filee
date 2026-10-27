@@ -226,6 +226,21 @@ internal static partial class ICalendar
         catch (InvalidTimeZoneException) { return null; }
     }
 
+    // Resolve the offset at an instant after adding the clock part of a DURATION. The local
+    // wall time may have crossed a daylight-saving transition since DTSTART.
+    private static TimeSpan? OffsetAtInstant(string id, DateTimeOffset instant, Dictionary<string, ZoneDefinition> zones)
+    {
+        if (zones.TryGetValue(id, out var definition) && !definition.HasRule && definition.Transitions.Count > 0)
+        {
+            var ordered = definition.Transitions.OrderBy(t => new DateTimeOffset(t.Local, t.From)).ToList();
+            var found = ordered.LastOrDefault(t => new DateTimeOffset(t.Local, t.From) <= instant);
+            return found == default ? ordered[0].From : found.To;
+        }
+        try { return TimeZoneInfo.FindSystemTimeZoneById(id).GetUtcOffset(instant); }
+        catch (TimeZoneNotFoundException) { return null; }
+        catch (InvalidTimeZoneException) { return null; }
+    }
+
     private static string DateCell(Property? property, Dictionary<string, ZoneDefinition> zones)
     {
         if (property is null)
@@ -242,7 +257,9 @@ internal static partial class ICalendar
         return offset is null ? text : new DateTimeOffset(value, offset.Value).ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
     }
 
-    private static bool Duration(string text, out TimeSpan duration)
+    private readonly record struct CalendarDuration(TimeSpan Days, TimeSpan Clock);
+
+    private static bool Duration(string text, out CalendarDuration duration)
     {
         duration = default;
         var sign = 1;
@@ -257,6 +274,8 @@ internal static partial class ICalendar
         var time = false;
         var digits = "";
         var any = false;
+        var days = TimeSpan.Zero;
+        var clock = TimeSpan.Zero;
         foreach (var ch in text)
         {
             if (ch == 'T' && !time)
@@ -271,7 +290,7 @@ internal static partial class ICalendar
             }
             if (digits.Length == 0 || !int.TryParse(digits, out var number))
                 return false;
-            duration += ch switch
+            var part = ch switch
             {
                 'W' when !time => TimeSpan.FromDays(number * 7d),
                 'D' when !time => TimeSpan.FromDays(number),
@@ -280,12 +299,16 @@ internal static partial class ICalendar
                 'S' when time => TimeSpan.FromSeconds(number),
                 _ => TimeSpan.MinValue,
             };
-            if (duration < TimeSpan.Zero)
+            if (part < TimeSpan.Zero)
                 return false;
+            if (ch is 'W' or 'D')
+                days += part;
+            else
+                clock += part;
             digits = "";
             any = true;
         }
-        duration *= sign;
+        duration = new CalendarDuration(days * sign, clock * sign);
         return any && digits.Length == 0;
     }
 
@@ -300,10 +323,20 @@ internal static partial class ICalendar
             if (end is null && start is not null && ParseIcsDate(start, out var startDate, out var date, out var utc)
                 && component.First("DURATION") is { } span && Duration(span.Value, out var duration))
             {
-                var computed = startDate + duration;
+                // Calendar days keep the local wall time; hours, minutes and seconds are elapsed time (RFC 5545).
+                var dayEnd = startDate + duration.Days;
+                var computed = dayEnd + duration.Clock;
                 var synthetic = new Property(start.Name, computed.ToString(date ? "yyyyMMdd" : "yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture)
                     + (utc && !date ? "Z" : ""), "", start.Parameters);
                 endCell = DateCell(synthetic, component.Zones);
+                var zone = start.Parameter("TZID");
+                if (!date && !utc && duration.Clock != TimeSpan.Zero && zone.Length > 0
+                    && Offset(zone, dayEnd, component.Zones) is { } dayOffset)
+                {
+                    var instant = new DateTimeOffset(dayEnd, dayOffset).Add(duration.Clock);
+                    if (OffsetAtInstant(zone, instant, component.Zones) is { } endOffset)
+                        endCell = instant.ToOffset(endOffset).ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
+                }
             }
             rows.Add(
             [

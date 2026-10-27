@@ -223,6 +223,68 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
         Assert.Equal(2, toPng.Outputs.Count());
     }
 
+    /// <summary>
+    /// A black square on white, written with the given PNG bit depth and colour type, or as a black-and-white TIFF
+    /// (a fax or a scan) when <paramref name="name"/> ends in .tif.
+    /// </summary>
+    internal static string MakeScan(string folder, string name, string bitDepth = "1", string colorType = "0")
+    {
+        using var image = new MagickImage(MagickColors.White, 64, 48);
+        image.Draw(new ImageMagick.Drawing.Drawables().FillColor(MagickColors.Black).Rectangle(10, 10, 40, 30));
+        var path = Path.Combine(folder, name);
+        if (name.EndsWith(".tif", StringComparison.Ordinal))
+        {
+            image.Threshold(new Percentage(50));
+            image.ColorType = ColorType.Bilevel;
+            image.Depth = 1;
+            image.Settings.Compression = CompressionMethod.Group4;
+            image.Write(path, MagickFormat.Tiff);
+            return path;
+        }
+        image.Settings.SetDefine(MagickFormat.Png, "bit-depth", bitDepth);
+        image.Settings.SetDefine(MagickFormat.Png, "color-type", colorType);
+        image.Write(path, MagickFormat.Png);
+        return path;
+    }
+
+    [Theory]
+    [InlineData("scan.png", "1", "0")]
+    [InlineData("grey.png", "4", "0")]
+    [InlineData("deep.png", "16", "2")]
+    [InlineData("fax.tif", "", "")]
+    public async Task Black_and_white_and_16_bit_pictures_go_into_a_pdf(string name, string bitDepth, string colorType)
+    {
+        // #605: PDFsharp refuses 1-, 2- and 4-bit grey and 16-bit PNGs ("Unsupported image format").
+        var source = MakeScan(fx.NewFolder(), name, bitDepth, colorType);
+
+        var job = await fx.ConvertAsync([source], new Preset { TargetFormat = "pdf" });
+
+        AssertDone(job);
+        using var pdf = PdfReader.Open(job.Outputs.Single(), PdfDocumentOpenMode.Import);
+        Assert.Equal(1, pdf.PageCount);
+    }
+
+    [Fact]
+    public void Pngs_pdfsharp_refuses_are_written_again_as_8_bit()
+    {
+        var folder = fx.NewFolder();
+        foreach (var (bitDepth, colorType, refused) in new[] { ("1", "0", true), ("4", "0", true), ("16", "2", true), ("8", "0", false), ("8", "2", false) })
+        {
+            var png = MakeScan(folder, $"{bitDepth}-{colorType}.png", bitDepth, colorType);
+            Assert.Equal(refused, Filee.Engines.Pdf.PdfPictures.NeedsReencoding(png));
+
+            var readable = Filee.Engines.Pdf.PdfPictures.Readable(png, Path.Combine(folder, "readable"));
+            Assert.Equal(!refused, readable == png);
+            Assert.False(Filee.Engines.Pdf.PdfPictures.NeedsReencoding(readable));
+            using var image = new MagickImage(readable);
+            Assert.Equal((64u, 48u), (image.Width, image.Height));
+            using var x = PdfSharp.Drawing.XImage.FromFile(readable);
+        }
+
+        var jpeg = EngineFixture.MakeImage(folder, "photo.jpg", MagickFormat.Jpeg);
+        Assert.Equal(jpeg, Filee.Engines.Pdf.PdfPictures.Readable(jpeg, folder));
+    }
+
     [Fact]
     public async Task Pdf_to_multi_page_tiff()
     {

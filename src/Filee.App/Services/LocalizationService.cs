@@ -71,9 +71,11 @@ public sealed class LocalizationService : ILocalizer
         CultureInfo.CurrentUICulture = culture;
         CultureInfo.DefaultThreadCurrentUICulture = culture;
 
-        // Every key is published (English fallback for missing translations) so DynamicResource never breaks.
-        foreach (var key in _english.Keys.Concat(_current.Keys).Distinct())
-            _resources[key] = this[key];
+        // Every key is published (English fallback for missing translations) so DynamicResource never breaks. All in
+        // one SetItems: setting the keys one by one raises a resource change per key, and each reaches every control of
+        // every window still alive.
+        _resources.SetItems(_english.Keys.Concat(_current.Keys).Distinct()
+            .Select(key => new KeyValuePair<object, object?>(key, this[key])));
 
         _initialized = true;
         LanguageChanged?.Invoke(this, EventArgs.Empty);
@@ -106,6 +108,8 @@ public sealed class LocalizationService : ILocalizer
             return Languages.First(l => l.Code.Equals(setting, StringComparison.OrdinalIgnoreCase)).Code;
 
         var ui = osLanguage();
+        if (ui.Equals("de", StringComparison.OrdinalIgnoreCase) || ui.StartsWith("de-", StringComparison.OrdinalIgnoreCase))
+            return "de";
         if (AppLanguages.PortugueseVariant(ui) is { } portuguese)
             return portuguese;
         if (ui.Equals("tr", StringComparison.OrdinalIgnoreCase) || ui.StartsWith("tr-", StringComparison.OrdinalIgnoreCase))

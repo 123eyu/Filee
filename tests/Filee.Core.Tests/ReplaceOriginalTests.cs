@@ -60,6 +60,32 @@ public class ReplaceOriginalTests
     }
 
     [Fact]
+    public async Task Undo_may_move_a_result_in_the_originals_place_and_says_the_original_is_in_the_trash()
+    {
+        using var dir = new TempDir();
+        using var bin = new TempDir();
+        var source = dir.File("a.jpg");
+
+        var entry = Filee.Core.History.HistoryEntry.From(await Run(new FakeTrash(bin.Path), source, Replacing));
+
+        Assert.Equal(source, Assert.Single(entry.Undoable).Path);
+        Assert.True(entry.OriginalsInTrash);
+    }
+
+    [Fact]
+    public async Task When_the_original_stays_it_is_never_a_result_undo_could_move()
+    {
+        using var dir = new TempDir();
+        var source = dir.File("a.jpg");
+
+        var entry = Filee.Core.History.HistoryEntry.From(await Run(new FakeTrash(dir.Path, refuse: new TrashRefusal("trash.in_use")), source, Replacing));
+
+        // The result was kept beside the original: only it can be undone.
+        Assert.NotEqual(source, Assert.Single(entry.Undoable).Path);
+        Assert.False(entry.OriginalsInTrash);
+    }
+
+    [Fact]
     public async Task When_the_trash_refuses_both_are_kept_with_the_reason()
     {
         using var dir = new TempDir();
@@ -237,6 +263,8 @@ public class ReplaceOriginalTests
         Assert.Equal([source], Directory.GetFiles(dir.Path)); // no copy beside it
         Assert.Equal("x", File.ReadAllText(source));
         Assert.Equal("notice.original_unchanged", job.Files[0].NoticeKey);
+        // The "result" is the user's own file: Undo must never send it to the Trash.
+        Assert.Empty(Filee.Core.History.HistoryEntry.From(job).Undoable);
     }
 
     [Fact]
