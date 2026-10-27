@@ -1,5 +1,5 @@
 // "Edit pictures" (#584): the conversion its window starts, the format a picture keeps, the choices kept in the tool, and
-// the tool's place in a new library and in one from before settings schema 49.
+// the tool's place in a new library and in one from before settings schema 51.
 
 using System.Text.Json;
 using Filee.Core.Conversion;
@@ -97,7 +97,7 @@ public class ImageEditToolTests
         Assert.DoesNotContain("heic", ImageEditTool.TargetsFrom(["png"], planner));
     }
 
-    // ───────────────────────── Settings schema 49 ─────────────────────────
+    // ───────────────────────── Settings schema 51 ─────────────────────────
 
     [Fact]
     public void A_new_library_has_the_tool_after_crop_and_on_the_images_donut_after_half_size()
@@ -112,7 +112,7 @@ public class ImageEditToolTests
     }
 
     [Fact]
-    public void Version_48_libraries_get_the_tool_on_the_images_donut()
+    public void Version_50_libraries_get_the_tool_on_the_images_donut()
     {
         var presets = BuiltInData.CreatePresets();
         presets.RemoveAll(p => p.Id == "tool-image-edit");
@@ -120,19 +120,19 @@ public class ImageEditToolTests
         var images = profiles.Single(p => p.Id == "images");
         images.PresetIds.Remove("tool-image-edit");
 
-        Assert.True(SettingsMigrations.ApplyToLibrary(48, presets, profiles));
+        Assert.True(SettingsMigrations.ApplyToLibrary(50, presets, profiles));
 
         Assert.Equal(BuiltInData.CreatePresets().Select(p => p.Id), presets.Select(p => p.Id));
         Assert.True(presets.Single(p => p.Id == "tool-image-edit").IsImageEditTool);
         Assert.Equal(BuiltInData.CreateProfiles().Single(p => p.Id == "images").PresetIds, images.PresetIds);
-        Assert.False(SettingsMigrations.ApplyToLibrary(48, presets, profiles)); // once only
+        Assert.False(SettingsMigrations.ApplyToLibrary(50, presets, profiles)); // once only
 
         // A front laid out by the user (without "Half size"), a full one, or the tool already on the back, stays as it is.
         var own = BuiltInData.CreateProfiles();
         var ownFront = own.Single(p => p.Id == "images").PresetIds;
         ownFront.Clear();
         ownFront.AddRange(["to-webp", "to-png"]);
-        SettingsMigrations.ApplyToLibrary(48, BuiltInData.CreatePresets(), own);
+        SettingsMigrations.ApplyToLibrary(50, BuiltInData.CreatePresets(), own);
         Assert.Equal(["to-webp", "to-png"], ownFront);
 
         var full = BuiltInData.CreateProfiles();
@@ -141,14 +141,14 @@ public class ImageEditToolTests
         while (fullFront.Count < ToolbarProfile.MaxSlices)
             fullFront.Add("to-gif");
         var before = fullFront.ToList();
-        SettingsMigrations.ApplyToLibrary(48, BuiltInData.CreatePresets(), full);
+        SettingsMigrations.ApplyToLibrary(50, BuiltInData.CreatePresets(), full);
         Assert.Equal(before, fullFront);
 
         var back = BuiltInData.CreateProfiles();
         var backImages = back.Single(p => p.Id == "images");
         backImages.PresetIds.Remove("tool-image-edit");
         backImages.BackPresetIds![^1] = "tool-image-edit";
-        SettingsMigrations.ApplyToLibrary(48, BuiltInData.CreatePresets(), back);
+        SettingsMigrations.ApplyToLibrary(50, BuiltInData.CreatePresets(), back);
         Assert.DoesNotContain("tool-image-edit", backImages.PresetIds);
     }
 
@@ -163,7 +163,7 @@ public class ImageEditToolTests
         edit.TargetFormat = "ico";
         Assert.True(edit.IsCropTool);
 
-        Assert.True(SettingsMigrations.ApplyToLibrary(48, presets, BuiltInData.CreateProfiles()));
+        Assert.True(SettingsMigrations.ApplyToLibrary(50, presets, BuiltInData.CreateProfiles()));
 
         Assert.True(edit.IsImageEditTool);
         Assert.Equal(("Icons", "ico"), (edit.Name, edit.TargetFormat));

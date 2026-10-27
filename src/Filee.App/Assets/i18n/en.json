@@ -88,6 +88,8 @@
   "format_request.notice_title": "Filee can't convert {0} files yet",
   "format_request.notice_text": "Tell us which format you need.\nRequests decide what Filee supports next.\nEncrypted or copy-protected (DRM) files can't be converted, whatever the format.",
   "error.no_route": "No engine can do this conversion",
+  "error.msi_busy": "Another installation is running. Try again when it has finished",
+  "error.msi_link": "Windows Installer couldn't open the package: a folder on its way may be a link to another drive",
   "error.cannot_turn": "Rotate and flip work on images only",
   "error.images_only": "Works on images only",
   "error.no_transparency": "This format has no transparency, so there's nothing to trim",

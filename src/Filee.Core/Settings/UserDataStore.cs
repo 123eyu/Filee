@@ -106,6 +106,16 @@ public sealed class UserDataStore
         Write(SettingsPath, Settings, FileeJsonContext.Default.AppSettings);
     }
 
+    /// <summary>
+    /// Remembers where the main window was (<see cref="AppSettings.MainWindow"/>), quietly as <see cref="SaveUiScale"/>:
+    /// nothing else depends on it.
+    /// </summary>
+    public void SaveMainWindow(WindowBounds bounds)
+    {
+        Settings.MainWindow = bounds;
+        Write(SettingsPath, Settings, FileeJsonContext.Default.AppSettings);
+    }
+
     public void SaveLibrary()
     {
         EnsureConsistency();
@@ -889,12 +899,16 @@ internal static class SettingsMigrations
         // v48: fragmented MP4 pieces (.m4s) learn the video donut; custom claims stay put.
         if (from < 48)
             changed |= LearnExtensions(profiles, out _, ["m4s"]);
-        // v49: "Edit pictures" (size, format, turn and colour chosen each time, #584), after "Crop" as in a new library,
+        // v49: SQL (#607, which came without a migration), AutoHotkey, INI, RouterOS exports and .cmd batch scripts learn
+        //      the text donut; custom claims stay put. (Schema 49 may be renumbered if another change takes it first.)
+        if (from < 49)
+            changed |= LearnExtensions(profiles, out _, ["sql", "ahk", "ini", "rsc", "cmd"]);
+        // v51: "Edit pictures" (size, format, turn and colour chosen each time, #584), after "Crop" as in a new library,
         //      and on the front of the images donut after "Half size" when that is there, the user hasn't put the tool
         //      elsewhere on the donut and the face has room.
         //      Present already but saved since by a Filee before 45 (2.0): that one dropped the tool's name, which made it
         //      a crop, so it is put back. 2.1 keeps the name (the slice is greyed out there, as a tool it doesn't know).
-        if (from < 49)
+        if (from < 51)
             changed |= AddImageEditTool(presets, profiles);
         return changed;
     }

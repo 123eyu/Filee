@@ -53,7 +53,9 @@ public sealed class WindowsPlatformServices : IPlatformServices
 
     public bool IsFileManagerAt(int x, int y)
     {
-        var root = RootWindowAt(x, y);
+        // Over a window the desktop owns (a desktop icon layer), a gesture is in the desktop's scope. Only here: the
+        // process name (ProcessNameAt, the excluded apps list) stays the layer's own, so the layer can be excluded.
+        var root = DesktopOrSelf(RootWindowAt(x, y));
         if (root == 0)
             return false;
         return IsFileManager(NativeMethods.ClassNameOf(root), ProcessNameOf(root));
@@ -81,6 +83,25 @@ public sealed class WindowsPlatformServices : IPlatformServices
 
     /// <summary>True for the desktop's window classes: its icons are not among Shell.Application's windows.</summary>
     internal static bool IsDesktop(string? windowClass) => windowClass is "Progman" or "WorkerW";
+
+    /// <summary>
+    /// True when the end of a window's owner chain (<paramref name="rootOwner"/>) is another window and the desktop.
+    /// Desktop icon layers (apps that hide Explorer's icon view and draw the icons themselves) cover the screen with a
+    /// window owned by the shell's desktop window, so a mouse gesture over them acts as on the desktop: the files
+    /// arrive through the OLE drag the layer starts. The selection shortcut is left out on purpose: it would read
+    /// Explorer's hidden desktop view, and nothing shows that a given layer keeps that view's selection in step.
+    /// </summary>
+    internal static bool StandsForDesktop(nint window, nint rootOwner, string? rootOwnerClass) =>
+        rootOwner != 0 && rootOwner != window && IsDesktop(rootOwnerClass);
+
+    /// <summary>The desktop for a top-level window it owns (see <see cref="StandsForDesktop"/>), else the window.</summary>
+    private static nint DesktopOrSelf(nint window)
+    {
+        if (window == 0)
+            return 0;
+        var owner = NativeMethods.GetAncestor(window, NativeMethods.GA_ROOTOWNER);
+        return StandsForDesktop(window, owner, NativeMethods.ClassNameOf(owner)) ? owner : window;
+    }
 
     public string? ShortcutTarget(string path) => ShellLinks.TargetOf(path);
 

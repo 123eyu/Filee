@@ -82,6 +82,8 @@
   "format_request.notice_title": "Fileeはまだ{0}ファイルを変換できません",
   "format_request.notice_text": "必要な形式を教えてください。\nリクエストをもとに、今後Fileeが対応する形式を決めます。\n暗号化またはコピー保護（DRM）されたファイルは、形式にかかわらず変換できません。",
   "error.no_route": "この変換に対応するエンジンがありません",
+  "error.msi_busy": "別のインストールが実行中です。終わってからもう一度お試しください",
+  "error.msi_link": "Windows Installer がパッケージを開けませんでした。パスの途中のフォルダーが別のドライブへのリンクになっている可能性があります",
   "error.cannot_turn": "回転と反転は画像でのみ使えます",
   "error.images_only": "画像でのみ使えます",
   "error.no_transparency": "この形式には透明部分がないため、切り取るものがありません",

@@ -88,6 +88,8 @@
   "format_request.notice_title": "Filee 暫時無法轉換 {0} 檔案",
   "format_request.notice_text": "告訴我們你需要的格式。\n我們會根據請求決定接下來支援哪些格式。\n加密或有複製保護 (DRM) 的檔案，無論什麼格式都無法轉換。",
   "error.no_route": "沒有引擎可以完成此轉換",
+  "error.msi_busy": "另一個安裝正在進行。請在它完成後再試一次",
+  "error.msi_link": "Windows Installer 無法開啟安裝套件：路徑中的某個資料夾可能是指向其他磁碟機的連結",
   "error.cannot_turn": "只能旋轉和翻轉圖片",
   "error.images_only": "只能用於圖片",
   "error.no_transparency": "此格式沒有透明部分，無需裁切",

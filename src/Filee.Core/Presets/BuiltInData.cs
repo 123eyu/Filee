@@ -195,7 +195,7 @@ public static class BuiltInData
     ];
 
     /// <summary>
-    /// "Edit pictures" (#584, added in settings schema 49): size, format, turn and colour chosen in a window each time, on
+    /// "Edit pictures" (#584, added in settings schema 51): size, format, turn and colour chosen in a window each time, on
     /// the front of the images donut after "Half size".
     /// </summary>
     public static List<Preset> ImageEditPresets() =>

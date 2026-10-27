@@ -88,6 +88,8 @@
   "format_request.notice_title": "Filee nie potrafi jeszcze konwertować plików {0}",
   "format_request.notice_text": "Napisz, jakiego formatu potrzebujesz.\nNa podstawie próśb wybieramy kolejne obsługiwane formaty.\nPlików zaszyfrowanych lub chronionych przed kopiowaniem (DRM) nie da się konwertować, niezależnie od formatu.",
   "error.no_route": "Żaden silnik nie wykona tej konwersji",
+  "error.msi_busy": "Trwa inna instalacja. Spróbuj ponownie, gdy się zakończy",
+  "error.msi_link": "Instalator Windows nie mógł otworzyć pakietu: folder na ścieżce może być łączem do innego dysku",
   "error.cannot_turn": "Obracanie i odbicie działają tylko na obrazach",
   "error.images_only": "Działa tylko na obrazach",
   "error.no_transparency": "Ten format nie ma przezroczystości, więc nie ma czego przycinać",
