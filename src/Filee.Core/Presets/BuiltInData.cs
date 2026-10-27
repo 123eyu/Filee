@@ -117,6 +117,7 @@ public static class BuiltInData
         .. LivePhotoPresets(),
         .. ClipPresets(),
         .. MediaToolPresets(),
+        .. MergeImagesPresets(),
         new() { Id = "to-docx", Name = "DOCX", TargetFormat = "docx" },
         new() { Id = "to-hwpx", Name = "HWPX", TargetFormat = "hwpx" },
         .. HwpPresets(),
@@ -287,6 +288,20 @@ public static class BuiltInData
             Image = { Quality = 90, KeepMetadata = false, KeepColorProfile = false, KeepSourceQuality = true },
             Pdf = { RemoveMetadata = true }, Media = { RemoveMetadata = true },
             Output = { FileNamePattern = "{name}_clean" },
+        },
+    ];
+
+    /// <summary>
+    /// "Merge images" (issue #645, added in settings schema 53): the dropped pictures, in the order set in the merge
+    /// order window, as one image, one under another or side by side, in the first picture's format. Quality 90 as the
+    /// JPG preset. On the back of the images donut next to "Merge PDF", where it took the slot of "GIF".
+    /// </summary>
+    public static List<Preset> MergeImagesPresets() =>
+    [
+        new()
+        {
+            Id = "merge-images", NameKey = "preset.merge_images", TargetFormat = SameAsSource,
+            Image = { JoinIntoOne = true, Quality = 90 }, Output = { FileNamePattern = "{name}_merged" },
         },
     ];
 
@@ -557,9 +572,10 @@ public static class BuiltInData
             Extensions = ExtensionsOf(FormatCategory.Image),
             PresetIds = ["to-png", "to-jpg", "to-webp", "to-pdf", "trace-svg", "trace-line-art", "to-tiff", "to-bmp", "to-ico", "half-size",
                 "tool-image-edit", "tool-hide"],
-            // Full (ToolbarProfile.MaxSlices): "Extract Live Photo video" stays in the library, on no donut.
-            BackPresetIds = ["tool-crop", "rotate", "flip", "remove-background", "trim-transparent", "grayscale", "to-avif", "to-gif", "merge-pdf",
-                "compress-image", "remove-metadata", "zip-all"],
+            // Full (ToolbarProfile.MaxSlices): "Extract Live Photo video" stays in the library, on no donut, and "GIF"
+            // since "Merge images" took its slot (settings schema 53): a still picture as GIF is the least wanted here.
+            BackPresetIds = ["tool-crop", "rotate", "flip", "remove-background", "trim-transparent", "grayscale", "to-avif", "merge-images",
+                "merge-pdf", "compress-image", "remove-metadata", "zip-all"],
         },
         new()
         {

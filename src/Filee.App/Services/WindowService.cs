@@ -53,11 +53,24 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
 
     private void PrepareWindow(Window window) => services.GetService<ThemeService>()?.ApplyWindowClass(window);
 
-    /// <summary>Reviews the order of a PDF merge. Closing or cancelling starts no conversion.</summary>
-    public async Task<IReadOnlyList<string>?> ChooseMergeOrderAsync(IReadOnlyList<string> files)
+    /// <summary>
+    /// Reviews the order of a merge (<paramref name="preset"/>, when given, names the button). For "Merge images" the
+    /// layout is chosen too and written into <paramref name="preset"/>. Closing or cancelling starts no conversion.
+    /// </summary>
+    public async Task<IReadOnlyList<string>?> ChooseMergeOrderAsync(IReadOnlyList<string> files, Preset? preset = null)
     {
         _mergeOrder?.Close();
-        var dialog = new MergeOrderWindow { DataContext = new MergeOrderViewModel(files) };
+        var images = preset is { JoinsImages: true };
+        var vm = new MergeOrderViewModel(files, images ? preset!.Image : null);
+        var dialog = new MergeOrderWindow { DataContext = vm };
+        if (preset is not null)
+            dialog.StartMerge.Content = loc.DisplayName(preset);
+        if (images)
+        {
+            // Room for the layout below the list.
+            dialog.Height = 640;
+            dialog.MinHeight = 540;
+        }
         PrepareWindow(dialog);
         var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         dialog.Closed += (_, _) =>
@@ -69,6 +82,8 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         dialog.Show();
         dialog.Activate();
         await closed.Task;
+        if (dialog.Result is not null && images)
+            vm.ApplyTo(preset!.Image);
         return dialog.Result;
     }
 

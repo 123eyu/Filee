@@ -307,7 +307,6 @@ public class HideToolTests
         Assert.True(presets.Single(p => p.Id == "tool-hide").IsHideTool);
         Assert.Equal(BuiltInData.CreateProfiles().Single(p => p.Id == "images").PresetIds, images.PresetIds);
         Assert.False(SettingsMigrations.ApplyToLibrary(52, presets, profiles)); // once only
-        Assert.Equal(52, AppSettings.CurrentSchemaVersion);
     }
 
     [Fact]

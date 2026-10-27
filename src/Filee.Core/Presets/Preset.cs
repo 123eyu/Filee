@@ -197,6 +197,15 @@ public sealed class Preset
     public bool JoinsIntoOneMedia =>
         (Media.JoinIntoOne || Media.Slideshow) && MediaOptions.JoinTargets.Contains(TargetFormat);
 
+    /// <summary>
+    /// True for "Merge images": every dropped picture goes, in order, into one image (<see cref="ImageOptions.JoinIntoOne"/>)
+    /// of a picture format, or of the first picture's format for <see cref="BuiltInData.SameAsSource"/>.
+    /// </summary>
+    [JsonIgnore]
+    public bool JoinsImages =>
+        Image.JoinIntoOne
+        && (TargetFormat == BuiltInData.SameAsSource || Formats.FormatRegistry.FindById(TargetFormat)?.Category == Formats.FormatCategory.Image);
+
     /// <summary>True for a <see cref="PresetKind.Tool"/>.</summary>
     [JsonIgnore]
     public bool IsTool => Kind == PresetKind.Tool;
@@ -331,6 +340,24 @@ public enum ImageFlip
     Horizontal,
     /// <summary>Top ↔ bottom.</summary>
     Vertical,
+}
+
+/// <summary>Which way merged pictures follow each other (<see cref="ImageOptions.JoinIntoOne"/>).</summary>
+public enum ImageJoinDirection
+{
+    /// <summary>One under another, the first at the top.</summary>
+    Vertical,
+    /// <summary>Side by side, the first on the left.</summary>
+    Horizontal,
+}
+
+/// <summary>How merged pictures of different sizes line up (<see cref="ImageOptions.JoinIntoOne"/>).</summary>
+public enum ImageJoinFit
+{
+    /// <summary>Scaled to the widest picture (one under another) or the tallest (side by side), so the edges line up.</summary>
+    SameSize,
+    /// <summary>Each at its own size, centred.</summary>
+    Original,
 }
 
 /// <summary>TIFF compression schemes.</summary>
@@ -513,6 +540,40 @@ public sealed class ImageOptions
 
     /// <summary>Use lossless WEBP encoding.</summary>
     public bool WebpLossless { get; set; }
+
+    /// <summary>
+    /// "Merge images": every dropped picture goes, in order, into one image named after the first (<see cref="Preset.JoinsImages"/>),
+    /// one under another or side by side (<see cref="JoinDirection"/>). Each picture is turned as its EXIF and
+    /// <see cref="Rotation"/> say first; the other options (resize, grayscale, quality …) apply to the merged image.
+    /// </summary>
+    public bool JoinIntoOne { get; set; }
+
+    /// <summary>With <see cref="JoinIntoOne"/>: one under another or side by side. A direction from a newer Filee reads as vertical.</summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<ImageJoinDirection>))]
+    public ImageJoinDirection JoinDirection { get; set; }
+
+    /// <summary>With <see cref="JoinIntoOne"/>: pictures of different sizes scaled to line up, or kept as they are, centred.</summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<ImageJoinFit>))]
+    public ImageJoinFit JoinFit { get; set; }
+
+    /// <summary>Largest <see cref="JoinGap"/>.</summary>
+    public const int MaxJoinGap = 1000;
+
+    /// <summary>With <see cref="JoinIntoOne"/>: pixels of <see cref="JoinBackground"/> between two pictures (0 to <see cref="MaxJoinGap"/>).</summary>
+    public int JoinGap { get; set; }
+
+    /// <summary><see cref="JoinBackground"/> for a see-through background (in a format that holds one).</summary>
+    public const string TransparentJoin = "transparent";
+
+    /// <summary>
+    /// With <see cref="JoinIntoOne"/>: the colour of the gaps and of the room around smaller pictures, <c>#RRGGBB</c>, or
+    /// <see cref="TransparentJoin"/>. A format without transparency (JPG) gets <see cref="Background"/> there instead.
+    /// </summary>
+    public string JoinBackground { get; set; } = "#FFFFFF";
+
+    /// <summary><see cref="JoinGap"/> within its limits (a hand-edited preset file may hold anything).</summary>
+    [JsonIgnore]
+    public int JoinSpacing => Math.Clamp(JoinGap, 0, MaxJoinGap);
 
     /// <summary>
     /// FITS → TIFF: the data as it is (the default) or stretched. Either way the TIFF follows the file's BITPIX: 8 and

@@ -11,7 +11,7 @@ namespace Filee.Engines.Magick;
 /// DDS, PCX, CUR, XPM, XBM, WBMP, PAM, PFM, SGI, Sun Raster and MIFF, and reads HEIC, XCF, camera RAW, DICOM,
 /// Photo CD, OpenEXR, Radiance HDR, FITS and (on Windows) EMF/WMF.
 /// </summary>
-public sealed class MagickImageConverter : IConverter, ITiffMerger, IImageTransformer
+public sealed class MagickImageConverter : IConverter, ITiffMerger, IImageTransformer, IImageJoiner
 {
     public string Id => "magick";
     public string DisplayName => "ImageMagick";
@@ -65,6 +65,15 @@ public sealed class MagickImageConverter : IConverter, ITiffMerger, IImageTransf
             }
             pages.Write(outputPath, MagickFormat.Tiff);
         }, cancellationToken);
+
+    public bool CanRead(string format) => ImageEncoder.Sources.Contains(format);
+
+    public bool CanWrite(string format) => ImageEncoder.Writable.Contains(format);
+
+    /// <summary>"Merge images": the pictures one under another or side by side in one image (<see cref="ImageJoiner"/>).</summary>
+    public Task JoinAsync(IReadOnlyList<(string Path, string Format)> inputs, string outputPath, string format,
+        Filee.Core.Presets.ImageOptions options, IProgress<double>? progress, CancellationToken cancellationToken) =>
+        Task.Run(() => ImageJoiner.Join(inputs, outputPath, format, options, progress, cancellationToken), cancellationToken);
 
     public Task<IReadOnlyList<string>> ConvertAsync(ConversionStep step, IProgress<double>? progress, CancellationToken cancellationToken) =>
         Task.Run<IReadOnlyList<string>>(() =>

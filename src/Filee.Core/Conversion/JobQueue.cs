@@ -113,9 +113,13 @@ public sealed class JobQueue : IAsyncDisposable
             var multiPageTiff = job.Preset.Image.MultiPageTiff && job.Preset.TargetFormat == "tiff" && _tiffMerger is not null;
             // Clips back to back, or pictures one after the other, in the order they were dropped.
             var join = job.Preset.JoinsIntoOneMedia && _mediaJoiner is not null;
+            // Pictures one under another or side by side, in the order they were dropped.
+            var imageJoiner = job.Preset.JoinsImages ? _catalog.All.OfType<IImageJoiner>().FirstOrDefault() : null;
 
             if (join)
                 await RunJoinedMediaAsync(job, planner, workDir);
+            else if (imageJoiner is not null)
+                await RunMergedImagesAsync(job, planner, workDir, imageJoiner);
             else if (merge)
                 await RunMergedAsync(job, planner, workDir);
             else if (multiPageTiff)
@@ -361,8 +365,11 @@ public sealed class JobQueue : IAsyncDisposable
         Notify(job);
     }
 
-    /// <summary>Share of a slideshow's progress that preparing its pictures takes; encoding the video fills the rest.</summary>
-    private const double SlidesReadyShare = 0.3;
+    /// <summary>
+    /// Share of a slideshow's (or a merge of pictures') progress that preparing its pictures takes; encoding the video
+    /// (or merging) fills the rest.
+    /// </summary>
+    private const double PicturesReadyShare = 0.3;
 
     /// <summary>
     /// "Merge videos" / "Merge audio": the videos or audio files go into one file as they are. "Video from images":
@@ -406,7 +413,7 @@ public sealed class JobQueue : IAsyncDisposable
                     parts[i] = source.Id == "png" && !job.Preset.Image.ReworksPixels
                         ? [file.SourcePath]
                         : await RunFileAsync(job, file, i + 1, planner, workDir, finalOutput: false, intermediate: "png",
-                            ceiling: SlidesReadyShare);
+                            ceiling: PicturesReadyShare);
                     return;
                 }
                 // A video's sound can join an audio file; a picture or a document joins nothing.
@@ -428,9 +435,73 @@ public sealed class JobQueue : IAsyncDisposable
             return;
         }
 
+        await WriteJoinedAsync(job, joined, inputs.Count, target.PrimaryExtension,
+            (output, progress) => _mediaJoiner!.JoinAsync(inputs, output, target.Id, job.Preset, workDir, progress, job.CancellationToken));
+    }
+
+    /// <summary>
+    /// "Merge images": the pictures go, in order, into one image named after the first, in the first one's format for
+    /// "same as source" (PNG when that one can't be written). A picture the joiner doesn't read as it is (ICNS, JPEG XR,
+    /// SVG, …) becomes a plain PNG in the work directory first; the preset's options apply once, as the pictures merge.
+    /// </summary>
+    private async Task RunMergedImagesAsync(ConversionJob job, RoutePlanner planner, string workDir, IImageJoiner joiner)
+    {
+        var plain = new Preset { TargetFormat = "png", Pdf = { RenderDpi = job.Preset.Pdf.RenderDpi } };
+        var parts = new (string Path, string Format)?[job.Files.Count];
+        await Parallel.ForEachAsync(Enumerable.Range(0, job.Files.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+            async (i, _) =>
+            {
+                var file = job.Files[i];
+                if (Stopped(file))
+                    return;
+                var source = FormatRegistry.Detect(file.SourcePath);
+                if (source is null)
+                    FailFile(job, file, "error.unsupported_source", "." + FormatRegistry.ExtensionOf(file.SourcePath));
+                else if (IsEmptyFile(file.SourcePath))
+                    FailFile(job, file, "error.empty_file", null);
+                else if (source.Category is not (FormatCategory.Image or FormatCategory.Vector))
+                    FailFile(job, file, "error.images_only", null);
+                else if (joiner.CanRead(source.Id))
+                    parts[i] = (file.SourcePath, source.Id);
+                else if (await RunFileAsync(job, file, i + 1, planner, workDir, finalOutput: false, intermediate: "png",
+                             ceiling: PicturesReadyShare, options: plain) is [var png, ..])
+                    parts[i] = (png, "png");
+            });
+
+        var joined = job.Files.Where((f, i) => parts[i] is not null && f.State != FileState.Failed).ToList();
+        var inputs = parts.OfType<(string Path, string Format)>().ToList();
+        if (joined.Count == 0 || job.CancellationToken.IsCancellationRequested)
+        {
+            Notify(job);
+            return;
+        }
+
+        var target = job.Preset.TargetFormat;
+        if (target == BuiltInData.SameAsSource)
+            target = FormatRegistry.Detect(joined[0].SourcePath) is { } first && joiner.CanWrite(first.Id) ? first.Id : "png";
+        else if (!joiner.CanWrite(target))
+        {
+            foreach (var f in joined)
+                FailFile(job, f, "error.no_route", $"{FormatRegistry.Detect(f.SourcePath)?.Id} → {target}");
+            return;
+        }
+
+        await WriteJoinedAsync(job, joined, inputs.Count, FormatRegistry.Get(target).PrimaryExtension,
+            (output, progress) => joiner.JoinAsync(inputs, output, target, job.Preset.Image, progress, job.CancellationToken));
+    }
+
+    /// <summary>
+    /// Writes the one file several sources become (merged videos, merged pictures), named after the first of
+    /// <paramref name="joined"/>. Their progress moves together; a write that fails or is cancelled is undone.
+    /// </summary>
+    /// <param name="write">Writes the file at the path it is given.</param>
+    private async Task WriteJoinedAsync(ConversionJob job, List<FileResult> joined, int inputCount, string extension,
+        Func<string, IProgress<double>, Task> write)
+    {
         var first = joined[0];
         var allocator = CreateFinalAllocator(job, first.SourcePath, 1, oneFile: true);
-        var output = allocator.Allocate(target.PrimaryExtension);
+        var output = allocator.Allocate(extension);
         if (output is null)
         {
             foreach (var f in joined)
@@ -459,8 +530,8 @@ public sealed class JobQueue : IAsyncDisposable
 
         try
         {
-            await _mediaJoiner!.JoinAsync(inputs, output, target.Id, job.Preset, workDir, progress, job.CancellationToken);
-            SizeLimit.Check(job.Preset, [output]); // joins aren't fitted: one over the limit is refused (#553)
+            await write(output, progress);
+            SizeLimit.Check(job.Preset, [output]); // joined media aren't fitted: one over the limit is refused (#553)
             first.Outputs.Add(output);
             foreach (var f in joined)
             {
@@ -477,14 +548,14 @@ public sealed class JobQueue : IAsyncDisposable
         catch (ConversionRefusedException ex)
         {
             allocator.Discard();
-            _log.LogInformation("Joining {Count} file(s) into {Output} was refused: {Reason}", inputs.Count, output, ex.Message);
+            _log.LogInformation("Joining {Count} file(s) into {Output} was refused: {Reason}", inputCount, output, ex.Message);
             foreach (var f in joined)
                 FailFile(job, f, ex.ErrorKey, ex.Detail);
         }
         catch (Exception ex)
         {
             allocator.Discard();
-            _log.LogWarning(ex, "Joining {Count} file(s) into {Output} failed", inputs.Count, output);
+            _log.LogWarning(ex, "Joining {Count} file(s) into {Output} failed", inputCount, output);
             foreach (var f in joined)
                 FailFile(job, f, "error.conversion_failed", ex.Message);
         }
@@ -659,13 +730,15 @@ public sealed class JobQueue : IAsyncDisposable
     /// Converts one source file along its planned route.
     /// With <paramref name="finalOutput"/> false, results stay in the work directory as <paramref name="intermediate"/>
     /// files (PDF for merging, TIFF pages for a multi-page TIFF). <paramref name="ceiling"/> is the file's progress once
-    /// the route is done (a slideshow's pictures leave the rest to the video).
+    /// the route is done (a slideshow's pictures leave the rest to the video). <paramref name="options"/> is the preset
+    /// the route runs with, the job's unless given (the pictures of a merge become plain PNGs first).
     /// </summary>
     private async Task<IReadOnlyList<string>> RunFileAsync(
         ConversionJob job, FileResult file, int index, RoutePlanner planner, string workDir, bool finalOutput,
-        string intermediate = "pdf", double ceiling = 1)
+        string intermediate = "pdf", double ceiling = 1, Preset? options = null)
     {
         var ct = job.CancellationToken;
+        var runWith = options ?? job.Preset;
         if (Stopped(file))
             return [];
         var source = FormatRegistry.Detect(file.SourcePath);
@@ -677,19 +750,19 @@ public sealed class JobQueue : IAsyncDisposable
             return Fail(file, "error.empty_file", null);
 
         var target = !finalOutput ? intermediate
-            : job.Preset.TargetFormat == BuiltInData.SameAsSource ? source.Id
-            : job.Preset.TargetFormat;
+            : runWith.TargetFormat == BuiltInData.SameAsSource ? source.Id
+            : runWith.TargetFormat;
 
         // "Save every frame": a video becomes a folder of pictures in one step of its own; "Extract Live/Motion Photo
         // video" likewise takes a photo's video, and "Live / Motion Photo" makes one of a video. Never for an
         // intermediate file, and never on the way to another format (video → JPG is otherwise one still frame, photo →
         // MP4 a video of the still picture).
-        var frames = finalOutput && job.Preset.SavesFramesOf(source.Id);
-        var motionPhoto = finalOutput && job.Preset.ExtractsMotionOf(source.Id);
-        var livePhoto = finalOutput && job.Preset.MakesLivePhotoOf(source.Id);
+        var frames = finalOutput && runWith.SavesFramesOf(source.Id);
+        var motionPhoto = finalOutput && runWith.ExtractsMotionOf(source.Id);
+        var livePhoto = finalOutput && runWith.MakesLivePhotoOf(source.Id);
         // "Recognize text": Tesseract writes a searchable PDF first, read on into DOCX, TXT, … from there. Also for the
         // PDFs that are merged into one.
-        var ocr = (finalOutput || target == "pdf") && job.Preset.RecognizesTextOf(source.Id);
+        var ocr = (finalOutput || target == "pdf") && runWith.RecognizesTextOf(source.Id);
         var route = planner.Plan(source.Id, target, frames, motionPhoto: motionPhoto, livePhoto: livePhoto, ocr: ocr);
         if (route is null)
             return Fail(file, "error.no_route", $"{source.Id} → {target}");
@@ -722,10 +795,10 @@ public sealed class JobQueue : IAsyncDisposable
         // Rotate / flip: only an engine that turns images does it. Without one the file would come out unturned
         // (a PDF or a video re-encoded "as rotated"); with two in the route (EPS → PNG → JPG) it would turn twice.
         // Parts of a picture to hide likewise, once: a route that can't cover them must not write the picture uncovered.
-        var turnAt = job.Preset.Image.ReworksPixels ? route.FirstTransformStep() : -1;
-        if (job.Preset.Image.ReworksPixels && turnAt < 0)
-            return Fail(file, job.Preset.Image.HidesAreas ? "error.cannot_hide" : "error.cannot_turn", $"{source.Id} → {target}");
-        var unturned = turnAt < 0 ? job.Preset : Unturned(job.Preset);
+        var turnAt = runWith.Image.ReworksPixels ? route.FirstTransformStep() : -1;
+        if (runWith.Image.ReworksPixels && turnAt < 0)
+            return Fail(file, runWith.Image.HidesAreas ? "error.cannot_hide" : "error.cannot_turn", $"{source.Id} → {target}");
+        var unturned = turnAt < 0 ? runWith : Unturned(runWith);
 
         file.State = FileState.Running;
         Notify(job);
@@ -740,7 +813,7 @@ public sealed class JobQueue : IAsyncDisposable
         {
             IReadOnlyList<string> inputs = [file.SourcePath];
             // "Save as ZIP": the last step writes into the work folder and the files are packed into one ZIP afterwards.
-            var zipResult = finalOutput && job.Preset.Output.ZipResult;
+            var zipResult = finalOutput && runWith.Output.ZipResult;
             for (var s = 0; s < route.Steps.Count; s++)
             {
                 var step = route.Steps[s];
@@ -771,7 +844,7 @@ public sealed class JobQueue : IAsyncDisposable
                         // Turned (and covered) once, in step turnAt: every other step gets the preset without rotation,
                         // flip and hidden parts, also one before it whose engine applies image options but doesn't say
                         // it turns.
-                        var preset = s == turnAt ? job.Preset : unturned;
+                        var preset = s == turnAt ? runWith : unturned;
                         // Playback speed changes once, in the step that writes the output: an animation passed from one
                         // engine to another would otherwise change speed in both.
                         if (preset.Image.ChangesSpeed && !(isLast && finalOutput))
@@ -800,16 +873,16 @@ public sealed class JobQueue : IAsyncDisposable
 
             // Under "Save as ZIP" the output is still in the work folder: the source copied over it goes into the ZIP.
             // Never with hidden parts: the source copied over the result would show them again.
-            var copiedSource = finalOutput && job.Preset.Output.OnlyIfSmaller && !job.Preset.Image.HidesAreas && inputs.Count == 1
+            var copiedSource = finalOutput && runWith.Output.OnlyIfSmaller && !runWith.Image.HidesAreas && inputs.Count == 1
                 && CopyIfNotSmaller(file.SourcePath, inputs[0]);
             if (copiedSource)
                 file.NoticeKey = "notice.pdf_not_smaller";
             // Watermark, page numbers, password: on every PDF this file became, from whichever engine.
-            if (finalOutput && job.Preset.TargetFormat == "pdf")
-                await FinishPdfsAsync(job.Preset, inputs, ct);
+            if (finalOutput && runWith.TargetFormat == "pdf")
+                await FinishPdfsAsync(runWith, inputs, ct);
             // The size limit (#553): a result the engine couldn't fit (HEIC, a render, an animation) isn't handed over.
             if (finalOutput)
-                SizeLimit.Check(job.Preset, inputs);
+                SizeLimit.Check(runWith, inputs);
 
             if (zipResult && inputs.Count > 0)
                 inputs = PackZip(job, file, index, inputs, ct);
@@ -818,7 +891,7 @@ public sealed class JobQueue : IAsyncDisposable
                 inputs = [NextToSource(job, file, index, inputs[0], final)];
 
             // The source's dates are read now: "Replace the original" may send it to the Trash below.
-            var dates = finalOutput && job.Preset.Output.KeepDates ? DatesOf(file.SourcePath) : null;
+            var dates = finalOutput && runWith.Output.KeepDates ? DatesOf(file.SourcePath) : null;
             if (finalOutput && !zipResult && inputs.Count == 1)
                 inputs = [ReplaceOriginal(job, file, source.Id, inputs[0], copiedSource)];
 

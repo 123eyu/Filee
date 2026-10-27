@@ -260,6 +260,30 @@ public interface IMediaJoiner
 }
 
 /// <summary>
+/// Puts several pictures into one image, one under another or side by side ("Merge images"). Implemented by the
+/// ImageMagick engine; <see cref="JobQueue"/> uses it when a preset merges pictures (<see cref="Preset.JoinsImages"/>).
+/// </summary>
+public interface IImageJoiner
+{
+    /// <summary>True if pictures of <paramref name="format"/> are read as they are; others become PNG first.</summary>
+    bool CanRead(string format);
+
+    /// <summary>True if the merged image can be written as <paramref name="format"/>.</summary>
+    bool CanWrite(string format);
+
+    /// <summary>
+    /// Writes the pictures of <paramref name="inputs"/>, in order, into one image laid out as
+    /// <paramref name="options"/> say (<see cref="ImageOptions.JoinDirection"/>, …). Refuses with
+    /// <c>error.merged_image_too_large</c> when the image would be too large to make.
+    /// </summary>
+    /// <param name="inputs">Each picture and its format id.</param>
+    /// <param name="outputPath">File to create.</param>
+    /// <param name="format">Target format id, one <see cref="CanWrite"/> takes.</param>
+    Task JoinAsync(IReadOnlyList<(string Path, string Format)> inputs, string outputPath, string format, ImageOptions options,
+        IProgress<double>? progress, CancellationToken cancellationToken);
+}
+
+/// <summary>
 /// Packs several files, unchanged, into one archive ("Compress into one archive"). Implemented by the archive engine;
 /// <see cref="JobQueue"/> uses it when a preset sets <see cref="ArchiveOptions.CombineIntoOne"/>.
 /// </summary>
