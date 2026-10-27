@@ -206,8 +206,8 @@ internal static class ImageEncoder
     public static double ResizeScale(double width, double height, ImageOptions options) =>
         options.CustomSize is { Width: > 0, Height: > 0 } custom
             ? custom.LockAspect
-                ? Math.Min(custom.Width / width, custom.Height / height)
-                : custom.Height / height
+                ? Math.Min(custom.ClampedWidth / width, custom.ClampedHeight / height)
+                : custom.ClampedHeight / height
             : options.Resize switch
             {
                 ResizeMode.Percent when options.ResizePercent > 0 => options.ResizePercent / 100.0,
@@ -286,22 +286,25 @@ internal static class ImageEncoder
 
         // A hand-edited presets.json or an imported bundle can carry sizes the editor would never write, and a
         // width of 0 or below would wrap to about 4 billion px in the (uint) casts below: such a size is skipped,
-        // so the picture keeps the preset's own resize behavior (None for a Custom preset) instead.
+        // so the picture keeps the preset's own resize behavior (None for a Custom preset) instead. A size above the
+        // editor's range is brought down to it, so a hand-edited 200000 x 200000 cannot ask for a 40-gigapixel picture.
         if (options.CustomSize is { Width: > 0, Height: > 0 } custom)
         {
+            var customWidth = custom.ClampedWidth;
+            var customHeight = custom.ClampedHeight;
             if (custom.LockAspect)
             {
                 // The file's own shape is kept: scaled up or down to the largest size that fits inside the box. Both
                 // sides come from one scale, so the aspect already matches and Resize keeps it, as it always does.
-                var scale = Math.Min(custom.Width / (double)image.Width, custom.Height / (double)image.Height);
+                var scale = Math.Min(customWidth / (double)image.Width, customHeight / (double)image.Height);
                 if (scale != 1)
                     image.Resize((uint)Math.Max(1, Math.Round(image.Width * scale)), (uint)Math.Max(1, Math.Round(image.Height * scale)));
             }
-            else if (image.Width != (uint)custom.Width || image.Height != (uint)custom.Height)
+            else if (image.Width != (uint)customWidth || image.Height != (uint)customHeight)
             {
                 // No lock: exactly the asked size, stretching or squeezing the picture on purpose (issue #576). Resize
                 // fits inside a box and keeps the aspect on its own, so the flag is what makes this a real stretch.
-                image.Resize(new MagickGeometry((uint)custom.Width, (uint)custom.Height) { IgnoreAspectRatio = true });
+                image.Resize(new MagickGeometry((uint)customWidth, (uint)customHeight) { IgnoreAspectRatio = true });
             }
         }
         else switch (options.Resize)

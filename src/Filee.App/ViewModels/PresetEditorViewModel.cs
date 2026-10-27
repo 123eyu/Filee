@@ -687,7 +687,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
             // (it would read presets.json as broken and fall back to the built-in presets, and the next save would
             // write those over the user's own; issue #576).
             image.Resize = ResizeMode.None;
-            image.CustomSize = new CustomImageSize { Width = Math.Clamp(CustomWidth, 16, 16384), Height = Math.Clamp(CustomHeight, 16, 16384), LockAspect = LockAspect };
+            image.CustomSize = new CustomImageSize { Width = Math.Clamp(CustomWidth, CustomImageSize.MinSide, CustomImageSize.MaxSide), Height = Math.Clamp(CustomHeight, CustomImageSize.MinSide, CustomImageSize.MaxSide), LockAspect = LockAspect };
         }
         else
         {

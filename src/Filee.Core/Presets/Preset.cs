@@ -489,10 +489,17 @@ public sealed class ImageOptions
 }
 
 /// <summary>The free width x height a preset resizes to: <see cref="ImageOptions.CustomSize"/> (issue #576). The
-/// editor keeps both sides within 16-16384; a size read from a hand-edited file with a side of 0 or below is
-/// ignored where it is used, so the picture keeps the preset's own resize behavior instead.</summary>
+/// editor keeps both sides within <see cref="MinSide"/>-<see cref="MaxSide"/>; a size read from a hand-edited file
+/// with a side of 0 or below is ignored where it is used, so the picture keeps the preset's own resize behavior
+/// instead, and any other side is brought into that range (<see cref="ClampedWidth"/>, <see cref="ClampedHeight"/>).</summary>
 public sealed class CustomImageSize
 {
+    /// <summary>The smallest side the editor offers.</summary>
+    public const int MinSide = 16;
+
+    /// <summary>The largest side the editor offers.</summary>
+    public const int MaxSide = 16384;
+
     /// <summary>Target width in pixels.</summary>
     public int Width { get; set; } = 1920;
 
@@ -504,6 +511,15 @@ public sealed class CustomImageSize
     /// stretching it to exactly that size.
     /// </summary>
     public bool LockAspect { get; set; }
+
+    /// <summary><see cref="Width"/> within the editor's range, so a hand-edited 200000 cannot ask for a picture no
+    /// machine can hold.</summary>
+    [JsonIgnore]
+    public int ClampedWidth => Math.Clamp(Width, MinSide, MaxSide);
+
+    /// <summary><see cref="Height"/> within the editor's range (see <see cref="ClampedWidth"/>).</summary>
+    [JsonIgnore]
+    public int ClampedHeight => Math.Clamp(Height, MinSide, MaxSide);
 }
 
 /// <summary>Page size used when images are placed into a PDF.</summary>

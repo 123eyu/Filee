@@ -172,8 +172,8 @@ internal static class SvgRenderer
             // bitmap, which comes out soft. With the lock, at the fit-inside scale; without, at the larger side's
             // scale, so the stretch that follows only ever shrinks the other side.
             scale = custom.LockAspect
-                ? Math.Min(custom.Width / bounds.Width, custom.Height / bounds.Height)
-                : Math.Max(custom.Width / bounds.Width, custom.Height / bounds.Height);
+                ? Math.Min(custom.ClampedWidth / bounds.Width, custom.ClampedHeight / bounds.Height)
+                : Math.Max(custom.ClampedWidth / bounds.Width, custom.ClampedHeight / bounds.Height);
         }
         else switch (image.Resize)
             {

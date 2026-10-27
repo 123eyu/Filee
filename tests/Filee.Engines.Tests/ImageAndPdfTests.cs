@@ -422,6 +422,23 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void A_custom_size_read_from_a_file_is_brought_into_the_editors_range()
+    {
+        // A hand-edited 200000 used to go straight into image.Resize; it now stops at the editor's 16384, and a side
+        // under 16 comes up to it, the same range the editor writes.
+        var options = new ImageOptions { CustomSize = new() { Width = 200000, Height = 10 } };
+        using var image = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(image, options, "png");
+        Assert.Equal((16384u, 16u), (image.Width, image.Height));
+
+        var locked = new ImageOptions { CustomSize = new() { Width = 200000, Height = 200000, LockAspect = true } };
+        Assert.Equal(20.48, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, locked), 3);
+
+        var stretched = new ImageOptions { CustomSize = new() { Width = 500, Height = 200000 } };
+        Assert.Equal(20.48, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, stretched), 3);
+    }
+
+    [Fact]
     public void Custom_resize_plans_pdf_page_runs_at_the_scale_the_resize_will_use()
     {
         // How PdfiumConverter.Split plans runs: the factor the stacked strip is scaled by (issue #576).
