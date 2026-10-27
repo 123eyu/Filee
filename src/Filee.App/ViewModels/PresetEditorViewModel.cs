@@ -109,6 +109,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         // Version names stay as AutoCAD calls them, in every language.
         CadVersions = Enum.GetValues<CadVersion>().Select(v => new Choice<CadVersion>(v,
             v == Core.Presets.CadVersion.SameAsSource ? loc["presets.cad_version.same"] : "AutoCAD " + v.ToString()["AutoCad".Length..])).ToList();
+        CadColorChoices = Enum.GetValues<CadColors>().Select(v => new Choice<CadColors>(v, loc[$"presets.cad_colors.{v}"])).ToList();
         // A speed set outside the editor (a hand-edited preset file) is offered too, instead of being lost.
         AnimationSpeeds = [.. ImageOptions.AnimationSpeeds.Append(_edit.Image.PlaybackSpeed).Distinct().Order()
             .Select(s => new Choice<double>(s, s == 1 ? loc["presets.animation_speed.original"] : SpeedLabel(s)))];
@@ -155,6 +156,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _crossfade = _edit.Media.Crossfade;
         _traceMode = TraceModes.First(m => m.Value == _edit.Trace.Mode);
         _cadVersion = CadVersions.First(v => v.Value == _edit.Cad.Version);
+        _cadColors = CadColorChoices.FirstOrDefault(c => c.Value == _edit.Cad.Colors) ?? CadColorChoices[0];
         _animationSpeed = AnimationSpeeds.First(s => s.Value == _edit.Image.PlaybackSpeed);
         _traceColors = Math.Clamp(_edit.Trace.Colors, TracingOptions.MinColors, TracingOptions.MaxColors);
         _traceDetail = Math.Clamp(_edit.Trace.Detail, 0, 100);
@@ -233,6 +235,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     /// <summary>The AutoCAD version a DWG or DXF is written in (CadOptions.Version, #489).</summary>
     public IReadOnlyList<Choice<CadVersion>> CadVersions { get; }
 
+    /// <summary>The colours a drawing is drawn in: as drawn, black and white, grayscale (CadOptions.Colors, #411).</summary>
+    public IReadOnlyList<Choice<CadColors>> CadColorChoices { get; }
+
     /// <summary>Playback speeds of animations, 0.25× to 4× (ImageOptions.AnimationSpeed).</summary>
     public IReadOnlyList<Choice<double>> AnimationSpeeds { get; }
 
@@ -248,7 +253,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         nameof(ShowAudioChannels), nameof(ShowWav), nameof(VideoCodecs), nameof(VideoCodecChoice), nameof(ShowVideoCodec), nameof(ShowHardwareEncoding),
         nameof(AudioCodecs), nameof(AudioCodecChoice), nameof(ShowAudioCodec),
         nameof(ShowArchive), nameof(ShowArchiveOptions), nameof(ShowExtractNote),
-        nameof(ShowSaveEveryFrame), nameof(ShowAnimationSpeed), nameof(ShowTrace), nameof(ShowCad), nameof(ShowExtractMotionPhoto), nameof(ShowSlideshow),
+        nameof(ShowSaveEveryFrame), nameof(ShowAnimationSpeed), nameof(ShowTrace), nameof(ShowCad), nameof(ShowCadColors), nameof(ShowExtractMotionPhoto), nameof(ShowSlideshow),
         nameof(ShowLivePhotoChoice), nameof(LivePhotoKinds), nameof(LivePhotoChoice), nameof(IsLivePhoto), nameof(LivePhotoHint))]
     private Choice<string> _target;
 
@@ -515,6 +520,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
 
     [ObservableProperty] private int _traceColors;
     [ObservableProperty] private Choice<CadVersion> _cadVersion;
+    [ObservableProperty] private Choice<CadColors> _cadColors;
     [ObservableProperty] private int _traceDetail;
     [ObservableProperty] private Choice<double> _animationSpeed;
 
@@ -539,6 +545,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     partial void OnArchiveLevelChanged(Choice<ArchiveLevel>? oldValue, Choice<ArchiveLevel> newValue) => Choices.Restore(oldValue, newValue, v => ArchiveLevel = v);
     partial void OnTraceModeChanged(Choice<TracingMode>? oldValue, Choice<TracingMode> newValue) => Choices.Restore(oldValue, newValue, v => TraceMode = v);
     partial void OnCadVersionChanged(Choice<CadVersion>? oldValue, Choice<CadVersion> newValue) => Choices.Restore(oldValue, newValue, v => CadVersion = v);
+    partial void OnCadColorsChanged(Choice<CadColors>? oldValue, Choice<CadColors> newValue) => Choices.Restore(oldValue, newValue, v => CadColors = v);
     partial void OnCompressionLevelChanged(Choice<PdfCompression>? oldValue, Choice<PdfCompression> newValue) =>
         Choices.Restore(oldValue, newValue, v => CompressionLevel = v);
     partial void OnAnimationSpeedChanged(Choice<double>? oldValue, Choice<double> newValue) =>
@@ -644,6 +651,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
 
     /// <summary>The AutoCAD version, for presets that write DWG or DXF.</summary>
     public bool ShowCad => !IsTool && TargetId is "dxf" or "dwg";
+
+    /// <summary>The colours, for the targets a DWG or DXF is drawn into: PDF, SVG and pictures.</summary>
+    public bool ShowCadColors => !IsTool && (TargetId is "pdf" or "svg" || TargetCategory == FormatCategory.Image);
     public bool ShowTraceColors => TraceMode.Value == TracingMode.Color;
     public bool ShowPercent => Resize.Value == ResizeMode.Percent;
     public bool ShowLongEdge => Resize.Value == ResizeMode.LongEdge;
@@ -773,8 +783,10 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _original.Trace.Mode = TraceMode.Value;
         _original.Trace.Colors = Math.Clamp(TraceColors, TracingOptions.MinColors, TracingOptions.MaxColors);
         _original.Trace.Detail = Math.Clamp(TraceDetail, 0, 100);
-        // Only where it is shown: a version chosen for DWG and left behind by a PNG target is not kept.
+        // Only where they are shown: a version chosen for DWG and left behind by a PNG target is not kept, nor
+        // black and white chosen for PDF and left behind by a DWG target.
         _original.Cad.Version = ShowCad ? CadVersion.Value : default;
+        _original.Cad.Colors = ShowCadColors ? CadColors.Value : default;
 
         var output = _original.Output;
         // Asking keeps the location it had: a Filee that can't ask (or one from before it) saves there.

@@ -1974,6 +1974,7 @@ public class RenderTests
         var preset = new Filee.Core.Presets.Preset { TargetFormat = "dwg", Name = "Old DWG" };
         var vm = new PresetEditorViewModel(preset, AppHost.Get<ILocalizer>());
         Assert.True(vm.ShowCad);
+        Assert.False(vm.ShowCadColors); // DWG to DWG draws nothing
         Assert.Equal(["AutoCAD 2018", "AutoCAD 2013", "AutoCAD 2010", "AutoCAD 2007", "AutoCAD 2004", "AutoCAD 2000", "Same as the source"],
             vm.CadVersions.Select(v => v.Label));
 
@@ -1987,6 +1988,63 @@ public class RenderTests
         Assert.False(vm.ShowCad);
         Assert.True(vm.Apply());
         Assert.Equal(Filee.Core.Presets.CadVersion.AutoCad2018, preset.Cad.Version);
+    }
+
+    [AvaloniaTheory]
+    [InlineData("en", false)]
+    [InlineData("en", true)]
+    [InlineData("de", false)]
+    [InlineData("de", true)]
+    [InlineData("ar", false)]
+    [InlineData("ar", true)]
+    public void Preset_editor_offers_cad_colours_for_drawings_made_into_pdf_svg_and_pictures(string language, bool dark)
+    {
+        TestServices.EnsureInitialized(language);
+        var theme = AppHost.Get<ThemeService>();
+        var loc = AppHost.Get<ILocalizer>();
+        var preset = AppHost.Get<UserDataStore>().FindPreset("to-pdf")!.Clone();
+        var vm = new PresetEditorViewModel(preset, loc);
+        Assert.True(vm.ShowCadColors);
+        Assert.False(vm.ShowCad); // the AutoCAD version is for DWG and DXF
+        Assert.Equal(Filee.Core.Presets.CadColors.AsDrawn, vm.CadColors.Value);
+        Assert.Equal(Enum.GetValues<Filee.Core.Presets.CadColors>().Select(c => loc[$"presets.cad_colors.{c}"]), vm.CadColorChoices.Select(c => c.Label));
+
+        vm.CadColors = vm.CadColorChoices.Single(c => c.Value == Filee.Core.Presets.CadColors.BlackAndWhite);
+        if (dark)
+            theme.Apply(new ThemeSettings { Mode = ThemeMode.Dark }, language);
+        try
+        {
+            var window = new PresetEditorWindow { DataContext = vm, Height = 900 };
+            window.Show();
+            Pump();
+            var card = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "CadColorsCard");
+            Assert.True(card.IsEffectivelyVisible);
+            card.BringIntoView();
+            Pump();
+            Save(window, $"preset-cad-colours-{language}{(dark ? "-dark" : "")}.png");
+            window.Close();
+        }
+        finally
+        {
+            if (dark)
+                theme.Apply(new ThemeSettings(), language);
+        }
+        Assert.True(vm.Apply());
+        Assert.Equal(Filee.Core.Presets.CadColors.BlackAndWhite, preset.Cad.Colors);
+        Assert.Equal(Filee.Core.Presets.CadColors.BlackAndWhite, new PresetEditorViewModel(preset, loc).CadColors.Value);
+
+        // SVG and pictures take it too; DWG and Markdown don't show it, and don't keep it.
+        foreach (var target in (string[])["svg", "png", "jpg", "tiff"])
+        {
+            vm.Target = vm.Targets.Single(t => t.Value == target);
+            Assert.True(vm.ShowCadColors, target);
+        }
+        vm.Target = vm.Targets.Single(t => t.Value == "dwg");
+        Assert.False(vm.ShowCadColors);
+        Assert.True(vm.Apply());
+        Assert.Equal(Filee.Core.Presets.CadColors.AsDrawn, preset.Cad.Colors);
+        vm.Target = vm.Targets.Single(t => t.Value == "md");
+        Assert.False(vm.ShowCadColors);
     }
 
     [AvaloniaFact]

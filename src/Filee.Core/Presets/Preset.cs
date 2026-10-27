@@ -99,7 +99,7 @@ public sealed class Preset
     /// <summary>Options used when a raster image is traced into vector shapes (PNG → SVG, DXF ...).</summary>
     public TracingOptions Trace { get; set; } = new();
 
-    /// <summary>Options used when a DWG or DXF is written.</summary>
+    /// <summary>Options used when a DWG or DXF is written or drawn.</summary>
     public CadOptions Cad { get; set; } = new();
 
     /// <summary>Where and how output files are written.</summary>
@@ -940,12 +940,33 @@ public enum CadVersion
     SameAsSource,
 }
 
-/// <summary>Options for writing DWG and DXF.</summary>
+/// <summary>How a DWG or DXF drawn to PDF, SVG or a picture is coloured (#411), like a plot style in AutoCAD.</summary>
+public enum CadColors
+{
+    /// <summary>The drawing's own colours; only white lines turn black on the white page.</summary>
+    AsDrawn,
+    /// <summary>
+    /// Lines, text and arrowheads in black like monochrome.ctb; filled hatches in the gray of their brightness, so a
+    /// light fill doesn't become a black block.
+    /// </summary>
+    BlackAndWhite,
+    /// <summary>Every colour as the gray of its brightness, lines and text kept dark enough to read.</summary>
+    Grayscale,
+}
+
+/// <summary>Options for DWG and DXF: the version they are written in and the colours they are drawn in.</summary>
 public sealed class CadOptions
 {
     /// <summary>A version from a newer Filee reads as <see cref="CadVersion.AutoCad2018"/>.</summary>
     [JsonConverter(typeof(LenientEnumJsonConverter<CadVersion>))]
     public CadVersion Version { get; set; }
+
+    /// <summary>
+    /// Colours of a drawing rendered to PDF, SVG or a picture. Filee 2.1.0 skips the property it doesn't know, and
+    /// a choice from a newer Filee reads as <see cref="CadColors.AsDrawn"/>.
+    /// </summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<CadColors>))]
+    public CadColors Colors { get; set; }
 
     public CadOptions Clone() => (CadOptions)MemberwiseClone();
 }
