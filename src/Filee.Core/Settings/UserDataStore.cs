@@ -906,7 +906,47 @@ internal static class SettingsMigrations
         // v50: Dahua DVR recordings (.dav) learn the video donut; custom claims stay put.
         if (from < 50)
             changed |= LearnExtensions(profiles, out _, ["dav"]);
+        // v53: "Merge images" (#645; 51 and 52 are kept for changes that came first, so this may be renumbered), after
+        //      "Merge audio" as in a new library, and on the back of the images donut before "Merge PDF" when the user
+        //      hasn't put it on either face: in a free slot, or in place of "GIF" (which stays in the library) on a
+        //      full face. Present already but saved since by a Filee before 53: that one dropped the option and left a
+        //      plain "same format" preset, so it is put back.
+        if (from < 53)
+            changed |= AddMergeImages(presets, profiles);
         return changed;
+    }
+
+    private static bool AddMergeImages(List<Preset> presets, List<ToolbarProfile> profiles)
+    {
+        var changed = false;
+        var merge = BuiltInData.MergeImagesPresets().Single();
+        if (presets.FirstOrDefault(p => p.Id == merge.Id) is { } existing)
+        {
+            if (!existing.Image.JoinIntoOne && existing.TargetFormat == merge.TargetFormat)
+            {
+                existing.Image.JoinIntoOne = true;
+                changed = true;
+            }
+        }
+        else
+        {
+            var at = presets.FindLastIndex(p => p.Id is "remove-metadata" or "merge-audio" or "merge-videos");
+            presets.Insert(at < 0 ? presets.Count : at + 1, merge);
+            changed = true;
+        }
+        if (profiles.FirstOrDefault(p => p.Id == "images") is not { BackPresetIds: { } back } images
+            || back.Contains(merge.Id) || images.PresetIds.Contains(merge.Id))
+            return changed;
+        if (back.Count < ToolbarProfile.MaxSlices)
+        {
+            InsertBefore(back, merge.Id, back.Contains("merge-pdf") ? "merge-pdf" : "zip-all");
+            return true;
+        }
+        var gif = back.IndexOf("to-gif");
+        if (gif < 0)
+            return changed;
+        back[gif] = merge.Id;
+        return true;
     }
 
     private static bool AddCalendarPreset(List<Preset> presets, List<ToolbarProfile> profiles)

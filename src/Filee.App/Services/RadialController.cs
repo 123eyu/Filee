@@ -338,8 +338,8 @@ public sealed class RadialController(
             return;
         }
 
-        // Merged PDFs, joined clips and slideshows follow the order the user picks.
-        if ((preset.TargetFormat == "pdf" && preset.Pdf.MergeIntoSingle || preset.JoinsIntoOneMedia) && sources.Count > 1)
+        // Merged PDFs, joined clips, slideshows and merged pictures follow the order the user picks.
+        if ((preset.TargetFormat == "pdf" && preset.Pdf.MergeIntoSingle || preset.JoinsIntoOneMedia || preset.JoinsImages) && sources.Count > 1)
         {
             Close(animate: false);
             _ = MergeInOrderAsync(sources, preset.Clone(), web);
@@ -371,7 +371,9 @@ public sealed class RadialController(
     {
         try
         {
-            var ordered = await windows.ChooseMergeOrderAsync(files);
+            var ordered = await windows.ChooseMergeOrderAsync(files, preset);
+            if (ordered is not null && preset.JoinsImages)
+                RememberMergeLayout(preset);
             if (ordered is not null && preset.Output.AskEveryTime && web is null)
                 await AskThenConvertAsync(ordered, preset);
             else if (ordered is not null)
@@ -382,11 +384,37 @@ public sealed class RadialController(
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            log.LogError(ex, "Could not start the ordered PDF merge");
+            log.LogError(ex, "Could not start the ordered merge");
         }
         finally
         {
             web?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// "Merge images": the layout chosen in the merge order window (<paramref name="chosen"/>, a copy of the preset)
+    /// goes into the preset as saved, so the window opens with it next time.
+    /// </summary>
+    private void RememberMergeLayout(Preset chosen)
+    {
+        if (store.FindPreset(chosen.Id) is not { JoinsImages: true } saved)
+            return;
+        var image = saved.Image;
+        if (image.JoinDirection == chosen.Image.JoinDirection && image.JoinFit == chosen.Image.JoinFit
+            && image.JoinGap == chosen.Image.JoinGap && image.JoinBackground == chosen.Image.JoinBackground)
+            return;
+        image.JoinDirection = chosen.Image.JoinDirection;
+        image.JoinFit = chosen.Image.JoinFit;
+        image.JoinGap = chosen.Image.JoinGap;
+        image.JoinBackground = chosen.Image.JoinBackground;
+        try
+        {
+            store.SaveLibrary();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            log.LogWarning(ex, "Could not remember the layout of merged pictures");
         }
     }
 

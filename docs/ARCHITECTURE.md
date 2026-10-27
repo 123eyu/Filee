@@ -65,6 +65,10 @@
    window, into one file with FFmpeg (`IMediaJoiner`); pictures become PNG through the image engines first. Like the
    other one-file jobs, the output follows "subfolder only for several files", and a join that fails or is cancelled
    is undone by the job's allocator, which deletes only paths that were the job's own.
+   "Merge images" puts the pictures, in the order picked in the same window (with their layout: one under another or
+   side by side, the same width or their own sizes, a gap and a background), into one image with ImageMagick
+   (`IImageJoiner`), in the first picture's format. Pictures ImageMagick doesn't read become PNG first; a merged image
+   over 200 megapixels is refused with its size.
 6. **Report** – progress and results appear in the toast window and in Home → Recent conversions.
    Renderers check only the original source for referenced fonts. `ConversionStep.MissingFonts` reports any missing
    families to `FileResult.MissingFonts`; the toast card can offer one trusted source, while the CLI and watch jobs
