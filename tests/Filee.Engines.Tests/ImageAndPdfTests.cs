@@ -367,6 +367,98 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void Custom_resize_stretches_to_exactly_the_asked_size()
+    {
+        // The case from the issue: a 1080 x 1920 photo asked for a 500 x 2000 banner, distorted on purpose.
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
+        using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
+
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+
+        Assert.Equal((500u, 2000u), (portrait.Width, portrait.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_with_the_lock_fits_inside_without_distortion()
+    {
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000, LockAspect = true } };
+
+        // The width is the limit: 1080 x 1920 shrinks to the largest 9:16 fit inside the box, 500 x 889.
+        using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+        Assert.Equal((500u, 889u), (portrait.Width, portrait.Height));
+
+        // The lock grows as well: 250 x 444 doubles to 500 x 888, the same shape.
+        using var small = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(small, options, "png");
+        Assert.Equal((500u, 888u), (small.Width, small.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_leaves_a_picture_that_already_has_the_asked_size()
+    {
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
+        using var exact = new MagickImage(MagickColors.White, 500, 2000);
+
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(exact, options, "png");
+
+        Assert.Equal((500u, 2000u), (exact.Width, exact.Height));
+    }
+
+    [Fact]
+    public void A_custom_size_read_from_a_file_with_a_side_of_zero_or_below_is_skipped()
+    {
+        // The editor keeps both sides within 16-16384, but a hand-edited presets.json or an imported bundle can
+        // carry anything, and a width of 0 or below used to reach (uint)custom.Width and wrap to about 4 billion px.
+        var options = new ImageOptions { CustomSize = new() { Width = 0, Height = 2000 } };
+        using var zeroed = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(zeroed, options, "png");
+        Assert.Equal((250u, 444u), (zeroed.Width, zeroed.Height));
+
+        options.CustomSize = new() { Width = -5, Height = 2000 };
+        using var negative = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(negative, options, "png");
+        Assert.Equal((250u, 444u), (negative.Width, negative.Height));
+    }
+
+    [Fact]
+    public void A_custom_size_read_from_a_file_is_brought_into_the_editors_range()
+    {
+        // A hand-edited 200000 used to go straight into image.Resize; it now stops at the editor's 16384, and a side
+        // under 16 comes up to it, the same range the editor writes.
+        var options = new ImageOptions { CustomSize = new() { Width = 200000, Height = 10 } };
+        using var image = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(image, options, "png");
+        Assert.Equal((16384u, 16u), (image.Width, image.Height));
+
+        var locked = new ImageOptions { CustomSize = new() { Width = 200000, Height = 200000, LockAspect = true } };
+        Assert.Equal(20.48, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, locked), 3);
+
+        var stretched = new ImageOptions { CustomSize = new() { Width = 500, Height = 200000 } };
+        Assert.Equal(20.48, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, stretched), 3);
+    }
+
+    [Fact]
+    public void Custom_resize_plans_pdf_page_runs_at_the_scale_the_resize_will_use()
+    {
+        // How PdfiumConverter.Split plans runs: the factor the stacked strip is scaled by (issue #576).
+        var locked = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000, LockAspect = true } };
+        Assert.Equal(1.25, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, locked), 3);
+
+        var stretched = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
+        Assert.Equal(2.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, stretched), 3);
+
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions()), 3);
+
+        // A size of 0 or below from a hand-edited file is no size: the preset's own resize runs instead of it.
+        var zeroed = new ImageOptions { CustomSize = new() { Width = 0, Height = 2000 } };
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, zeroed), 3);
+
+        var negative = new ImageOptions { CustomSize = new() { Width = 500, Height = -1 } };
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, negative), 3);
+    }
+
+    [Fact]
     public void A_long_image_splits_between_pages_into_parts_the_format_holds()
     {
         // Five 6,000 px pages: a WebP holds 16,383 px, so two pages per part; at half width (Width 50 px) all fit.

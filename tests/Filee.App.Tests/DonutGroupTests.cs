@@ -472,6 +472,16 @@ public class DonutGroupTests
         Assert.Equal("Works on images only", availability.Check(removeBackground, [mp3]));
         Assert.Null(availability.Check(removeBackground, [png]));
 
+        // Custom sizing edits the picture too: a same-format Custom preset stores Resize None plus CustomSize, so
+        // EditsPicture has to read CustomSize as well, or it would still be offered for an MP3 (#604 follow-up).
+        var customSize = new Preset
+        {
+            TargetFormat = BuiltInData.SameAsSource,
+            Image = { CustomSize = new CustomImageSize { Width = 777, Height = 333 } }
+        };
+        Assert.Equal("Works on images only", availability.Check(customSize, [mp3]));
+        Assert.Null(availability.Check(customSize, [png]));
+
         var mixedOptions = new Preset
         {
             TargetFormat = BuiltInData.SameAsSource,

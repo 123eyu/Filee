@@ -61,6 +61,18 @@ public sealed class PresetKindJsonConverter : LenientEnumJsonConverter<PresetKin
 }
 
 /// <summary>
+/// Reads like the lenient converter and, when writing, never emits <see cref="ResizeMode.Custom"/> (an editor-only
+/// choice): a preset with custom sizing stores Resize None plus CustomSize, so a version without the mode keeps
+/// reading presets.json instead of rejecting it as broken and overwriting the user's presets with the built-in
+/// ones (issue #576).
+/// </summary>
+public sealed class ResizeModeJsonConverter : LenientEnumJsonConverter<ResizeMode>
+{
+    public override void Write(Utf8JsonWriter writer, ResizeMode value, JsonSerializerOptions options) =>
+        writer.WriteStringValue((value == ResizeMode.Custom ? ResizeMode.None : value).ToString());
+}
+
+/// <summary>
 /// A named conversion recipe. The donut toolbar shows presets; dropping files on one runs it.
 /// </summary>
 /// <remarks>
@@ -265,6 +277,13 @@ public enum ResizeMode
     LongEdge,
     /// <summary>Scale to <see cref="ImageOptions.Width"/> pixels wide, height in proportion (never upscales).</summary>
     Width,
+    /// <summary>
+    /// Scale to the free width x height in <see cref="ImageOptions.CustomSize"/>: stretched to exactly that size, or
+    /// with the aspect kept, scaled (up or down) to the largest size that fits inside (issue #576). An editor choice
+    /// only: a preset with custom sizing stores <see cref="ImageOptions.Resize"/> None plus
+    /// <see cref="ImageOptions.CustomSize"/>, so a version without the mode still reads the file.
+    /// </summary>
+    Custom,
 }
 
 /// <summary>How an image is turned, after its EXIF orientation is applied.</summary>
@@ -317,6 +336,13 @@ public sealed class ImageOptions
     /// </summary>
     public double MaxSizeMb { get; set; }
 
+    /// <summary>
+    /// How the picture is scaled. A preset with <see cref="CustomSize"/> set stores None here (custom sizing wins),
+    /// so a version without custom sizing simply does not resize instead of rejecting a name it does not know. The
+    /// lenient converter also reads a name a future version might add as None, and the writer maps Custom down to
+    /// None (see <see cref="ResizeModeJsonConverter"/>).
+    /// </summary>
+    [JsonConverter(typeof(ResizeModeJsonConverter))]
     public ResizeMode Resize { get; set; } = ResizeMode.None;
 
     /// <summary>Turns the image (after its EXIF orientation is applied).</summary>
@@ -333,7 +359,7 @@ public sealed class ImageOptions
 
     /// <summary>Whether the preset edits picture content, size, or playback speed.</summary>
     [JsonIgnore]
-    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed;
+    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed || CustomSize is not null;
 
     /// <summary>Scale in percent when <see cref="Resize"/> is <see cref="ResizeMode.Percent"/>.</summary>
     public int ResizePercent { get; set; } = 50;
@@ -343,6 +369,15 @@ public sealed class ImageOptions
 
     /// <summary>Target width in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Width"/>.</summary>
     public int Width { get; set; } = 1200;
+
+    /// <summary>
+    /// Free width x height resizing (issue #576): stretched to exactly that size, or with
+    /// <see cref="CustomImageSize.LockAspect"/> scaled (up or down) to the largest size that fits inside. When set it
+    /// wins over <see cref="Resize"/>; null leaves <see cref="Resize"/> in charge. Stored as one object so a
+    /// presets.json written by this version never carries a resize name an older version rejects: older versions skip
+    /// the unknown property and simply do not resize.
+    /// </summary>
+    public CustomImageSize? CustomSize { get; set; }
 
     /// <summary>Output DPI written into the file. <c>null</c> keeps the source value.</summary>
     public int? Dpi { get; set; }
@@ -446,8 +481,45 @@ public sealed class ImageOptions
     {
         var copy = (ImageOptions)MemberwiseClone();
         copy.IcoSizes = [.. IcoSizes];
+        copy.CustomSize = CustomSize is { } size
+            ? new CustomImageSize { Width = size.Width, Height = size.Height, LockAspect = size.LockAspect }
+            : null;
         return copy;
     }
+}
+
+/// <summary>The free width x height a preset resizes to: <see cref="ImageOptions.CustomSize"/> (issue #576). The
+/// editor keeps both sides within <see cref="MinSide"/>-<see cref="MaxSide"/>; a size read from a hand-edited file
+/// with a side of 0 or below is ignored where it is used, so the picture keeps the preset's own resize behavior
+/// instead, and any other side is brought into that range (<see cref="ClampedWidth"/>, <see cref="ClampedHeight"/>).</summary>
+public sealed class CustomImageSize
+{
+    /// <summary>The smallest side the editor offers.</summary>
+    public const int MinSide = 16;
+
+    /// <summary>The largest side the editor offers.</summary>
+    public const int MaxSide = 16384;
+
+    /// <summary>Target width in pixels.</summary>
+    public int Width { get; set; } = 1920;
+
+    /// <summary>Target height in pixels.</summary>
+    public int Height { get; set; } = 1080;
+
+    /// <summary>
+    /// Keep each file's own shape and scale it to the largest size that fits inside Width x Height, instead of
+    /// stretching it to exactly that size.
+    /// </summary>
+    public bool LockAspect { get; set; }
+
+    /// <summary><see cref="Width"/> within the editor's range, so a hand-edited 200000 cannot ask for a picture no
+    /// machine can hold.</summary>
+    [JsonIgnore]
+    public int ClampedWidth => Math.Clamp(Width, MinSide, MaxSide);
+
+    /// <summary><see cref="Height"/> within the editor's range (see <see cref="ClampedWidth"/>).</summary>
+    [JsonIgnore]
+    public int ClampedHeight => Math.Clamp(Height, MinSide, MaxSide);
 }
 
 /// <summary>Page size used when images are placed into a PDF.</summary>
