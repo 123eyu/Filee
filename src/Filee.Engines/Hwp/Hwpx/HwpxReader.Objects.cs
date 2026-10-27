@@ -56,7 +56,6 @@ internal sealed partial class HwpxReader
     /// <summary>The model objects for one drawing object; groups give one object per member.</summary>
     private IEnumerable<HInline> Shapes(XElement element, Placement placement)
     {
-        _budget.Object();
         switch (element.Name.LocalName)
         {
             case "pic":
@@ -243,7 +242,6 @@ internal sealed partial class HwpxReader
     /// </summary>
     private IEnumerable<HInline> Group(XElement container, Placement placement)
     {
-        using var level = _budget.Enter();
         var anchor = placement.Anchor ?? new HAnchor("COLUMN", "LEFT", 0, "PARA", "TOP", 0, "IN_FRONT_OF_TEXT", true);
         foreach (var member in Elements(container))
         {

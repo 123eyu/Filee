@@ -10,8 +10,6 @@ internal sealed partial class DocxReader
 {
     private HTable ReadTable(XElement tbl)
     {
-        _budget.Object();
-        using var level = _budget.Enter();
         var tblPr = tbl.Element(W + "tblPr");
         var style = _styles.GetValueOrDefault(Val(tblPr?.Element(W + "tblStyle")) ?? _defaultTableStyle ?? "");
         var styleChain = StyleChain(style);
@@ -66,18 +64,16 @@ internal sealed partial class DocxReader
             if (trPr?.Element(W + "trHeight") is { } height && Twips(height, "val") is > 0 and var h)
                 row.Height = HwpxUnits.FromTwips(h);
 
-            // Column numbers and spans of damaged files stay within the limit, so they can't overflow.
-            var maxColumns = _budget.Limits.MaxTableColumns;
-            var column = Math.Clamp(Twips(trPr?.Element(W + "gridBefore"), "val") ?? 0, 0, maxColumns);
+            var column = Twips(trPr?.Element(W + "gridBefore"), "val") ?? 0;
             foreach (var tc in tr.Elements().SelectMany(e => e.Name == W + "tc" ? [e] : FlattenCells(e)))
             {
                 var tcPr = tc.Element(W + "tcPr");
-                var span = Math.Clamp(Twips(tcPr?.Element(W + "gridSpan"), "val") ?? 1, 1, maxColumns);
+                var span = Math.Max(1, Twips(tcPr?.Element(W + "gridSpan"), "val") ?? 1);
                 var vMerge = tcPr?.Element(W + "vMerge");
                 if (vMerge is not null && Val(vMerge) is not "restart" && mergeOrigin.TryGetValue(column, out var origin))
                 {
                     origin.RowSpan++;
-                    column = Math.Min(column + span, maxColumns);
+                    column += span;
                     continue;
                 }
 
@@ -123,7 +119,7 @@ internal sealed partial class DocxReader
                 else
                     mergeOrigin.Remove(column);
                 row.Cells.Add(cell);
-                column = Math.Min(column + span, maxColumns);
+                column += span;
             }
             table.Rows.Add(row);
             table.ColumnCount = Math.Max(table.ColumnCount, column);
@@ -134,7 +130,7 @@ internal sealed partial class DocxReader
     private List<Style> StyleChain(Style? style)
     {
         var chain = new List<Style>();
-        for (var current = style; current is not null && chain.Count < MaxStyleChain; current = current.BasedOn is { } b ? _styles.GetValueOrDefault(b) : null)
+        for (var current = style; current is not null && chain.Count < 20; current = current.BasedOn is { } b ? _styles.GetValueOrDefault(b) : null)
             chain.Insert(0, current);
         return chain;
     }

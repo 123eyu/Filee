@@ -40,9 +40,6 @@ internal static class HwpxUnits
             "%" => number * 1.5, // % of a ~150 mm text width
             _ => number * 25.4 / 96, // px or unitless
         };
-        // Lengths beyond ±500 million (1.7 km) are cut there, so differences of two can't overflow.
-        return (int)Math.Clamp(Math.Round(mm * PerMm), -MaxLength, MaxLength);
+        return (int)Math.Round(mm * PerMm);
     }
-
-    private const int MaxLength = 500_000_000;
 }

@@ -21,7 +21,6 @@
 
 using System.Globalization;
 using System.Xml.Linq;
-using Filee.Engines.Documents;
 using Filee.Engines.Hwp.Hwpx;
 using ImageMagick;
 
@@ -611,9 +610,6 @@ internal sealed partial class OfdReader
         var name = Path.Combine(_mediaFolder, $"ofd-{Guid.NewGuid():N}");
         if (kind is "png" or "jpg" or "gif" or "bmp")
         {
-            // Copied as they are; one that claims more pixels than any picture should have is left out.
-            if (PictureSize.Read(new MemoryStream(bytes, writable: false)) is { } size && (long)size.Width * size.Height > _package.Limits.MaxPicturePixels)
-                return null;
             File.WriteAllBytes($"{name}.{kind}", bytes);
             return $"{name}.{kind}";
         }

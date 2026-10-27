@@ -3,7 +3,6 @@
 
 using System.Globalization;
 using System.Xml.Linq;
-using Filee.Engines.Documents;
 
 namespace Filee.Engines.Hwp.Hwpx.Docx;
 
@@ -59,7 +58,6 @@ internal sealed partial class DocxReader
     {
         foreach (var obj in objects)
         {
-            _budget.Object();
             if (obj.Name == Pic + "pic")
             {
                 if (Picture(obj, width, height, anchor) is { } picture)
@@ -81,7 +79,6 @@ internal sealed partial class DocxReader
     private IEnumerable<HInline> Group(XElement group, int width, int height, HAnchor? anchor,
         (double X, double Y, double ScaleX, double ScaleY) parent)
     {
-        using var level = _budget.Enter();
         var xfrm = group.Element(Wpg + "grpSpPr")?.Element(A + "xfrm") ?? group.Element(A + "grpSpPr")?.Element(A + "xfrm");
         var chOff = xfrm?.Element(A + "chOff");
         var chExt = xfrm?.Element(A + "chExt");
@@ -233,7 +230,6 @@ internal sealed partial class DocxReader
     /// <summary>Text box paragraphs; Word's document grid does not apply inside text boxes.</summary>
     private void ReadTextBoxContent(XElement content, List<HBlock> output)
     {
-        using var level = _budget.Enter();
         _textBoxDepth++;
         try
         {
@@ -404,12 +400,13 @@ internal sealed partial class DocxReader
             return null;
         if (_media.TryGetValue(rel.Target, out var existing))
             return existing;
-        if (_package.GetEntry(rel.Target) is not { } entry)
+        if (_zip.GetEntry(rel.Target) is not { } entry)
             return null;
         Directory.CreateDirectory(_mediaFolder);
-        string? path = Path.Combine(_mediaFolder, $"docx-media-{_media.Count + 1}{DocumentPackage.SafeExtension(rel.Target)}");
-        if (!_package.ExtractPicture(entry, path))
-            path = null; // larger than any picture should be: left out
+        var path = Path.Combine(_mediaFolder, $"docx-media-{_media.Count + 1}{Path.GetExtension(rel.Target)}");
+        using (var source = entry.Open())
+        using (var target = File.Create(path))
+            source.CopyTo(target);
         _media[rel.Target] = path;
         return path;
     }
@@ -425,12 +422,10 @@ internal sealed partial class DocxReader
                 continue;
             if (shape.Name.LocalName == "group")
             {
-                using var level = _budget.Enter();
                 foreach (var inline in Vml(shape, format))
                     yield return inline;
                 continue;
             }
-            _budget.Object();
             if (shape.Name.LocalName is "shapetype")
                 continue;
 
