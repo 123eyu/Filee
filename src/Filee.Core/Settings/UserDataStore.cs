@@ -889,6 +889,10 @@ internal static class SettingsMigrations
         // v48: fragmented MP4 pieces (.m4s) learn the video donut; custom claims stay put.
         if (from < 48)
             changed |= LearnExtensions(profiles, out _, ["m4s"]);
+        // v49: SQL (#607, which came without a migration), AutoHotkey, INI, RouterOS exports and .cmd batch scripts learn
+        //      the text donut; custom claims stay put. (Schema 49 may be renumbered if another change takes it first.)
+        if (from < 49)
+            changed |= LearnExtensions(profiles, out _, ["sql", "ahk", "ini", "rsc", "cmd"]);
         return changed;
     }
 
