@@ -320,11 +320,12 @@
   "clip.cannot_play": "Impossible de lire l'extrait",
 
   "preset.half_size": "Taille 50 %",
+  "preset.half_size.donut": "Taille 50 %",
   "preset.image_edit": "Modifier les images",
+  "preset.image_edit.donut": "Modifier",
   "image_edit.count": "{0} images",
   "image_edit.hint": "Choisissez la taille, le format et la rotation de ces images. Filee garde vos choix pour la prochaine fois.",
   "image_edit.convert": "Convertir",
-  "preset.half_size.donut": "Taille 50 %",
   "preset.grayscale": "Niveaux de gris",
   "preset.remove_background": "Détourer",
   "preset.trim_transparent": "Rogner les bords transparents",

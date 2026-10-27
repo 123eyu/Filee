@@ -891,8 +891,9 @@ internal static class SettingsMigrations
             changed |= LearnExtensions(profiles, out _, ["m4s"]);
         // v49: "Edit pictures" (size, format, turn and colour chosen each time, #584), after "Crop" as in a new library,
         //      and on the front of the images donut after "Half size" when that is there, the user hasn't put the tool
-        //      elsewhere on the donut and the face has room. Present already but saved since by a Filee before 49: that one dropped the tool's
-        //      name, which made it a crop, so it is put back.
+        //      elsewhere on the donut and the face has room.
+        //      Present already but saved since by a Filee before 45 (2.0): that one dropped the tool's name, which made it
+        //      a crop, so it is put back. 2.1 keeps the name (the slice is greyed out there, as a tool it doesn't know).
         if (from < 49)
             changed |= AddImageEditTool(presets, profiles);
         return changed;

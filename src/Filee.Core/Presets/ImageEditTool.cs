@@ -19,9 +19,25 @@ public static class ImageEditTool
     /// <summary>Formats the quality slider is shown for.</summary>
     public static readonly IReadOnlySet<string> LossyTargets = new HashSet<string> { "jpg", "webp", "avif", "heic" };
 
+    /// <summary>
+    /// The resizes the window offers, named rather than every <see cref="ResizeMode"/>: a mode added later (a free
+    /// width × height, #593) needs fields of its own in the window before it can be offered there.
+    /// </summary>
+    public static readonly IReadOnlyList<ResizeMode> ResizeModes = [ResizeMode.None, ResizeMode.Percent, ResizeMode.LongEdge, ResizeMode.Width];
+
     /// <summary>True when a <paramref name="sourceFormat"/> file is a picture the tool can open.</summary>
     public static bool CanEdit(string sourceFormat) =>
         FormatRegistry.FindById(sourceFormat)?.Category == FormatCategory.Image;
+
+    /// <summary>
+    /// The <see cref="Targets"/> at least one of the <paramref name="sourceFormats"/> can be written in with the engines
+    /// there are: HEIC only once FFmpeg is downloaded, as the donut's HEIC preset.
+    /// </summary>
+    public static IReadOnlyList<string> TargetsFrom(IEnumerable<string> sourceFormats, RoutePlanner planner)
+    {
+        var sources = sourceFormats.Distinct().ToList();
+        return [.. Targets.Where(target => sources.Any(source => planner.Plan(source, target) is not null))];
+    }
 
     /// <summary>
     /// The format a <paramref name="sourceFormat"/> picture is written in for the <paramref name="chosen"/> one: as

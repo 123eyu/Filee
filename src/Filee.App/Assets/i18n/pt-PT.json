@@ -320,11 +320,12 @@
   "clip.cannot_play": "Não é possível reproduzir o excerto",
 
   "preset.half_size": "Metade do tamanho",
+  "preset.half_size.donut": "Tamanho 50%",
   "preset.image_edit": "Editar imagens",
+  "preset.image_edit.donut": "Editar imagens",
   "image_edit.count": "{0} imagens",
   "image_edit.hint": "Escolha o tamanho, o formato e a rotação destas imagens. O Filee guarda as suas escolhas para a próxima vez.",
   "image_edit.convert": "Converter",
-  "preset.half_size.donut": "Tamanho 50%",
   "preset.grayscale": "Escala de cinzentos",
   "preset.remove_background": "Remover fundo",
   "preset.trim_transparent": "Recortar margens transparentes",

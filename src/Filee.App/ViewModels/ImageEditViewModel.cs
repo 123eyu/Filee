@@ -14,6 +14,9 @@ namespace Filee.App.ViewModels;
 
 public sealed partial class ImageEditViewModel : ObservableObject
 {
+    /// <summary>File names listed in the heading's tooltip before "…".</summary>
+    private const int NamesInTip = 12;
+
     private readonly Preset _tool;
     private readonly ILocalizer _loc;
     private readonly UserDataStore _store;
@@ -21,15 +24,21 @@ public sealed partial class ImageEditViewModel : ObservableObject
     private readonly Action<IReadOnlyList<string>, Preset> _start;
     private readonly ILogger? _log;
     private readonly (int Width, int Height)? _firstSize;
+    private readonly IReadOnlyList<string> _sourceFormats;
+    private readonly bool _keepsLossyFormat;
 
     /// <param name="pictures">The pictures to convert (other files are left out by the caller).</param>
     /// <param name="tool">The "Edit pictures" tool: its last choices, name and output rule.</param>
     /// <param name="targetFor">The format a picture (path) is written in for the chosen one (<see cref="ImageEditTool.TargetFor"/>).</param>
     /// <param name="start">Starts the conversion of some of the pictures.</param>
-    /// <param name="sizeOf">The pixel size of a picture, null when it can't be read; for the size shown in the window.</param>
+    /// <param name="sizeOf">
+    /// The pixel size of a picture as it is seen (EXIF orientation applied), null when it can't be read; for the size
+    /// shown in the window.
+    /// </param>
+    /// <param name="targets">The formats offered after "Same format" (<see cref="ImageEditTool.TargetsFrom"/>); all by default.</param>
     public ImageEditViewModel(IReadOnlyList<string> pictures, Preset tool, ILocalizer loc, UserDataStore store,
         Func<string, string, string> targetFor, Action<IReadOnlyList<string>, Preset> start,
-        Func<string, (int Width, int Height)?>? sizeOf = null, ILogger? log = null)
+        Func<string, (int Width, int Height)?>? sizeOf = null, ILogger? log = null, IReadOnlyList<string>? targets = null)
     {
         Pictures = pictures;
         _tool = tool;
@@ -38,14 +47,17 @@ public sealed partial class ImageEditViewModel : ObservableObject
         _targetFor = targetFor;
         _start = start;
         _log = log;
-        _firstSize = pictures.Count > 0 ? sizeOf?.Invoke(pictures[0]) : null;
+        _firstSize = pictures.Count > 0 && sizeOf?.Invoke(pictures[0]) is { Width: > 0, Height: > 0 } size ? size : null;
+        _sourceFormats = pictures.Select(path => FormatRegistry.Detect(path)?.Id ?? "").ToList();
+        _keepsLossyFormat = pictures.Where((path, i) => ImageEditTool.LossyTargets.Contains(_sourceFormats[i])
+            && targetFor(path, BuiltInData.SameAsSource) == BuiltInData.SameAsSource).Any();
 
         Targets =
         [
             new Choice<string>(BuiltInData.SameAsSource, loc["presets.same_as_source"]),
-            .. ImageEditTool.Targets.Select(id => new Choice<string>(id, FormatRegistry.Get(id).DisplayName)),
+            .. (targets ?? ImageEditTool.Targets).Select(id => new Choice<string>(id, FormatRegistry.Get(id).DisplayName)),
         ];
-        ResizeModes = Enum.GetValues<ResizeMode>().Select(v => new Choice<ResizeMode>(v, loc[$"presets.resize.{v}"])).ToList();
+        ResizeModes = ImageEditTool.ResizeModes.Select(v => new Choice<ResizeMode>(v, loc[$"presets.resize.{v}"])).ToList();
         Rotations = Enum.GetValues<ImageRotation>().Select(v => new Choice<ImageRotation>(v, loc[$"presets.rotation.{v}"])).ToList();
         Flips = Enum.GetValues<ImageFlip>().Select(v => new Choice<ImageFlip>(v, loc[$"presets.flip.{v}"])).ToList();
 
@@ -69,29 +81,29 @@ public sealed partial class ImageEditViewModel : ObservableObject
     public IReadOnlyList<Choice<ImageFlip>> Flips { get; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowQuality))]
+    [NotifyPropertyChangedFor(nameof(ShowQuality), nameof(SizeAfter))]
     private Choice<string> _target;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowPercent), nameof(ShowLongEdge), nameof(ShowWidth), nameof(SizeChange))]
+    [NotifyPropertyChangedFor(nameof(ShowPercent), nameof(ShowLongEdge), nameof(ShowWidth), nameof(SizeAfter))]
     private Choice<ResizeMode> _resize;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SizeChange))]
+    [NotifyPropertyChangedFor(nameof(SizeAfter))]
     private Choice<ImageRotation> _rotation;
 
     [ObservableProperty] private Choice<ImageFlip> _flip;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SizeChange))]
+    [NotifyPropertyChangedFor(nameof(SizeAfter))]
     private int _resizePercent;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SizeChange))]
+    [NotifyPropertyChangedFor(nameof(SizeAfter))]
     private int _longEdge;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SizeChange))]
+    [NotifyPropertyChangedFor(nameof(SizeAfter))]
     private int _width;
 
     [ObservableProperty] private bool _grayscale;
@@ -106,28 +118,47 @@ public sealed partial class ImageEditViewModel : ObservableObject
     public bool ShowLongEdge => Resize.Value == ResizeMode.LongEdge;
     public bool ShowWidth => Resize.Value == ResizeMode.Width;
 
-    /// <summary>JPG, WEBP, AVIF and HEIC, or the source's own format (which may be one of them).</summary>
-    public bool ShowQuality => Target.Value == BuiltInData.SameAsSource || ImageEditTool.LossyTargets.Contains(Target.Value);
+    /// <summary>
+    /// JPG, WEBP, AVIF and HEIC; with "Same format", when one of the pictures is one of them (a PNG has no quality).
+    /// </summary>
+    public bool ShowQuality => Target.Value == BuiltInData.SameAsSource ? _keepsLossyFormat : ImageEditTool.LossyTargets.Contains(Target.Value);
 
     /// <summary>The first picture's name, or how many pictures there are.</summary>
     public string Heading => Pictures.Count == 1 ? Path.GetFileName(Pictures[0]) : _loc.Format("image_edit.count", Pictures.Count);
 
-    /// <summary>"512 × 512 → 32 × 32" for the first picture; empty when its size can't be read.</summary>
-    public string SizeChange
+    /// <summary>The heading's tooltip: the picture's whole path, or the names of the pictures.</summary>
+    public string HeadingTip => Pictures.Count == 1
+        ? Pictures[0]
+        : string.Join('\n', Pictures.Take(NamesInTip).Select(Path.GetFileName)) + (Pictures.Count > NamesInTip ? "\n…" : "");
+
+    /// <summary>The before → after line is shown: the first picture's size could be read.</summary>
+    public bool ShowSize => _firstSize is not null;
+
+    /// <summary>The first picture's size, "512 × 256"; empty when it can't be read.</summary>
+    public string SizeBefore => _firstSize is { } size ? $"{size.Width} × {size.Height}" : "";
+
+    /// <summary>The size the first picture is written in with the choices, "32 × 16"; empty when it can't be read.</summary>
+    public string SizeAfter => SizeOfFirst() is { } size ? $"{size.Width} × {size.Height}" : "";
+
+    /// <summary>
+    /// The first picture's size once converted, worked out as the encoder does it: turned, resized, brought within what
+    /// the format stores, and for an icon squared and at most 256 px.
+    /// </summary>
+    internal (int Width, int Height)? SizeOfFirst()
     {
-        get
-        {
-            if (_firstSize is not { } size || size.Width <= 0 || size.Height <= 0)
-                return "";
-            var (width, height) = size;
-            var options = Options();
-            var scale = ImageEncoder.ResizeScale(width, height, options);
-            var turned = options.Rotation is ImageRotation.Left90 or ImageRotation.Right90;
-            var (outWidth, outHeight) = (Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)));
-            if (turned)
-                (outWidth, outHeight) = (outHeight, outWidth);
-            return $"{width} × {height} → {outWidth} × {outHeight}";
-        }
+        if (_firstSize is not { } size)
+            return null;
+        var options = Options();
+        var (width, height) = options.Rotation is ImageRotation.Left90 or ImageRotation.Right90 ? (size.Height, size.Width) : size;
+        var scale = ImageEncoder.ResizeScale(width, height, options);
+        (width, height) = (Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)));
+        var target = _targetFor(Pictures[0], Target.Value) is var chosen && chosen == BuiltInData.SameAsSource ? _sourceFormats[0] : chosen;
+        var fit = Math.Min(1, ImageEncoder.MaxSide(target) / Math.Max(width, height));
+        if (fit < 1)
+            (width, height) = (Math.Max(1, (int)Math.Floor(width * fit)), Math.Max(1, (int)Math.Floor(height * fit)));
+        if (target == "ico")
+            width = height = Math.Min(256, Math.Max(width, height));
+        return (width, height);
     }
 
     /// <summary>The tool's picture options with the window's choices.</summary>

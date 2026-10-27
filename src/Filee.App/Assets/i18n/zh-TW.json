@@ -320,11 +320,12 @@
   "clip.cannot_play": "無法播放片段",
 
   "preset.half_size": "縮小 50%",
+  "preset.half_size.donut": "縮小 50%",
   "preset.image_edit": "編輯圖片",
+  "preset.image_edit.donut": "編輯圖片",
   "image_edit.count": "{0} 張圖片",
   "image_edit.hint": "為這些圖片選擇尺寸、格式和旋轉。Filee 會記住你的選擇，下次繼續使用。",
   "image_edit.convert": "轉換",
-  "preset.half_size.donut": "縮小 50%",
   "preset.grayscale": "灰階",
   "preset.remove_background": "去除背景",
   "preset.trim_transparent": "裁掉透明邊框",

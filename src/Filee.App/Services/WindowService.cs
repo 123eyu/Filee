@@ -123,8 +123,8 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
     public MainWindow? Main => _main;
 
     /// <summary>
-    /// Opens the window of a tool preset (crop, cut a clip, the spreadsheet print studio: one per workbook, the PDF page
-    /// editor) on the files. A tool this version doesn't know opens nothing.
+    /// Opens the window of a tool preset (crop, cut a clip, edit pictures, the spreadsheet print studio: one per workbook,
+    /// the PDF page editor) on the files. A tool this version doesn't know opens nothing.
     /// </summary>
     public void ShowTool(IReadOnlyList<string> files, Preset preset, PixelPoint? near = null)
     {
@@ -192,9 +192,10 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         var conversions = services.GetRequiredService<ConversionService>();
         var log = services.GetService<ILogger<ImageEditViewModel>>();
         var planner = catalog.CreatePlanner();
+        var formats = pictures.Select(path => FormatRegistry.Detect(path)?.Id ?? "").ToList();
         var vm = new ImageEditViewModel(pictures, preset, loc, store,
             (path, chosen) => ImageEditTool.TargetFor(FormatRegistry.Detect(path)?.Id ?? "", chosen, planner),
-            (paths, conversion) => conversions.Start(paths, conversion), PictureSize, log);
+            (paths, conversion) => conversions.Start(paths, conversion), PictureSize, log, ImageEditTool.TargetsFrom(formats, planner));
         var win = new ImageEditWindow { DataContext = vm };
         PrepareWindow(win);
         win.Closed += (_, _) =>
@@ -207,13 +208,21 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         win.Activate();
     }
 
-    /// <summary>The pixel size of a picture, read from its header; null when ImageMagick can't read it.</summary>
-    private static (int Width, int Height)? PictureSize(string path)
+    /// <summary>
+    /// The pixel size of a picture as it is seen, read from its headers: turned as its EXIF orientation says, and the
+    /// largest of an icon's sizes (the one converted). Null when ImageMagick can't read it.
+    /// </summary>
+    internal static (int Width, int Height)? PictureSize(string path)
     {
         try
         {
-            var info = new ImageMagick.MagickImageInfo(path);
-            return ((int)info.Width, (int)info.Height);
+            var info = ImageMagick.MagickImageInfo.ReadCollection(path).MaxBy(frame => (long)frame.Width * frame.Height);
+            if (info is null)
+                return null;
+            return info.Orientation is ImageMagick.OrientationType.LeftTop or ImageMagick.OrientationType.RightTop
+                or ImageMagick.OrientationType.RightBottom or ImageMagick.OrientationType.LeftBottom
+                ? ((int)info.Height, (int)info.Width)
+                : ((int)info.Width, (int)info.Height);
         }
         catch (Exception ex) when (ex is ImageMagick.MagickException or IOException or UnauthorizedAccessException)
         {

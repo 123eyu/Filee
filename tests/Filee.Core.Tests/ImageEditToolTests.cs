@@ -84,6 +84,19 @@ public class ImageEditToolTests
         Assert.False(ImageEditTool.CanEdit("pdf"));
     }
 
+    [Fact]
+    public void The_formats_offered_are_those_a_picture_can_be_written_in()
+    {
+        // HEIC is written with the FFmpeg download: without it, not offered.
+        var magick = new FakeConverter("magick", new ConversionEdge("png", "jpg"), new ConversionEdge("png", "webp"),
+            new ConversionEdge("dcm", "png"), new ConversionEdge("jpg", "ico"));
+        var planner = new ConverterCatalog([magick]).CreatePlanner();
+
+        Assert.Equal(["png", "jpg", "webp", "ico"], ImageEditTool.TargetsFrom(["png", "dcm", "jpg"], planner));
+        Assert.Equal(["ico"], ImageEditTool.TargetsFrom(["jpg"], planner));
+        Assert.DoesNotContain("heic", ImageEditTool.TargetsFrom(["png"], planner));
+    }
+
     // ───────────────────────── Settings schema 49 ─────────────────────────
 
     [Fact]
@@ -142,7 +155,7 @@ public class ImageEditToolTests
     [Fact]
     public void Back_from_an_older_Filee_the_tool_edits_pictures_again_and_keeps_the_users_changes()
     {
-        // A Filee before 49 reads the unknown "tool" as nothing (a crop) and saves it so.
+        // A Filee before 45 (2.0) has no "tool": it reads the tool as a crop and saves it so.
         var presets = BuiltInData.CreatePresets();
         var edit = presets.Single(p => p.Id == "tool-image-edit");
         edit.Tool = null;
