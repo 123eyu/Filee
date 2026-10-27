@@ -82,6 +82,8 @@
   "format_request.notice_title": "Filee henüz {0} dosyalarını dönüştüremiyor",
   "format_request.notice_text": "İhtiyacınız olan biçimi bize bildirin.\nFilee'nin sırada hangi biçimleri destekleyeceğini talepler belirler.\nŞifreli veya kopya korumalı (DRM) dosyalar, biçimi ne olursa olsun dönüştürülemez.",
   "error.no_route": "Bu dönüştürmeyi yapabilen bir motor yok",
+  "error.msi_busy": "Başka bir yükleme sürüyor. Bittiğinde yeniden deneyin",
+  "error.msi_link": "Windows Installer paketi açamadı: yoldaki bir klasör başka bir sürücüye bağlantı olabilir",
   "error.cannot_turn": "Döndürme ve çevirme yalnızca görsellerde çalışır",
   "error.images_only": "Yalnızca görsellerde çalışır",
   "error.no_transparency": "Bu biçim saydamlık içermediği için kırpılacak alan yok",
