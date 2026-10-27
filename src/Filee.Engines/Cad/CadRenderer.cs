@@ -134,7 +134,7 @@ internal static class CadRenderer
     private const int MaxDashesPerFigure = 20_000;
 
     /// <summary>Writes a one-page vector PDF.</summary>
-    public static void WritePdf(CadScene scene, PdfOptions options, string title, Stream output)
+    public static void WritePdf(CadScene scene, PdfOptions options, CadPalette palette, string title, Stream output)
     {
         var page = PageLayout.ForPdf(scene.Extents, options);
         var metadata = new SKDocumentPdfMetadata
@@ -148,7 +148,7 @@ internal static class CadRenderer
         };
         using var document = SKDocument.CreatePdf(output, metadata);
         var canvas = document.BeginPage(page.Width, page.Height);
-        Draw(canvas, scene, page, background: false);
+        Draw(canvas, scene, page, palette, background: false);
         document.EndPage();
         document.Close();
     }
@@ -158,7 +158,7 @@ internal static class CadRenderer
     /// drawing and viewport frames; inside each frame model space is drawn at the viewport's scale, clipped to it,
     /// under the layout's own drawing (title block, notes).
     /// </summary>
-    public static void WritePdf(IReadOnlyList<LayoutSheet> sheets, CadScene model, PdfOptions options, string title, Stream output)
+    public static void WritePdf(IReadOnlyList<LayoutSheet> sheets, CadScene model, PdfOptions options, CadPalette palette, string title, Stream output)
     {
         var metadata = new SKDocumentPdfMetadata
         {
@@ -182,22 +182,22 @@ internal static class CadRenderer
                 canvas.ClipRect(new SKRect(Math.Min(corner1.X, corner2.X), Math.Min(corner1.Y, corner2.Y),
                     Math.Max(corner1.X, corner2.X), Math.Max(corner1.Y, corner2.Y)));
                 var center = new Vec2((view.Frame.MinX + view.Frame.MaxX) / 2, (view.Frame.MinY + view.Frame.MaxY) / 2);
-                Draw(canvas, model, page.Through(view.Scale, view.ViewCenter, center), background: false);
+                Draw(canvas, model, page.Through(view.Scale, view.ViewCenter, center), palette, background: false);
                 canvas.Restore();
             }
-            Draw(canvas, sheet.Paper, page, background: false);
+            Draw(canvas, sheet.Paper, page, palette, background: false);
             document.EndPage();
         }
         document.Close();
     }
 
     /// <summary>Writes an SVG (pixel units at 96 dpi) with a white background.</summary>
-    public static void WriteSvg(CadScene scene, Stream output)
+    public static void WriteSvg(CadScene scene, CadPalette palette, Stream output)
     {
         var page = PageLayout.ForImage(scene.Extents, 96 / 25.4);
         // The SVG canvas writes its XML when disposed; the stream must stay open until then.
         using (var canvas = SKSvgCanvas.Create(new SKRect(0, 0, page.Width, page.Height), output))
-            Draw(canvas, scene, page, background: true);
+            Draw(canvas, scene, page, palette, background: true);
         output.Flush();
     }
 
@@ -205,7 +205,7 @@ internal static class CadRenderer
     /// Renders a white-background bitmap at <paramref name="dpi"/> (for the virtual A3 page), limited to a
     /// sensible pixel count.
     /// </summary>
-    public static SKBitmap RenderBitmap(CadScene scene, double dpi)
+    public static SKBitmap RenderBitmap(CadScene scene, double dpi, CadPalette palette)
     {
         const double MaxEdge = 12_000;
         const double MaxPixels = 80_000_000;
@@ -216,13 +216,16 @@ internal static class CadRenderer
 
         var bitmap = new SKBitmap(new SKImageInfo(Math.Max(1, (int)Math.Round(page.Width)), Math.Max(1, (int)Math.Round(page.Height)), SKColorType.Rgba8888, SKAlphaType.Premul));
         using var canvas = new SKCanvas(bitmap);
-        Draw(canvas, scene, page, background: true);
+        Draw(canvas, scene, page, palette, background: true);
         canvas.Flush();
         return bitmap;
     }
 
-    /// <summary>Draws every primitive in order. Consecutive strokes with the same pen are merged into one path.</summary>
-    public static void Draw(SKCanvas canvas, CadScene scene, PageLayout page, bool background)
+    /// <summary>
+    /// Draws every primitive in order, in the colours of <paramref name="palette"/>. Consecutive strokes with the same
+    /// pen are merged into one path.
+    /// </summary>
+    public static void Draw(SKCanvas canvas, CadScene scene, PageLayout page, CadPalette palette, bool background)
     {
         if (background)
         {
@@ -236,33 +239,33 @@ internal static class CadRenderer
             switch (item)
             {
                 case StrokePrimitive stroke:
-                    DrawStroke(batch, stroke, page);
+                    DrawStroke(batch, stroke, page, palette.Ink(stroke.Color));
                     break;
                 case InfiniteLinePrimitive line:
-                    DrawInfinite(batch, line, page);
+                    DrawInfinite(batch, line, page, palette.Ink(line.Color));
                     break;
                 case FillPrimitive fill:
                     batch.Flush();
-                    DrawFill(canvas, fill, page);
+                    DrawFill(canvas, fill, page, palette);
                     break;
                 case HatchLinesPrimitive hatch:
                     batch.Flush();
-                    DrawHatchLines(canvas, hatch, page);
+                    DrawHatchLines(canvas, hatch, page, palette.Ink(hatch.Color));
                     break;
                 case TextPrimitive text:
                     batch.Flush();
-                    DrawText(canvas, text, page);
+                    DrawText(canvas, text, page, palette.Ink(text.Color));
                     break;
                 case PointPrimitive point:
                     batch.Flush();
-                    DrawPoint(canvas, point, page);
+                    DrawPoint(canvas, point, page, palette.Ink(point.Color));
                     break;
             }
         }
         batch.Flush();
     }
 
-    private static void DrawStroke(StrokeBatch batch, StrokePrimitive stroke, PageLayout page)
+    private static void DrawStroke(StrokeBatch batch, StrokePrimitive stroke, PageLayout page, SKColor color)
     {
         var penWidth = stroke.WidthMm * page.UnitsPerMm;
         var wide = stroke.WorldWidth > 0 && stroke.WorldWidth * page.Scale > penWidth;
@@ -273,14 +276,14 @@ internal static class CadRenderer
         var dashes = PageDashes(stroke.Dashes, page);
         if (dashes is null)
         {
-            batch.Add(path, stroke.Color, (float)width, wide);
+            batch.Add(path, color, (float)width, wide);
             return;
         }
         using var dashed = Dash(path, dashes);
-        batch.Add(dashed ?? path, stroke.Color, (float)width, wide);
+        batch.Add(dashed ?? path, color, (float)width, wide);
     }
 
-    private static void DrawInfinite(StrokeBatch batch, InfiniteLinePrimitive line, PageLayout page)
+    private static void DrawInfinite(StrokeBatch batch, InfiniteLinePrimitive line, PageLayout page, SKColor color)
     {
         // Clip to the page: the lines only need to reach its corners.
         var corners = new[] { page.FromPage(0, 0), page.FromPage(page.Width, 0), page.FromPage(0, page.Height), page.FromPage(page.Width, page.Height) };
@@ -290,15 +293,17 @@ internal static class CadRenderer
             return;
         var figure = new Figure(line.Origin + line.Direction * tMin);
         figure.LineTo(line.Origin + line.Direction * tMax);
-        DrawStroke(batch, new StrokePrimitive { Color = line.Color, WidthMm = line.WidthMm, Dashes = line.Dashes, Figures = { figure } }, page);
+        DrawStroke(batch, new StrokePrimitive { WidthMm = line.WidthMm, Dashes = line.Dashes, Figures = { figure } }, page, color);
     }
 
-    private static void DrawFill(SKCanvas canvas, FillPrimitive fill, PageLayout page)
+    private static void DrawFill(SKCanvas canvas, FillPrimitive fill, PageLayout page, CadPalette palette)
     {
+        // A filled hatch is an area, anything else (arrowheads, SOLID, wide polylines) is ink: see CadPalette.
+        var color = fill.IsArea ? palette.Area(fill.Color) : palette.Ink(fill.Color);
         using var path = new SKPath { FillType = SKPathFillType.EvenOdd };
         foreach (var figure in fill.Figures)
             AddFigure(path, figure, page, close: true);
-        using var paint = new SKPaint { Color = fill.Color, Style = SKPaintStyle.Fill, IsAntialias = true };
+        using var paint = new SKPaint { Color = color, Style = SKPaintStyle.Fill, IsAntialias = true };
         if (fill.GradientColor is { } second)
         {
             var bounds = path.Bounds;
@@ -308,12 +313,12 @@ internal static class CadRenderer
             paint.Shader = SKShader.CreateLinearGradient(
                 new SKPoint(bounds.MidX - direction.X, bounds.MidY - direction.Y),
                 new SKPoint(bounds.MidX + direction.X, bounds.MidY + direction.Y),
-                [fill.Color, second], SKShaderTileMode.Clamp);
+                [color, fill.IsArea ? palette.Area(second) : palette.Ink(second)], SKShaderTileMode.Clamp);
         }
         canvas.DrawPath(path, paint);
     }
 
-    private static void DrawHatchLines(SKCanvas canvas, HatchLinesPrimitive hatch, PageLayout page)
+    private static void DrawHatchLines(SKCanvas canvas, HatchLinesPrimitive hatch, PageLayout page, SKColor color)
     {
         using var clip = new SKPath { FillType = SKPathFillType.EvenOdd };
         foreach (var figure in hatch.Boundary)
@@ -324,14 +329,14 @@ internal static class CadRenderer
             lines.MoveTo(page.Point(a));
             lines.LineTo(page.Point(b));
         }
-        using var paint = Pen(hatch.Color, (float)(hatch.WidthMm * page.UnitsPerMm), wide: false);
+        using var paint = Pen(color, (float)(hatch.WidthMm * page.UnitsPerMm), wide: false);
         canvas.Save();
         canvas.ClipPath(clip, SKClipOperation.Intersect, antialias: true);
         canvas.DrawPath(lines, paint);
         canvas.Restore();
     }
 
-    private static void DrawText(SKCanvas canvas, TextPrimitive text, PageLayout page)
+    private static void DrawText(SKCanvas canvas, TextPrimitive text, PageLayout page, SKColor color)
     {
         var origin = page.ToPage(text.Origin);
         var x = page.VectorToPage(text.XAxis);
@@ -346,17 +351,17 @@ internal static class CadRenderer
             (float)(x.Y / size), (float)(y.Y / size), (float)origin.Y,
             0, 0, 1);
         using var font = CadFonts.CreateFont(text.Typeface, (float)size);
-        using var paint = new SKPaint { Color = text.Color, IsAntialias = true, Style = SKPaintStyle.Fill };
+        using var paint = new SKPaint { Color = color, IsAntialias = true, Style = SKPaintStyle.Fill };
         canvas.Save();
         canvas.Concat(in matrix);
         canvas.DrawText(text.Text, 0, 0, font, paint);
         canvas.Restore();
     }
 
-    private static void DrawPoint(SKCanvas canvas, PointPrimitive point, PageLayout page)
+    private static void DrawPoint(SKCanvas canvas, PointPrimitive point, PageLayout page, SKColor color)
     {
         var radius = (float)Math.Max(point.WidthMm * page.UnitsPerMm, 0.3 * page.UnitsPerMm) / 2;
-        using var paint = new SKPaint { Color = point.Color, IsAntialias = true, Style = SKPaintStyle.Fill };
+        using var paint = new SKPaint { Color = color, IsAntialias = true, Style = SKPaintStyle.Fill };
         canvas.DrawCircle(page.Point(point.Location), radius, paint);
     }
 

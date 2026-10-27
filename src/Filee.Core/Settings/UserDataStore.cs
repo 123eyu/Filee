@@ -906,10 +906,24 @@ internal static class SettingsMigrations
         // v50: Dahua DVR recordings (.dav) learn the video donut; custom claims stay put.
         if (from < 50)
             changed |= LearnExtensions(profiles, out _, ["dav"]);
-        // v53: "Merge images" (#645; 51 and 52 are kept for changes that came first, so this may be renumbered), after
-        //      "Merge audio" as in a new library, and on the back of the images donut before "Merge PDF" when the user
-        //      hasn't put it on either face: in a free slot, or in place of "GIF" (which stays in the library) on a
-        //      full face. Present already but saved since by a Filee before 53: that one dropped the option and left a
+        // v51: "Edit pictures" (size, format, turn and colour chosen each time, #584), after "Crop" as in a new library,
+        //      and on the front of the images donut after "Half size" when that is there, the user hasn't put the tool
+        //      elsewhere on the donut and the face has room.
+        //      Present already but saved since by a Filee before 45 (2.0): that one dropped the tool's name, which made it
+        //      a crop, so it is put back. 2.1 keeps the name (the slice is greyed out there, as a tool it doesn't know).
+        if (from < 51)
+            changed |= AddImageEditTool(presets, profiles);
+        // v52: "Pixelate / blur", after "Edit pictures" (else "Crop") as in a new library, and on the images donut after
+        //      "Half size" (after "Edit pictures" when that follows it) when the front has room, else at the end of the
+        //      back face when that has room. A front without "Half size" was laid out by the user and is left alone (the
+        //      tool is in the library); one who put the tool somewhere on the donut keeps it there.
+        //      Present already but saved since by a Filee before 45 (2.0): that one dropped the tool's name, which made it
+        //      a crop, so it is put back. 2.1 keeps the name (the slice is greyed out there, as a tool it doesn't know).
+        if (from < 52)
+            changed |= AddHideTool(presets, profiles);
+        // v53: "Merge images" (#645), after "Merge audio" as in a new library, and on the back of the images donut before
+        //      "Merge PDF" when the user hasn't put it on either face: in a free slot, or in place of "GIF" (which stays in
+        //      the library) on a full face. Present already but saved since by a Filee before 53: that one dropped the option and left a
         //      plain "same format" preset, so it is put back.
         if (from < 53)
             changed |= AddMergeImages(presets, profiles);
@@ -1068,6 +1082,88 @@ internal static class SettingsMigrations
                 back.Insert(0, clip.Id);
                 changed = true;
             }
+        }
+        return changed;
+    }
+
+    private static bool AddImageEditTool(List<Preset> presets, List<ToolbarProfile> profiles)
+    {
+        var changed = false;
+        var edit = BuiltInData.ImageEditPresets().Single();
+        if (presets.FirstOrDefault(p => p.Id == edit.Id) is { } existing)
+        {
+            if (!existing.IsImageEditTool)
+            {
+                existing.Kind = PresetKind.Tool;
+                existing.Tool = Preset.ImageEditTool;
+                existing.SubPresetIds = [];
+                if (existing.TargetFormat == Preset.GroupTarget)
+                    existing.TargetFormat = edit.TargetFormat;
+                changed = true;
+            }
+        }
+        else
+        {
+            var at = presets.FindIndex(p => p.Id == "tool-crop");
+            presets.Insert(at < 0 ? presets.Count : at + 1, edit);
+            changed = true;
+        }
+        // Next to "Half size", the resize it does more of: a front without it was laid out by the user and stays so.
+        if (profiles.FirstOrDefault(p => p.Id == "images") is { } images
+            && images.PresetIds.IndexOf("half-size") is >= 0 and var half
+            && !images.PresetIds.Contains(edit.Id) && images.BackPresetIds?.Contains(edit.Id) != true
+            && images.PresetIds.Count < ToolbarProfile.MaxSlices)
+        {
+            images.PresetIds.Insert(half + 1, edit.Id);
+            changed = true;
+        }
+        return changed;
+    }
+
+    private static bool AddHideTool(List<Preset> presets, List<ToolbarProfile> profiles)
+    {
+        var changed = false;
+        var hide = BuiltInData.HidePresets().Single();
+        if (presets.FirstOrDefault(p => p.Id == hide.Id) is { } existing)
+        {
+            if (!existing.IsHideTool)
+            {
+                existing.Kind = PresetKind.Tool;
+                existing.Tool = Preset.HideTool;
+                existing.SubPresetIds = [];
+                if (existing.TargetFormat == Preset.GroupTarget)
+                    existing.TargetFormat = hide.TargetFormat;
+                changed = true;
+            }
+        }
+        else
+        {
+            var at = presets.FindIndex(p => p.Id == "tool-image-edit") is >= 0 and var edit
+                ? edit
+                : presets.FindIndex(p => p.Id == "tool-crop");
+            presets.Insert(at < 0 ? presets.Count : at + 1, hide);
+            changed = true;
+        }
+        if (profiles.FirstOrDefault(p => p.Id == "images") is not { } images
+            || images.PresetIds.Contains(hide.Id) || images.BackPresetIds?.Contains(hide.Id) == true)
+            return changed;
+        var front = images.PresetIds;
+        // Next to the other everyday edits: "Half size", and "Edit pictures" when it follows it. A front without "Half
+        // size" was laid out by the user and stays so, with the back face.
+        var after = front.IndexOf("half-size");
+        if (after < 0)
+            return changed;
+        if (after + 1 < front.Count && front[after + 1] == "tool-image-edit")
+            after++;
+        if (front.Count < ToolbarProfile.MaxSlices)
+        {
+            front.Insert(after + 1, hide.Id);
+            return true;
+        }
+        if (images.BackPresetIds is { } back && back.Count < ToolbarProfile.MaxSlices)
+        {
+            InsertBefore(back, hide.Id, "zip-all");
+            return true;
         }
         return changed;
     }

@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Xml.Linq;
+using Filee.Engines.Documents;
 
 namespace Filee.Engines.Hwp.Hwpx.Docx;
 
@@ -28,8 +29,24 @@ internal sealed partial class DocxReader
             var height = HwpxUnits.FromEmu(Long(extent, "cy") ?? 0);
             var anchor = anchored ? Anchor(container) : null;
             var data = container.Element(A + "graphic")?.Element(A + "graphicData");
+            // Stacking order of floating objects (members of a group share the group's).
+            var zOrder = anchored && Long(container, "relativeHeight") is { } height32 ? (int?)Math.Min(height32, int.MaxValue) : null;
             foreach (var inline in GraphicObjects(data?.Elements() ?? [], width, height, anchor, (0, 0, 1, 1)))
+            {
+                switch (inline)
+                {
+                    case HImage image:
+                        image.ZOrder = zOrder;
+                        break;
+                    case HShape shape:
+                        shape.ZOrder = zOrder;
+                        break;
+                    case HTextBox box:
+                        box.ZOrder = zOrder;
+                        break;
+                }
                 yield return inline;
+            }
         }
     }
 
@@ -42,6 +59,7 @@ internal sealed partial class DocxReader
     {
         foreach (var obj in objects)
         {
+            _budget.Object();
             if (obj.Name == Pic + "pic")
             {
                 if (Picture(obj, width, height, anchor) is { } picture)
@@ -63,6 +81,7 @@ internal sealed partial class DocxReader
     private IEnumerable<HInline> Group(XElement group, int width, int height, HAnchor? anchor,
         (double X, double Y, double ScaleX, double ScaleY) parent)
     {
+        using var level = _budget.Enter();
         var xfrm = group.Element(Wpg + "grpSpPr")?.Element(A + "xfrm") ?? group.Element(A + "grpSpPr")?.Element(A + "xfrm");
         var chOff = xfrm?.Element(A + "chOff");
         var chExt = xfrm?.Element(A + "chExt");
@@ -111,7 +130,29 @@ internal sealed partial class DocxReader
     {
         var blip = pic.Descendants(A + "blip").FirstOrDefault();
         var path = ExtractImage(Attr(blip, "embed", R));
-        return path is null ? null : new HImage(path) { Width = width > 0 ? width : null, Height = height > 0 ? height : null, Anchor = anchor };
+        return path is null ? null : new HImage(path)
+        {
+            Width = width > 0 ? width : null,
+            Height = height > 0 ? height : null,
+            Anchor = anchor,
+            Crop = Crop(pic.Descendants(A + "srcRect").FirstOrDefault()),
+            Transform = Transform(pic.Element(Pic + "spPr")?.Element(A + "xfrm")),
+        };
+    }
+
+    /// <summary>a:srcRect: the part of the picture cut away at each edge, in 1/1000 percent.</summary>
+    private static HCrop? Crop(XElement? sourceRect)
+    {
+        double Edge(string name) => Math.Clamp((Long(sourceRect, name) ?? 0) / 100000.0, 0, 1);
+        var crop = new HCrop(Edge("l"), Edge("t"), Edge("r"), Edge("b"));
+        return sourceRect is null || crop.IsEmpty ? null : crop;
+    }
+
+    /// <summary>Rotation (a:xfrm rot, 1/60000 degree, clockwise) and mirroring; null when there is neither.</summary>
+    private static HTransform? Transform(XElement? xfrm)
+    {
+        var transform = new HTransform((Long(xfrm, "rot") ?? 0) / 60000.0, Attr(xfrm, "flipH") is "1" or "true", Attr(xfrm, "flipV") is "1" or "true");
+        return transform.IsIdentity ? null : transform;
     }
 
     /// <summary>A text box, or a rectangle / ellipse / line without text. Other geometries are skipped.</summary>
@@ -162,6 +203,7 @@ internal sealed partial class DocxReader
             CornerRatio = geometry is "roundRect" or "round1Rect" or "round2SameRect" or "flowChartAlternateProcess" ? 20 : 0,
             FlipHorizontal = Attr(xfrm, "flipH") is "1" or "true",
             FlipVertical = Attr(xfrm, "flipV") is "1" or "true",
+            Transform = Transform(xfrm),
         };
     }
 
@@ -183,6 +225,7 @@ internal sealed partial class DocxReader
                 _ => HVerticalAlign.Top,
             },
         }.Build();
+        box.Transform = Transform(spPr?.Element(A + "xfrm"));
         ReadTextBoxContent(content, box.Blocks);
         return box;
     }
@@ -190,6 +233,7 @@ internal sealed partial class DocxReader
     /// <summary>Text box paragraphs; Word's document grid does not apply inside text boxes.</summary>
     private void ReadTextBoxContent(XElement content, List<HBlock> output)
     {
+        using var level = _budget.Enter();
         _textBoxDepth++;
         try
         {
@@ -360,13 +404,12 @@ internal sealed partial class DocxReader
             return null;
         if (_media.TryGetValue(rel.Target, out var existing))
             return existing;
-        if (_zip.GetEntry(rel.Target) is not { } entry)
+        if (_package.GetEntry(rel.Target) is not { } entry)
             return null;
         Directory.CreateDirectory(_mediaFolder);
-        var path = Path.Combine(_mediaFolder, $"docx-media-{_media.Count + 1}{Path.GetExtension(rel.Target)}");
-        using (var source = entry.Open())
-        using (var target = File.Create(path))
-            source.CopyTo(target);
+        string? path = Path.Combine(_mediaFolder, $"docx-media-{_media.Count + 1}{DocumentPackage.SafeExtension(rel.Target)}");
+        if (!_package.ExtractPicture(entry, path))
+            path = null; // larger than any picture should be: left out
         _media[rel.Target] = path;
         return path;
     }
@@ -382,10 +425,12 @@ internal sealed partial class DocxReader
                 continue;
             if (shape.Name.LocalName == "group")
             {
+                using var level = _budget.Enter();
                 foreach (var inline in Vml(shape, format))
                     yield return inline;
                 continue;
             }
+            _budget.Object();
             if (shape.Name.LocalName is "shapetype")
                 continue;
 
@@ -393,10 +438,12 @@ internal sealed partial class DocxReader
             var width = HwpxUnits.ParseLength(style.GetValueOrDefault("width")) ?? 0;
             var height = HwpxUnits.ParseLength(style.GetValueOrDefault("height")) ?? 0;
             var anchor = style.GetValueOrDefault("position") == "absolute" ? VmlAnchor(shape, style) : null;
+            var transform = VmlTransform(style);
+            int? zOrder = anchor is not null && int.TryParse(style.GetValueOrDefault("z-index"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var z) ? z : null;
 
             if (shape.Element(V + "imagedata") is { } imageData && ExtractImage(Attr(imageData, "id", R)) is { } path)
             {
-                yield return new HImage(path) { Width = width > 0 ? width : null, Height = height > 0 ? height : null, Anchor = anchor };
+                yield return new HImage(path) { Width = width > 0 ? width : null, Height = height > 0 ? height : null, Anchor = anchor, Transform = transform, ZOrder = zOrder };
             }
             else if (shape.Element(V + "textbox")?.Element(W + "txbxContent") is { } content)
             {
@@ -405,6 +452,7 @@ internal sealed partial class DocxReader
                     Fill = VmlFill(shape),
                     Line = VmlLine(shape),
                 }.Build();
+                (box.Transform, box.ZOrder) = (transform, zOrder);
                 ReadTextBoxContent(content, box.Blocks);
                 yield return box;
             }
@@ -453,6 +501,8 @@ internal sealed partial class DocxReader
                     Fill = kind == HShapeKind.Line ? null : VmlFill(shape),
                     Line = VmlLine(shape),
                     CornerRatio = shape.Name.LocalName == "roundrect" ? 20 : 0,
+                    Transform = transform,
+                    ZOrder = zOrder,
                 };
             }
         }
@@ -494,7 +544,21 @@ internal sealed partial class DocxReader
             Bold = font.GetValueOrDefault("font-weight") is { } weight ? weight == "bold" || int.TryParse(weight, out var w) && w >= 600 : format.Bold,
             Italic = font.GetValueOrDefault("font-style") is { } italic ? italic == "italic" : format.Italic,
             Color = color ?? format.Color,
+            Layout = family is null || format.Layout is null ? format.Layout : format.Layout with { WordFonts = new HWordFonts(family, family, family, family) },
         });
+    }
+
+    /// <summary>VML rotation (style "rotation", degrees clockwise) and mirroring ("flip: x y"); null when there is neither.</summary>
+    private static HTransform? VmlTransform(Dictionary<string, string> style)
+    {
+        var rotation = style.GetValueOrDefault("rotation")?.TrimEnd('f', 'd') is { } value &&
+                       double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var degrees) ? degrees : 0;
+        // "fd" values are in 1/65536 degree.
+        if (style.GetValueOrDefault("rotation")?.EndsWith("fd", StringComparison.Ordinal) == true)
+            rotation /= 65536;
+        var flip = style.GetValueOrDefault("flip")?.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+        var transform = new HTransform(rotation, flip.Contains("x"), flip.Contains("y"));
+        return transform.IsIdentity ? null : transform;
     }
 
     private static string? VmlFill(XElement shape) =>

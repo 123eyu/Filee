@@ -133,6 +133,20 @@
             <TextBlock Classes="label" Text="{DynamicResource presets.width}" />
             <NumericUpDown Value="{Binding Width}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" AutomationProperties.Name="{DynamicResource presets.width}" />
           </StackPanel>
+          <!-- Full rows instead of half-width boxes: the spinner kept most of a half-width box for itself and
+               clipped a three-digit size to its first digit, so width and height each get the whole row. -->
+          <StackPanel Grid.Column="2" IsVisible="{Binding ShowCustom}">
+            <TextBlock Classes="label" Text="{DynamicResource presets.width}" />
+            <NumericUpDown Value="{Binding CustomWidth}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Center" AutomationProperties.Name="{DynamicResource presets.width}" />
+            <TextBlock Classes="label" Margin="0,8,0,0" Text="{DynamicResource presets.height}" />
+            <NumericUpDown Value="{Binding CustomHeight}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Center" AutomationProperties.Name="{DynamicResource presets.height}" />
+            <CheckBox Content="{DynamicResource presets.lock_aspect}" IsChecked="{Binding LockAspect}" Margin="0,8,0,0" AutomationProperties.Name="{DynamicResource presets.lock_aspect}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" IsVisible="{Binding ShowMinShortEdge}">
+            <TextBlock Classes="label" Text="{DynamicResource presets.min_short_edge}" />
+            <NumericUpDown Value="{Binding MinShortEdge}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Center"
+                           ToolTip.Tip="{DynamicResource presets.min_short_edge_hint}" AutomationProperties.Name="{DynamicResource presets.min_short_edge}" />
+          </StackPanel>
         </Grid>
         <Grid ColumnDefinitions="*,12,*">
           <StackPanel>
@@ -450,6 +464,21 @@
           <TextBlock Classes="caption" TextWrapping="Wrap" Text="{DynamicResource presets.pdf_password_hint}" />
           <CheckBox Content="{DynamicResource presets.page_numbers}" IsChecked="{Binding PageNumbers}" />
         </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- DWG / DXF drawn into a PDF, SVG or picture: as drawn, black and white or grayscale (#411). After the PDF card:
+         most PDFs and pictures aren't made from drawings. -->
+    <Border x:Name="CadColorsCard" Classes="card" IsVisible="{Binding ShowCadColors}" Padding="14">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="h2" Text="{DynamicResource presets.group.cad}" />
+        <Grid ColumnDefinitions="*,12,*">
+          <StackPanel>
+            <TextBlock Classes="label" Text="{DynamicResource presets.cad_colors}" />
+            <ComboBox ItemsSource="{Binding CadColorChoices}" SelectedItem="{Binding CadColors}" HorizontalAlignment="Stretch" AutomationProperties.Name="{DynamicResource presets.cad_colors}" />
+          </StackPanel>
+        </Grid>
+        <TextBlock Classes="caption" Text="{DynamicResource presets.cad_colors_hint}" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
 

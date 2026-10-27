@@ -4,11 +4,14 @@
 // footnotes and endnotes, bookmarks and hyperlinks (including the links of a Word table of contents).
 //
 // Split over partial files: this one walks the package and the text, DocxReader.Styles resolves formatting,
-// DocxReader.Tables and DocxReader.Drawing handle tables and graphic objects.
+// DocxReader.Tables and DocxReader.Drawing handle tables and graphic objects. The package is read within
+// DocumentLimits (Documents/DocumentPackage); embedded fonts (word/fonts) are not read.
 
 using System.IO.Compression;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
+using Filee.Engines.Documents;
 
 namespace Filee.Engines.Hwp.Hwpx.Docx;
 
@@ -28,10 +31,14 @@ internal sealed partial class DocxReader
     private static readonly XNamespace M = "http://schemas.openxmlformats.org/officeDocument/2006/math";
     private static readonly XNamespace Dc = "http://purl.org/dc/elements/1.1/";
 
-    private readonly ZipArchive _zip;
+    /// <summary>Styles followed through basedOn at the most (real chains are a few long; damaged files loop).</summary>
+    private const int MaxStyleChain = 20;
+
+    private readonly DocumentPackage _package;
+    private readonly DocumentBudget _budget;
     private readonly string _mediaFolder;
     private readonly Dictionary<string, Part?> _parts = [];
-    private readonly Dictionary<string, string> _media = [];
+    private readonly Dictionary<string, string?> _media = [];
     private readonly Dictionary<string, XElement> _footnotes = [];
     private readonly Dictionary<string, XElement> _endnotes = [];
     private readonly List<FieldState> _fields = [];
@@ -44,12 +51,16 @@ internal sealed partial class DocxReader
     private int _sectionIndex;
     private int _textBoxDepth;
 
+    /// <summary>True while a note is read: Word has no notes in notes, and a note that refers to itself would never end.</summary>
+    private bool _inNote;
+
     /// <summary>The part being read; relationship ids (images, links) are resolved against it.</summary>
     private Part _part;
 
-    private DocxReader(ZipArchive zip, string mediaFolder)
+    private DocxReader(DocumentPackage package, string mediaFolder)
     {
-        _zip = zip;
+        _package = package;
+        _budget = new DocumentBudget(package.Limits);
         _mediaFolder = mediaFolder;
         var mainPath = RelationshipsOf("")
             .FirstOrDefault(r => r.Value.Type.EndsWith("/officeDocument", StringComparison.Ordinal)).Value.Target ?? "word/document.xml";
@@ -57,10 +68,27 @@ internal sealed partial class DocxReader
     }
 
     /// <summary>Reads <paramref name="path"/>; embedded pictures are extracted into <paramref name="mediaFolder"/>.</summary>
-    public static HDocument Read(string path, string mediaFolder)
+    public static HDocument Read(string path, string mediaFolder) => Read(path, mediaFolder, DocumentLimits.Default);
+
+    /// <summary>Reads within other <paramref name="limits"/> than <see cref="DocumentLimits.Default"/> (for tests).</summary>
+    internal static HDocument Read(string path, string mediaFolder, DocumentLimits limits)
     {
-        using var zip = ZipFile.OpenRead(path);
-        return new DocxReader(zip, mediaFolder).ReadDocument();
+        using var package = DocumentPackage.Open(path, limits,
+            () => new InvalidDataException("The file is not a Word document (it is not a ZIP package). It may be damaged or protected by document security (DRM) software."));
+        return new DocxReader(package, mediaFolder).ReadDocument();
+    }
+
+    /// <summary>An XML part; damaged XML is invalid data with the part's name.</summary>
+    private XDocument LoadXml(ZipArchiveEntry entry, bool preserveWhitespace)
+    {
+        try
+        {
+            return _package.LoadXml(entry, preserveWhitespace);
+        }
+        catch (XmlException ex)
+        {
+            throw new InvalidDataException($"The Word document cannot be read ({entry.FullName} is not valid XML). It may be encrypted or damaged. {ex.Message}", ex);
+        }
     }
 
     // ───────────────────────── Package ─────────────────────────
@@ -79,11 +107,10 @@ internal sealed partial class DocxReader
         if (_parts.TryGetValue(path, out var cached))
             return cached;
         Part? part = null;
-        if (_zip.GetEntry(path) is { } entry)
+        if (_package.GetEntry(path) is { } entry)
         {
-            using var stream = entry.Open();
             // Whitespace matters: <w:t xml:space="preserve"> </w:t> is a real space.
-            part = new Part(path, XDocument.Load(stream, LoadOptions.PreserveWhitespace), RelationshipsOf(path));
+            part = new Part(path, LoadXml(entry, preserveWhitespace: true), RelationshipsOf(path));
         }
         _parts[path] = part;
         return part;
@@ -95,10 +122,9 @@ internal sealed partial class DocxReader
         var folder = partPath.Contains('/') ? partPath[..partPath.LastIndexOf('/')] : "";
         var relsPath = partPath.Length == 0 ? "_rels/.rels" : $"{folder}/_rels/{partPath[(partPath.LastIndexOf('/') + 1)..]}.rels".TrimStart('/');
         var result = new Dictionary<string, Relationship>();
-        if (_zip.GetEntry(relsPath) is not { } entry)
+        if (_package.GetEntry(relsPath) is not { } entry)
             return result;
-        using var stream = entry.Open();
-        foreach (var rel in XDocument.Load(stream).Root?.Elements(PackageRelationships + "Relationship") ?? [])
+        foreach (var rel in LoadXml(entry, preserveWhitespace: false).Root?.Elements(PackageRelationships + "Relationship") ?? [])
         {
             var id = (string?)rel.Attribute("Id") ?? "";
             var target = (string?)rel.Attribute("Target") ?? "";
@@ -158,7 +184,8 @@ internal sealed partial class DocxReader
         LoadTheme(theme);
         LoadThemeColors(theme);
         LoadNumbering(RelatedPart(main, "/numbering"));
-        _evenAndOddHeaders = RelatedPart(main, "/settings")?.Xml.Root?.Element(W + "evenAndOddHeaders") is { } evenOdd && Val(evenOdd) is not ("0" or "false");
+        var settings = RelatedPart(main, "/settings")?.Xml.Root;
+        _evenAndOddHeaders = settings?.Element(W + "evenAndOddHeaders") is { } evenOdd && Val(evenOdd) is not ("0" or "false");
         _footnotesPart = RelatedPart(main, "/footnotes");
         _endnotesPart = RelatedPart(main, "/endnotes");
         foreach (var note in _footnotesPart?.Xml.Root?.Elements(W + "footnote") ?? [])
@@ -167,6 +194,7 @@ internal sealed partial class DocxReader
             _endnotes[Attr(note, "id") ?? ""] = note;
 
         var document = new HDocument { Title = Title() };
+        Kinsoku(settings, document);
         var body = main.Xml.Root?.Element(W + "body") ?? throw new InvalidDataException("word/document.xml has no body.");
 
         // A section ends with the paragraph whose properties hold its sectPr; the last one is the body's own sectPr.
@@ -199,11 +227,10 @@ internal sealed partial class DocxReader
 
     private string? Title()
     {
-        var core = _zip.GetEntry("docProps/core.xml");
+        var core = _package.GetEntry("docProps/core.xml");
         if (core is null)
             return null;
-        using var stream = core.Open();
-        return NullIfEmpty(XDocument.Load(stream).Descendants(Dc + "title").FirstOrDefault()?.Value);
+        return NullIfEmpty(LoadXml(core, preserveWhitespace: false).Descendants(Dc + "title").FirstOrDefault()?.Value);
     }
 
     private void AddSection(HDocument document, List<HBlock> blocks, XElement? sectPr,
@@ -224,7 +251,7 @@ internal sealed partial class DocxReader
             return;
         }
 
-        var section = new HSection { Page = page, Columns = columns };
+        var section = new HSection { Page = page, Columns = columns, Grid = Grid(sectPr) };
         section.Blocks.AddRange(blocks);
 
         // Sections without their own header or footer reference inherit the previous section's.
@@ -339,7 +366,45 @@ internal sealed partial class DocxReader
         var natural = size * WordLineToHwpPercent / 100.0; // 1/100 pt = HWPUNIT
         var lines = Math.Max(1, Math.Ceiling(natural / cell));
         var multiple = (props.Line ?? 240) / 240.0;
-        paragraph.Format = paragraph.Format with { LineSpacing = new HLineSpacing(HLineSpacingKind.AtLeast, (int)Math.Round(lines * cell * multiple)) };
+        // The line rule itself stays Word's multiple, with the grid its lines snap to.
+        var layout = paragraph.Format.Layout ?? new HParaLayout();
+        paragraph.Format = paragraph.Format with
+        {
+            LineSpacing = new HLineSpacing(HLineSpacingKind.AtLeast, (int)Math.Round(lines * cell * multiple)),
+            Layout = layout with { LineHeight = (layout.LineHeight ?? new HLineHeight(HLineHeightRule.Multiple, props.Line ?? 240)) with { GridPitch = cell } },
+        };
+    }
+
+    /// <summary>The section's document grid (w:docGrid); null without one.</summary>
+    private static HDocumentGrid? Grid(XElement? sectPr)
+    {
+        var grid = sectPr?.Element(W + "docGrid");
+        var kind = Attr(grid, "type") switch
+        {
+            "lines" => HGridKind.Lines,
+            "linesAndChars" => HGridKind.LinesAndChars,
+            "snapToChars" => HGridKind.SnapToChars,
+            _ => HGridKind.None,
+        };
+        return kind == HGridKind.None ? null : new HDocumentGrid(kind, HwpxUnits.FromTwips(Twips(grid, "linePitch") ?? 0), CharSpace: Twips(grid, "charSpace") ?? 0);
+    }
+
+    /// <summary>Custom East Asian line breaking characters of the document (settings: w:noLineBreaksBefore / After).</summary>
+    private static void Kinsoku(XElement? settings, HDocument document)
+    {
+        var rules = new Dictionary<string, (string? Start, string? End)>();
+        foreach (var element in settings?.Elements() ?? [])
+        {
+            var before = element.Name == W + "noLineBreaksBefore";
+            if (!before && element.Name != W + "noLineBreaksAfter")
+                continue;
+            var language = Attr(element, "lang") ?? "";
+            var (start, end) = rules.GetValueOrDefault(language);
+            // "No line break before" a character: it cannot start a line; "after": it cannot end one.
+            rules[language] = before ? (Val(element), end) : (start, Val(element));
+        }
+        foreach (var (language, (start, end)) in rules)
+            document.Kinsoku.Add(new HKinsoku(language.Length > 0 ? language : null, start, end));
     }
 
     private static int? MaxFontSize(IEnumerable<HInline> inlines)
@@ -491,6 +556,7 @@ internal sealed partial class DocxReader
 
     private void ReadParagraph(XElement p, List<HBlock> output)
     {
+        _budget.Paragraph();
         var pPr = p.Element(W + "pPr");
         var (props, mark) = ParagraphProperties(pPr);
         var builder = new ParagraphBuilder(this, output, props, mark, pPr);
@@ -538,6 +604,7 @@ internal sealed partial class DocxReader
                     {
                         var field = new FieldState();
                         field.Instruction.Append(Attr(element, "instr"));
+                        _budget.Fields(_fields.Count + 1);
                         _fields.Add(field);
                         StartFieldResult(field, builder, CharFormat(styleRun));
                         ParagraphContent(element.Elements(), builder, styleRun);
@@ -670,6 +737,7 @@ internal sealed partial class DocxReader
     /// </summary>
     private void Equations(XElement math, ParagraphBuilder builder, RunProps styleRun)
     {
+        _budget.Object();
         var rPr = math.Descendants(M + "r").Select(r => r.Element(W + "rPr")).FirstOrDefault(p => p is not null);
         var format = CharFormat(RunProperties(rPr, styleRun)) with { Italic = true };
         var lines = math.Name.LocalName == "oMathPara" ? math.Elements(M + "oMath").ToList() : [math];
@@ -701,14 +769,25 @@ internal sealed partial class DocxReader
 
     private HNote? Note(XElement reference, Dictionary<string, XElement> notes, Part? part, bool endnote)
     {
-        if (part is null || !notes.TryGetValue(Attr(reference, "id") ?? "", out var element))
+        if (_inNote || part is null || !notes.TryGetValue(Attr(reference, "id") ?? "", out var element))
             return null;
         var note = new HNote(endnote);
-        WithPart(part, () =>
+        using (_budget.Enter())
         {
-            ReadBlocks(element.Elements(), note.Blocks);
-            return 0;
-        });
+            _inNote = true;
+            try
+            {
+                WithPart(part, () =>
+                {
+                    ReadBlocks(element.Elements(), note.Blocks);
+                    return 0;
+                });
+            }
+            finally
+            {
+                _inNote = false;
+            }
+        }
         // Word notes start with the reference mark and a space; 한글 writes its own number.
         if (note.Blocks.FirstOrDefault() is HParagraph first && first.Inlines.FirstOrDefault() is HText { Text: var text } leading)
         {
@@ -744,6 +823,8 @@ internal sealed partial class DocxReader
         switch (Attr(fldChar, "fldCharType"))
         {
             case "begin":
+                // ShowsText looks at every open field for every run, so their number is limited.
+                _budget.Fields(_fields.Count + 1);
                 _fields.Add(new FieldState());
                 break;
             case "separate":

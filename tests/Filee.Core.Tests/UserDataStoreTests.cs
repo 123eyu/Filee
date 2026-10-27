@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Filee.Core.Presets;
 using Filee.Core.Profiles;
 using Filee.Core.Settings;
@@ -51,6 +52,126 @@ public class UserDataStoreTests
         Assert.Single(reloaded.Profiles, p => p.Extensions.Contains("py"));
         Assert.Single(reloaded.Profiles, p => p.Extensions.Contains("dat"));
         Assert.DoesNotContain("log", reloaded.Profiles.Single(p => p.Id == "text").Extensions);
+    }
+
+    [Fact]
+    public void A_preset_with_custom_sizing_never_writes_a_resize_name_an_older_version_rejects()
+    {
+        using var dir = new TempDir();
+        var store = new UserDataStore(dir.Path);
+        store.Load();
+        var preset = store.Presets[0];
+        preset.Image.Resize = ResizeMode.None;
+        preset.Image.CustomSize = new CustomImageSize { Width = 777, Height = 333, LockAspect = true };
+        store.SaveLibrary();
+
+        // What a version without custom sizing reads: every resize stays a name it knows (so presets.json is not
+        // dropped as broken and overwritten with the built-in presets) and the unknown customSize is simply skipped.
+        var stored = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir.Path, "presets.json")));
+        foreach (var p in stored.RootElement.EnumerateArray())
+        {
+            var name = p.GetProperty("image").GetProperty("resize").GetString();
+            Assert.Contains(name, new[] { "None", "Percent", "LongEdge", "Width" });
+        }
+        var image = stored.RootElement.EnumerateArray().Single(p => p.GetProperty("id").GetString() == preset.Id).GetProperty("image");
+        var size = image.GetProperty("customSize");
+        Assert.Equal(777, size.GetProperty("width").GetInt32());
+        Assert.Equal(333, size.GetProperty("height").GetInt32());
+        Assert.True(size.GetProperty("lockAspect").GetBoolean());
+
+        // And this version reads the custom sizing back.
+        var reloaded = new UserDataStore(dir.Path);
+        reloaded.Load();
+        var back = reloaded.Presets.Single(p => p.Id == preset.Id);
+        Assert.Equal(ResizeMode.None, back.Image.Resize);
+        Assert.Equal((777, 333, true), (back.Image.CustomSize!.Width, back.Image.CustomSize!.Height, back.Image.CustomSize!.LockAspect));
+    }
+
+    [Fact]
+    public void A_resize_mode_of_Custom_is_never_written_to_presets_json()
+    {
+        using var dir = new TempDir();
+        var store = new UserDataStore(dir.Path);
+        store.Load();
+        store.Presets[0].Image.Resize = ResizeMode.Custom;
+        store.SaveLibrary();
+
+        // However custom sizing reaches the model, the file keeps a resize name every version knows.
+        var stored = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir.Path, "presets.json")));
+        foreach (var p in stored.RootElement.EnumerateArray())
+        {
+            var name = p.GetProperty("image").GetProperty("resize").GetString();
+            Assert.Contains(name, new[] { "None", "Percent", "LongEdge", "Width" });
+        }
+    }
+
+    [Fact]
+    public void A_preset_with_a_minimum_short_edge_never_writes_a_resize_name_an_older_version_rejects()
+    {
+        using var dir = new TempDir();
+        var store = new UserDataStore(dir.Path);
+        store.Load();
+        var preset = store.Presets[0];
+        preset.Image.Resize = ResizeMode.None;
+        preset.Image.MinShortEdge = 1080;
+        store.SaveLibrary();
+
+        // What Filee 2.1.0 reads: every resize stays a name it knows, and the unknown minShortEdge is skipped (#652).
+        var stored = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir.Path, "presets.json")));
+        foreach (var p in stored.RootElement.EnumerateArray())
+        {
+            var name = p.GetProperty("image").GetProperty("resize").GetString();
+            Assert.Contains(name, new[] { "None", "Percent", "LongEdge", "Width" });
+        }
+        var image = stored.RootElement.EnumerateArray().Single(p => p.GetProperty("id").GetString() == preset.Id).GetProperty("image");
+        Assert.Equal(1080, image.GetProperty("minShortEdge").GetInt32());
+        // Presets without it keep the shape they had: no "minShortEdge": null written into each one.
+        Assert.All(stored.RootElement.EnumerateArray().Where(p => p.GetProperty("id").GetString() != preset.Id),
+            p => Assert.False(p.GetProperty("image").TryGetProperty("minShortEdge", out _)));
+
+        // And this version reads it back.
+        var reloaded = new UserDataStore(dir.Path);
+        reloaded.Load();
+        var back = reloaded.Presets.Single(p => p.Id == preset.Id);
+        Assert.Equal(ResizeMode.None, back.Image.Resize);
+        Assert.Equal(1080, back.Image.MinShortEdge);
+        Assert.True(back.Image.EditsPicture);
+        Assert.Equal(1080, back.Image.Clone().MinShortEdge);
+    }
+
+    [Fact]
+    public void A_resize_mode_of_MinShortEdge_is_never_written_to_presets_json()
+    {
+        using var dir = new TempDir();
+        var store = new UserDataStore(dir.Path);
+        store.Load();
+        store.Presets[0].Image.Resize = ResizeMode.MinShortEdge;
+        store.SaveLibrary();
+
+        var stored = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir.Path, "presets.json")));
+        Assert.Equal("None", stored.RootElement[0].GetProperty("image").GetProperty("resize").GetString());
+    }
+
+    [Fact]
+    public void A_resize_name_this_version_does_not_know_reads_as_no_resize()
+    {
+        using var dir = new TempDir();
+        var store = new UserDataStore(dir.Path);
+        store.Load();
+        store.Presets[0].Name = "mine";
+        store.SaveLibrary();
+
+        // A preset from a future version, or a hand-edited one: a resize name this version has never heard of.
+        var path = Path.Combine(dir.Path, "presets.json");
+        var original = File.ReadAllText(path);
+        var edited = original.Replace("\"resize\": \"None\"", "\"resize\": \"Quantum\"");
+        Assert.NotEqual(original, edited);
+        File.WriteAllText(path, edited);
+
+        var reloaded = new UserDataStore(dir.Path);
+        reloaded.Load();
+        Assert.Equal(ResizeMode.None, reloaded.Presets[0].Image.Resize);   // the lenient converter, not a broken file
+        Assert.Equal("mine", reloaded.Presets[0].Name);                    // and the library was kept, not replaced
     }
 
     [Fact]

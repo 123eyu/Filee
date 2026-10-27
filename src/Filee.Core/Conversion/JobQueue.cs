@@ -269,8 +269,8 @@ public sealed class JobQueue : IAsyncDisposable
                 // one whose text is recognized first.
                 if (FormatRegistry.Detect(file.SourcePath)?.Id == "pdf" && !IsEmptyFile(file.SourcePath) && !job.Preset.RecognizesTextOf("pdf"))
                 {
-                    // Already a PDF, merged as it is: its pages can't be turned (only images going into it can).
-                    if (job.Preset.Image.TurnsOrMirrors)
+                    // Already a PDF, merged as it is: its pages can't be turned or covered (only images going into it can).
+                    if (job.Preset.Image.ReworksPixels)
                         FailUnturned(job, file, "pdf → pdf");
                     else
                         parts[i] = file.SourcePath;
@@ -327,8 +327,8 @@ public sealed class JobQueue : IAsyncDisposable
                 var file = job.Files[i];
                 if (Stopped(file))
                     return;
-                // A TIFF joins as it is, unless it is to be turned: then it goes through the engine like the rest.
-                parts[i] = FormatRegistry.Detect(file.SourcePath)?.Id == "tiff" && !job.Preset.Image.TurnsOrMirrors
+                // A TIFF joins as it is, unless it is to be turned or covered: then it goes through the engine like the rest.
+                parts[i] = FormatRegistry.Detect(file.SourcePath)?.Id == "tiff" && !job.Preset.Image.ReworksPixels
                            && !IsEmptyFile(file.SourcePath)
                     ? [file.SourcePath]
                     : await RunFileAsync(job, file, i + 1, planner, workDir, finalOutput: false, intermediate: "tiff");
@@ -410,7 +410,7 @@ public sealed class JobQueue : IAsyncDisposable
                 }
                 if (slideshow)
                 {
-                    parts[i] = source.Id == "png" && !job.Preset.Image.TurnsOrMirrors
+                    parts[i] = source.Id == "png" && !job.Preset.Image.ReworksPixels
                         ? [file.SourcePath]
                         : await RunFileAsync(job, file, i + 1, planner, workDir, finalOutput: false, intermediate: "png",
                             ceiling: PicturesReadyShare);
@@ -571,11 +571,11 @@ public sealed class JobQueue : IAsyncDisposable
         Notify(job);
     }
 
-    /// <summary>A file that would be used as it is although the preset turns or mirrors it.</summary>
+    /// <summary>A file that would be used as it is although the preset turns, mirrors or covers parts of it.</summary>
     private void FailUnturned(ConversionJob job, FileResult file, string detail)
     {
         file.State = FileState.Failed;
-        file.ErrorKey = "error.cannot_turn";
+        file.ErrorKey = job.Preset.Image.HidesAreas ? "error.cannot_hide" : "error.cannot_turn";
         file.ErrorDetail = detail;
         file.Progress = 1;
         Notify(job);
@@ -794,9 +794,10 @@ public sealed class JobQueue : IAsyncDisposable
 
         // Rotate / flip: only an engine that turns images does it. Without one the file would come out unturned
         // (a PDF or a video re-encoded "as rotated"); with two in the route (EPS → PNG → JPG) it would turn twice.
-        var turnAt = runWith.Image.TurnsOrMirrors ? route.FirstTransformStep() : -1;
-        if (runWith.Image.TurnsOrMirrors && turnAt < 0)
-            return Fail(file, "error.cannot_turn", $"{source.Id} → {target}");
+        // Parts of a picture to hide likewise, once: a route that can't cover them must not write the picture uncovered.
+        var turnAt = runWith.Image.ReworksPixels ? route.FirstTransformStep() : -1;
+        if (runWith.Image.ReworksPixels && turnAt < 0)
+            return Fail(file, runWith.Image.HidesAreas ? "error.cannot_hide" : "error.cannot_turn", $"{source.Id} → {target}");
         var unturned = turnAt < 0 ? runWith : Unturned(runWith);
 
         file.State = FileState.Running;
@@ -840,8 +841,9 @@ public sealed class JobQueue : IAsyncDisposable
                     await gate.WaitAsync(ct);
                     try
                     {
-                        // Turned once, in step turnAt: every other step gets the preset without rotation and flip,
-                        // also one before it whose engine applies image options but doesn't say it turns.
+                        // Turned (and covered) once, in step turnAt: every other step gets the preset without rotation,
+                        // flip and hidden parts, also one before it whose engine applies image options but doesn't say
+                        // it turns.
                         var preset = s == turnAt ? runWith : unturned;
                         // Playback speed changes once, in the step that writes the output: an animation passed from one
                         // engine to another would otherwise change speed in both.
@@ -870,7 +872,9 @@ public sealed class JobQueue : IAsyncDisposable
             }
 
             // Under "Save as ZIP" the output is still in the work folder: the source copied over it goes into the ZIP.
-            var copiedSource = finalOutput && runWith.Output.OnlyIfSmaller && inputs.Count == 1 && CopyIfNotSmaller(file.SourcePath, inputs[0]);
+            // Never with hidden parts: the source copied over the result would show them again.
+            var copiedSource = finalOutput && runWith.Output.OnlyIfSmaller && !runWith.Image.HidesAreas && inputs.Count == 1
+                && CopyIfNotSmaller(file.SourcePath, inputs[0]);
             if (copiedSource)
                 file.NoticeKey = "notice.pdf_not_smaller";
             // Watermark, page numbers, password: on every PDF this file became, from whichever engine.
@@ -929,6 +933,7 @@ public sealed class JobQueue : IAsyncDisposable
             var copy = preset.Clone();
             copy.Image.Rotation = ImageRotation.None;
             copy.Image.Flip = ImageFlip.None;
+            copy.Image.HiddenAreas = null;
             return copy;
         }
 
