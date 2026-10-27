@@ -52,6 +52,7 @@ public static class ProcessRunner
 
         if (!process.Start())
             throw new InvalidOperationException($"Could not start {executable}.");
+        Lower(process);
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
@@ -72,6 +73,22 @@ public static class ProcessRunner
         process.WaitForExit();
         AppLocalRuntime.ThrowIfMissing(executable, process.ExitCode);
         return new ProcessResult(process.ExitCode, stdout.ToString(), stderr.ToString());
+    }
+
+    /// <summary>
+    /// Below normal priority, so a long conversion on every core leaves room for the desktop and Filee's own input
+    /// hook (#511); on an idle machine it is as fast. Programs it starts inherit it. A process that is already gone
+    /// or not ours to change stays as it is.
+    /// </summary>
+    internal static void Lower(Process process)
+    {
+        try
+        {
+            process.PriorityClass = ProcessPriorityClass.BelowNormal;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+        {
+        }
     }
 
     private static void TryKill(Process process)
