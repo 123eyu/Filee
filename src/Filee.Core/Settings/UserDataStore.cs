@@ -906,6 +906,13 @@ internal static class SettingsMigrations
         // v50: Dahua DVR recordings (.dav) learn the video donut; custom claims stay put.
         if (from < 50)
             changed |= LearnExtensions(profiles, out _, ["dav"]);
+        // v51: "Edit pictures" (size, format, turn and colour chosen each time, #584), after "Crop" as in a new library,
+        //      and on the front of the images donut after "Half size" when that is there, the user hasn't put the tool
+        //      elsewhere on the donut and the face has room.
+        //      Present already but saved since by a Filee before 45 (2.0): that one dropped the tool's name, which made it
+        //      a crop, so it is put back. 2.1 keeps the name (the slice is greyed out there, as a tool it doesn't know).
+        if (from < 51)
+            changed |= AddImageEditTool(presets, profiles);
         return changed;
     }
 
@@ -1028,6 +1035,40 @@ internal static class SettingsMigrations
                 back.Insert(0, clip.Id);
                 changed = true;
             }
+        }
+        return changed;
+    }
+
+    private static bool AddImageEditTool(List<Preset> presets, List<ToolbarProfile> profiles)
+    {
+        var changed = false;
+        var edit = BuiltInData.ImageEditPresets().Single();
+        if (presets.FirstOrDefault(p => p.Id == edit.Id) is { } existing)
+        {
+            if (!existing.IsImageEditTool)
+            {
+                existing.Kind = PresetKind.Tool;
+                existing.Tool = Preset.ImageEditTool;
+                existing.SubPresetIds = [];
+                if (existing.TargetFormat == Preset.GroupTarget)
+                    existing.TargetFormat = edit.TargetFormat;
+                changed = true;
+            }
+        }
+        else
+        {
+            var at = presets.FindIndex(p => p.Id == "tool-crop");
+            presets.Insert(at < 0 ? presets.Count : at + 1, edit);
+            changed = true;
+        }
+        // Next to "Half size", the resize it does more of: a front without it was laid out by the user and stays so.
+        if (profiles.FirstOrDefault(p => p.Id == "images") is { } images
+            && images.PresetIds.IndexOf("half-size") is >= 0 and var half
+            && !images.PresetIds.Contains(edit.Id) && images.BackPresetIds?.Contains(edit.Id) != true
+            && images.PresetIds.Count < ToolbarProfile.MaxSlices)
+        {
+            images.PresetIds.Insert(half + 1, edit.Id);
+            changed = true;
         }
         return changed;
     }

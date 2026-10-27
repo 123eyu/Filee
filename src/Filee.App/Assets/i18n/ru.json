@@ -325,6 +325,11 @@
 
   "preset.half_size": "Вдвое меньше",
   "preset.half_size.donut": "Вдвое меньше",
+  "preset.image_edit": "Изменить изображения",
+  "preset.image_edit.donut": "Изменить",
+  "image_edit.count": "Изображений: {0}",
+  "image_edit.hint": "Выберите размер, формат и поворот для этих изображений. Filee запомнит выбор на следующий раз.",
+  "image_edit.convert": "Преобразовать",
   "preset.grayscale": "Оттенки серого",
   "preset.remove_background": "Убрать фон",
   "preset.trim_transparent": "Обрезать прозрачные края",

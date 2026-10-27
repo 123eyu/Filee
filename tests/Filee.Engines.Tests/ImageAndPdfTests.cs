@@ -196,6 +196,20 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task Ico_resized_below_its_sizes_holds_that_size_and_the_smaller_ones()
+    {
+        // "Edit pictures" (#584): 512 × 512 → long edge 32 is a 32 px icon, not 256 and 48 blown up from 32 px.
+        var dir = fx.NewFolder();
+        var source = EngineFixture.MakeImage(dir, "logo.png", MagickFormat.Png, 512, 512);
+
+        var job = await fx.ConvertAsync([source], new Preset { TargetFormat = "ico", Image = { Resize = ResizeMode.LongEdge, LongEdge = 32 } });
+
+        AssertDone(job);
+        using var icons = new MagickImageCollection(job.Outputs.Single());
+        Assert.Equal([32u, 16u], icons.Select(i => i.Width));
+    }
+
+    [Fact]
     public async Task Multi_page_tiff_to_png_writes_one_file_per_page()
     {
         var dir = fx.NewFolder();

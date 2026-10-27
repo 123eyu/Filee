@@ -208,8 +208,15 @@ public sealed class Preset
     public const string ClipTool = "clip";
 
     /// <summary>
+    /// <see cref="Tool"/> of "Edit pictures": the size, format, turn and colour of pictures, chosen in a small window each
+    /// time (#584).
+    /// </summary>
+    public const string ImageEditTool = "image-edit";
+
+    /// <summary>
     /// <see cref="PresetKind.Tool"/>: which window it opens, <see cref="CropTool"/> (or null, as saved before there were
-    /// other tools) or <see cref="ClipTool"/>. A tool this version doesn't know (from a newer Filee) opens nothing.
+    /// other tools), <see cref="ClipTool"/> or <see cref="ImageEditTool"/>. A tool this version doesn't know (from a newer
+    /// Filee) opens nothing.
     /// Ignored for other kinds.
     /// </summary>
     public string? Tool { get; set; }
@@ -221,6 +228,10 @@ public sealed class Preset
     /// <summary>True for "Cut a clip".</summary>
     [JsonIgnore]
     public bool IsClipTool => IsTool && Tool == ClipTool;
+
+    /// <summary>True for "Edit pictures".</summary>
+    [JsonIgnore]
+    public bool IsImageEditTool => IsTool && Tool == ImageEditTool;
 
     /// <summary>
     /// True if converting a <paramref name="sourceFormat"/> file cuts a clip of it (<see cref="MediaOptions.Clip"/>,

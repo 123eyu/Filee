@@ -49,6 +49,7 @@ public static class BuiltInData
             Id = "tool-crop", NameKey = "preset.crop", TargetFormat = SameAsSource,
             Kind = PresetKind.Tool, Output = { FileNamePattern = "{name}_cropped" },
         },
+        .. ImageEditPresets(),
         new()
         {
             Id = "tool-sheet-studio", NameKey = "preset.sheet_studio", TargetFormat = "pdf",
@@ -190,6 +191,19 @@ public static class BuiltInData
         {
             Id = "tool-clip", NameKey = "preset.clip", TargetFormat = SameAsSource,
             Kind = PresetKind.Tool, Tool = Preset.ClipTool, Output = { FileNamePattern = "{name}_clip" },
+        },
+    ];
+
+    /// <summary>
+    /// "Edit pictures" (#584, added in settings schema 51): size, format, turn and colour chosen in a window each time, on
+    /// the front of the images donut after "Half size".
+    /// </summary>
+    public static List<Preset> ImageEditPresets() =>
+    [
+        new()
+        {
+            Id = "tool-image-edit", NameKey = "preset.image_edit", TargetFormat = SameAsSource,
+            Kind = PresetKind.Tool, Tool = Preset.ImageEditTool, Output = { FileNamePattern = "{name}_edited" },
         },
     ];
 
@@ -527,7 +541,8 @@ public static class BuiltInData
         {
             Id = "images", NameKey = "profile.images",
             Extensions = ExtensionsOf(FormatCategory.Image),
-            PresetIds = ["to-png", "to-jpg", "to-webp", "to-pdf", "trace-svg", "trace-line-art", "to-tiff", "to-bmp", "to-ico", "half-size"],
+            PresetIds = ["to-png", "to-jpg", "to-webp", "to-pdf", "trace-svg", "trace-line-art", "to-tiff", "to-bmp", "to-ico", "half-size",
+                "tool-image-edit"],
             // Full (ToolbarProfile.MaxSlices): "Extract Live Photo video" stays in the library, on no donut.
             BackPresetIds = ["tool-crop", "rotate", "flip", "remove-background", "trim-transparent", "grayscale", "to-avif", "to-gif", "merge-pdf",
                 "compress-image", "remove-metadata", "zip-all"],

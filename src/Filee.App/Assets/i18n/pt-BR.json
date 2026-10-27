@@ -325,6 +325,11 @@
 
   "preset.half_size": "Reduzir 50%",
   "preset.half_size.donut": "Tamanho 50%",
+  "preset.image_edit": "Editar imagens",
+  "preset.image_edit.donut": "Editar imagens",
+  "image_edit.count": "{0} imagens",
+  "image_edit.hint": "Escolha o tamanho, o formato e a rotação dessas imagens. O Filee guarda suas escolhas para a próxima vez.",
+  "image_edit.convert": "Converter",
   "preset.grayscale": "Tons de cinza",
   "preset.remove_background": "Remover fundo",
   "preset.trim_transparent": "Cortar bordas transparentes",

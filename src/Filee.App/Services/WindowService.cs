@@ -36,8 +36,10 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
 
     private CropOverlayWindow? _cropOverlay;
     private ClipWindow? _clipWindow;
+    private ImageEditWindow? _imageEdit;
 
     internal ClipWindow? ClipWindow => _clipWindow;
+    internal ImageEditWindow? ImageEdit => _imageEdit;
     private readonly HashSet<SpreadsheetPrintStudioWindow> _spreadsheetStudios = [];
 
     internal IReadOnlyCollection<SpreadsheetPrintStudioWindow> SpreadsheetStudios => _spreadsheetStudios;
@@ -121,13 +123,15 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
     public MainWindow? Main => _main;
 
     /// <summary>
-    /// Opens the window of a tool preset (crop, cut a clip, the spreadsheet print studio: one per workbook, the PDF page
-    /// editor) on the files. A tool this version doesn't know opens nothing.
+    /// Opens the window of a tool preset (crop, cut a clip, edit pictures, the spreadsheet print studio: one per workbook,
+    /// the PDF page editor) on the files. A tool this version doesn't know opens nothing.
     /// </summary>
     public void ShowTool(IReadOnlyList<string> files, Preset preset, PixelPoint? near = null)
     {
         if (preset.IsClipTool)
             ShowClipWindow(files, preset, near);
+        else if (preset.IsImageEditTool)
+            ShowImageEditWindow(files, preset);
         // Before the crop: the print studio and the PDF page tools have no Tool of their own, which reads as a crop
         // ("Crop PDF" is one and opens the crop overlay).
         else if (preset.Id == "tool-sheet-studio")
@@ -171,6 +175,59 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         _clipWindow = win;
         win.Show();
         win.Activate();
+    }
+
+    /// <summary>
+    /// Opens the "Edit pictures" window on the pictures among the files. Its Convert starts ordinary conversions, shown
+    /// in the toast.
+    /// </summary>
+    public void ShowImageEditWindow(IReadOnlyList<string> files, Preset preset)
+    {
+        var pictures = files.Where(f => FormatRegistry.Detect(f) is { } format && ImageEditTool.CanEdit(format.Id)).ToList();
+        if (pictures.Count == 0)
+            return;
+        _imageEdit?.Close();
+        var store = services.GetRequiredService<UserDataStore>();
+        var catalog = services.GetRequiredService<ConverterCatalog>();
+        var conversions = services.GetRequiredService<ConversionService>();
+        var log = services.GetService<ILogger<ImageEditViewModel>>();
+        var planner = catalog.CreatePlanner();
+        var formats = pictures.Select(path => FormatRegistry.Detect(path)?.Id ?? "").ToList();
+        var vm = new ImageEditViewModel(pictures, preset, loc, store,
+            (path, chosen) => ImageEditTool.TargetFor(FormatRegistry.Detect(path)?.Id ?? "", chosen, planner),
+            (paths, conversion) => conversions.Start(paths, conversion), PictureSize, log, ImageEditTool.TargetsFrom(formats, planner));
+        var win = new ImageEditWindow { DataContext = vm };
+        PrepareWindow(win);
+        win.Closed += (_, _) =>
+        {
+            if (_imageEdit == win)
+                _imageEdit = null;
+        };
+        _imageEdit = win;
+        win.Show();
+        win.Activate();
+    }
+
+    /// <summary>
+    /// The pixel size of a picture as it is seen, read from its headers: turned as its EXIF orientation says, and the
+    /// largest of an icon's sizes (the one converted). Null when ImageMagick can't read it.
+    /// </summary>
+    internal static (int Width, int Height)? PictureSize(string path)
+    {
+        try
+        {
+            var info = ImageMagick.MagickImageInfo.ReadCollection(path).MaxBy(frame => (long)frame.Width * frame.Height);
+            if (info is null)
+                return null;
+            return info.Orientation is ImageMagick.OrientationType.LeftTop or ImageMagick.OrientationType.RightTop
+                or ImageMagick.OrientationType.RightBottom or ImageMagick.OrientationType.LeftBottom
+                ? ((int)info.Height, (int)info.Width)
+                : ((int)info.Width, (int)info.Height);
+        }
+        catch (Exception ex) when (ex is ImageMagick.MagickException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Opens the interactive crop overlay for the files.</summary>

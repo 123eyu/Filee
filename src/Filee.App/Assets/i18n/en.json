@@ -325,6 +325,11 @@
 
   "preset.half_size": "Half size",
   "preset.half_size.donut": "Half size",
+  "preset.image_edit": "Edit pictures",
+  "preset.image_edit.donut": "Edit pictures",
+  "image_edit.count": "{0} pictures",
+  "image_edit.hint": "Choose the size, format and rotation of these pictures. Filee keeps your choices for next time.",
+  "image_edit.convert": "Convert",
   "preset.grayscale": "Grayscale",
   "preset.remove_background": "Remove background",
   "preset.trim_transparent": "Trim transparent borders",
