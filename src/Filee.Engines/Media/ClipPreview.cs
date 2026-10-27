@@ -157,7 +157,7 @@ public static partial class ClipPreview
                 args.AddRange(["-to", ClipRange.Ffmpeg(end)]);
             args.AddRange(["-i", Path.GetFullPath(path), "-map", "0:a:0", "-ac", "1", "-ar", PeakRate.ToString(CultureInfo.InvariantCulture),
                 "-c:a", "pcm_f32le", "-f", "f32le", samples]);
-            var result = await FfmpegRunner.RunAsync(ffmpeg, args, null, cancellationToken, background: true);
+            var result = await FfmpegRunner.RunAsync(ffmpeg, args, null, cancellationToken);
             if (result.ExitCode != 0 || !File.Exists(samples))
                 return []; // no sound
             var bytes = await File.ReadAllBytesAsync(samples, cancellationToken);
