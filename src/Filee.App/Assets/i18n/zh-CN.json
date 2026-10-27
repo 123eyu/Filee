@@ -104,6 +104,7 @@
   "error.live_photo_hdr": "此 FFmpeg 没有 zscale 滤镜，无法把 HDR 视频制作成实况/动态照片。Filee 下载的 FFmpeg 带有该滤镜",
   "error.rhwp_timeout": "文档太长，rhwp 未能在时限内完成",
   "error.rhwp_timeout_calibre": "文档太长，rhwp 未能在时限内完成。如果是电子书，请在“设置 → 转换引擎”中把 Calibre 移到 HWPX writer 之上，Calibre 生成 PDF 要快得多",
+  "error.engine_stalled": "转换引擎停止响应：长时间没有进展，已将其停止",
   "error.needs_shaping": "这种文字需要 LibreOffice 才能正确转换，请在“设置 → 转换引擎”中安装",
   "error.runtime_missing": "此引擎所需的 Microsoft Visual C++ 运行库文件缺失或版本过旧。请更新或重新安装 Filee，或安装 Microsoft Visual C++ 可再发行程序包 (x64)",
   "error.conversion_failed": "转换引擎出错",

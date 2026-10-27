@@ -98,6 +98,7 @@
   "error.live_photo_hdr": "यस FFmpeg मा zscale फिल्टर छैन, त्यसैले यो HDR भिडियो लाइभ / मोशन फोटो बन्न सक्दैन। Filee को FFmpeg डाउनलोडमा यो उपलब्ध छ",
   "error.rhwp_timeout": "rhwp ले यस लामो कागजातलाई समयमै पूरा गर्न सकेन",
   "error.rhwp_timeout_calibre": "rhwp ले यस लामो कागजातलाई समयमै पूरा गर्न सकेन। इ-पुस्तकका लागि, सेटिङहरू → इन्जिनहरूमा गएर Calibre लाई HWPX writer भन्दा माथि सार्नुहोस्, र Calibre ले PDF धेरै छिटो बनाउनेछ",
+  "error.engine_stalled": "इन्जिनले प्रतिक्रिया दिन बन्द गर्‍यो: लामो समयसम्म कुनै प्रगति नभएकाले यसलाई रोकियो",
   "error.needs_shaping": "यस लिपिलाई सही रूपमा रूपान्तरण गर्न LibreOffice आवश्यक पर्दछ। यसलाई सेटिङहरू → इन्जिनहरूमा स्थापना गर्नुहोस्",
   "error.runtime_missing": "यो इन्जिनलाई आवश्यक पर्ने Microsoft Visual C++ रनटाइम फाइल फेला परेन वा पुरानो भयो। Filee लाई अपडेट वा पुन: स्थापना गर्नुहोस्, वा Microsoft Visual C++ Redistributable (x64) स्थापना गर्नुहोस्",
   "error.conversion_failed": "इन्जिनले त्रुटि रिपोर्ट गर्‍यो",

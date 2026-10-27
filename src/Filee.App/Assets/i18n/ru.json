@@ -104,6 +104,7 @@
   "error.live_photo_hdr": "В этом FFmpeg нет фильтра zscale, поэтому из этого HDR-видео нельзя сделать Live Photo или Motion Photo. В FFmpeg, который скачивает Filee, он есть",
   "error.rhwp_timeout": "rhwp не успел обработать этот длинный документ",
   "error.rhwp_timeout_calibre": "rhwp не успел обработать этот длинный документ. Для электронной книги поставьте Calibre выше HWPX writer в разделе «Настройки → Движки» — так Calibre сделает PDF намного быстрее",
+  "error.engine_stalled": "Движок перестал отвечать: он долго не продвигался и был остановлен",
   "error.needs_shaping": "Чтобы правильно сконвертировать текст в этой системе письма, нужен LibreOffice. Установите его в разделе «Настройки → Движки»",
   "error.runtime_missing": "Не хватает файла среды выполнения Microsoft Visual C++, нужного этому движку, или он устарел. Обновите или переустановите Filee либо установите Microsoft Visual C++ Redistributable (x64)",
   "error.conversion_failed": "Движок сообщил об ошибке",

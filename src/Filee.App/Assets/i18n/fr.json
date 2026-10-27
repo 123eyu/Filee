@@ -104,6 +104,7 @@
   "error.live_photo_hdr": "Ce FFmpeg n'a pas le filtre zscale : cette vidéo HDR ne peut donc pas devenir une Live Photo ou une Motion Photo. Le FFmpeg téléchargé par Filee l'inclut",
   "error.rhwp_timeout": "rhwp n'a pas pu terminer ce long document à temps",
   "error.rhwp_timeout_calibre": "rhwp n'a pas pu terminer ce long document à temps. Pour un livre numérique, placez Calibre au-dessus du rédacteur HWPX dans Paramètres → Moteurs : Calibre produira le PDF bien plus vite",
+  "error.engine_stalled": "Le moteur ne répond plus : il n'a pas progressé pendant longtemps et a été arrêté",
   "error.needs_shaping": "Cette écriture nécessite LibreOffice pour être convertie correctement. Installez-le dans Paramètres → Moteurs",
   "error.runtime_missing": "Un fichier du runtime Microsoft Visual C++ requis par ce moteur est manquant ou obsolète. Mettez à jour ou réinstallez Filee, ou installez Microsoft Visual C++ Redistributable (x64)",
   "error.conversion_failed": "Le moteur a signalé une erreur",
