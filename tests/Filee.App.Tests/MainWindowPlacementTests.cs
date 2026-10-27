@@ -122,6 +122,40 @@ public class MainWindowPlacementTests
     }
 
     [AvaloniaTheory]
+    [InlineData(WindowState.Maximized)]
+    [InlineData(WindowState.Minimized)]
+    public void Quitting_maximized_or_minimized_keeps_the_size_settings_json_had(WindowState state)
+    {
+        // The first close of a run has no placement of this run to fall back on: the one the window opened with counts.
+        TestServices.EnsureInitialized("en");
+        var store = AppHost.Get<UserDataStore>();
+        var before = store.Settings.MainWindow;
+        var service = ActivatorUtilities.CreateInstance<WindowService>(AppHost.Services);
+        try
+        {
+            store.Settings.MainWindow = new WindowBounds { X = 120, Y = 80, Width = 900, Height = 600 };
+            service.ShowMain();
+            var main = service.Main!;
+            Pump();
+            main.WindowState = state;
+            Pump();
+            main.Close();
+            Pump();
+
+            var saved = Assert.IsType<WindowBounds>(store.Settings.MainWindow);
+            Assert.Equal((120, 80, 900.0, 600.0, state == WindowState.Maximized),
+                (saved.X, saved.Y, saved.Width, saved.Height, saved.Maximized));
+        }
+        finally
+        {
+            service.Main?.Close();
+            Pump();
+            store.Settings.MainWindow = before;
+            store.SaveSettings();
+        }
+    }
+
+    [AvaloniaTheory]
     [InlineData(WindowCloseReason.ApplicationShutdown, true)] // Quit from the tray (lifetime.Shutdown())
     [InlineData(WindowCloseReason.OSShutdown, false)] // Windows signing out or shutting down
     public void Quitting_while_the_window_is_open_remembers_it_too(WindowCloseReason reason, bool programmatic)

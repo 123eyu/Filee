@@ -305,7 +305,8 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
             // While it is still on screen: the release closes it hidden, when its position may no longer be known.
             if (!main.IsVisible)
                 return;
-            _mainPlacement = MainWindowPlacement.Of(main, model, _mainPlacement);
+            // Maximized or minimized it keeps the size it had before: on the first close of a run, the one it opened with.
+            _mainPlacement = MainWindowPlacement.Of(main, model, _mainPlacement ?? placement);
             store?.SaveMainWindow(_mainPlacement.ToBounds());
         };
         main.Closed += (_, _) =>
