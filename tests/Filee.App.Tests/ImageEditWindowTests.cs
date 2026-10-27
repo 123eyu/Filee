@@ -40,6 +40,8 @@ public class ImageEditWindowTests
             vm.Rotation = vm.Rotations.Single(r => r.Value == ImageRotation.Right90);
             Pump();
             Assert.True(vm.ShowQuality); // the JPG keeps its format
+            // Plain number boxes as the crop window's W × H: typed, or stepped with the arrow keys.
+            Assert.All(window.GetVisualDescendants().OfType<NumericUpDown>(), box => Assert.False(box.ShowButtonSpinner));
             Save(window, $"window-image-edit-{language}-{(dark ? "dark" : "light")}.png");
         }, language: language, dark: dark);
     }

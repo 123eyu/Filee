@@ -37,15 +37,15 @@
         </StackPanel>
         <StackPanel Grid.Column="2" IsVisible="{Binding ShowPercent}">
           <TextBlock Classes="label" Text="{DynamicResource presets.percent}" />
-          <NumericUpDown Value="{Binding ResizePercent}" Minimum="1" Maximum="1000" Increment="5" FormatString="0" AutomationProperties.Name="{DynamicResource presets.percent}" />
+          <NumericUpDown Value="{Binding ResizePercent}" Minimum="1" Maximum="1000" Increment="5" FormatString="0" ShowButtonSpinner="False" AutomationProperties.Name="{DynamicResource presets.percent}" />
         </StackPanel>
         <StackPanel Grid.Column="2" IsVisible="{Binding ShowLongEdge}">
           <TextBlock Classes="label" Text="{DynamicResource presets.long_edge}" />
-          <NumericUpDown Value="{Binding LongEdge}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" AutomationProperties.Name="{DynamicResource presets.long_edge}" />
+          <NumericUpDown Value="{Binding LongEdge}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" ShowButtonSpinner="False" AutomationProperties.Name="{DynamicResource presets.long_edge}" />
         </StackPanel>
         <StackPanel Grid.Column="2" IsVisible="{Binding ShowWidth}">
           <TextBlock Classes="label" Text="{DynamicResource presets.width}" />
-          <NumericUpDown Value="{Binding Width}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" AutomationProperties.Name="{DynamicResource presets.width}" />
+          <NumericUpDown Value="{Binding Width}" Minimum="16" Maximum="20000" Increment="100" FormatString="0" ShowButtonSpinner="False" AutomationProperties.Name="{DynamicResource presets.width}" />
         </StackPanel>
       </Grid>
       <!-- The first picture's size before and after. Each size stays "width × height" in Arabic too; the arrow and their
