@@ -336,7 +336,7 @@ internal static class Cli
             var everything = host.Catalog.CreatePlanner(host.Catalog.All
                 .Where(c => host.Catalog.StatusOf(c).ReasonKey != "engine.reason.unsupported_platform")
                 .Select(c => c.Id).ToList());
-            var targets = FormatRegistry.Known.Where(t => t.Writable && t.Id != from.Id && t.Id != FormatRegistry.Folder).ToList();
+            var targets = FormatRegistry.Known.Where(t => t.Writable && t.Id != from.Id).ToList();
             var now = targets.Where(t => installed.CanConvert(from.Id, t.Id)).Select(t => t.Id).ToList();
             var later = targets.Where(t => !now.Contains(t.Id) && everything.CanConvert(from.Id, t.Id)).Select(t => t.Id).ToList();
             output.WriteLine($"{from.DisplayName} ({string.Join(", ", from.Extensions)}) converts to:");

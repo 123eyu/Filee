@@ -317,6 +317,18 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public async Task Archives_list_folder_as_a_target()
+    {
+        var (code, output, _) = await Run("formats", "zip");
+        Assert.Equal(Cli.Success, code);
+        Assert.Contains("folder", output);
+
+        (code, output, _) = await Run("formats", "png");
+        Assert.Equal(Cli.Success, code);
+        Assert.DoesNotContain("folder", output);
+    }
+
+    [Fact]
     public async Task Jpeg_xr_converts_on_windows_and_is_no_download_away_elsewhere()
     {
         var (code, output, _) = await Run("formats", "jxr");
