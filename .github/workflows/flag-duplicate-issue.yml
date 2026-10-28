@@ -1,0 +1,119 @@
+# Flags a new issue that may duplicate an open one: a comment links the original and mentions the owner (or the
+# collaborators listed in MENTION below), who decide. The issue gets the `duplicate` label but is not closed.
+# Trigger: an issue is opened. The `issues` event never fires for pull requests (those use `pull_request`), so this
+# workflow only ever runs for issues.
+# What counts as a duplicate, compared with the other open issues:
+# - Format requests (the "File extension" field of .github/ISSUE_TEMPLATE/format_request.yml): the same file
+#   extension. ".NCM" and "ncm" are the same, and a list such as ".mp3, .wav" must match the other list exactly. The
+#   format it should convert to is not compared.
+# - Any other issue, or a format request without a usable extension: the same title, ignoring case, punctuation and
+#   spacing. Titles whose text is short or only the template tag (for example "[Bug]:") are never compared, so empty
+#   or generic titles are never closed.
+# When several open issues match, the oldest one is the original. The workflow then comments on the new issue with a
+# link to it, adds the `duplicate` label (created when missing) and asks the owner to check, so a person decides
+# whether to close it.
+name: Flag duplicate issue
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  duplicate:
+    if: ${{ github.event.issue.user.type != 'Bot' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      ISSUE: ${{ github.event.issue.number }}
+      # Who is mentioned in the comment: the repository owner. To also notify collaborators, list them here, for
+      # example '@owner @collaborator1 @collaborator2'.
+      MENTION: "@${{ github.repository_owner }}"
+    steps:
+      - name: Find an open issue that asks for the same thing
+        id: find
+        env:
+          # Passed as environment variables, never written into the script, so the text can't run as code.
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess, sys
+
+          def norm(text):
+              return re.sub(r'[\W_]+', ' ', text.lower()).strip()
+
+          def core(text):
+              # The title without the leading template tags such as "[Bug]:" or "[Format]:".
+              return re.sub(r'^\s*(\[[^\]]*\]\s*:?\s*)+', '', text)
+
+          def extensions(body):
+              # The "File extension" answer of the format request form, as a set such as {"ncm"}; None when the issue
+              # has no such field, it was left empty, or it holds anything but plain extensions.
+              m = re.search(r'###[ \t]+File extension[ \t]*\r?\n(?:[ \t]*\r?\n)*([^\r\n]+)', body or '')
+              if not m or m.group(1).strip() == '_No response_':
+                  return None
+              found = set()
+              for part in re.split(r'[,;/\s]+', m.group(1).strip()):
+                  part = part.lstrip('.*').lower()
+                  if not part:
+                      continue
+                  if not re.fullmatch(r'[a-z0-9_+\-]{1,12}', part):
+                      return None
+                  found.add(part)
+              return frozenset(found) or None
+
+          title = os.environ['TITLE']
+          me = int(os.environ['ISSUE'])
+          mine = extensions(os.environ.get('BODY', ''))
+          key = norm(title)
+          if mine is None and len(norm(core(title))) < 8:
+              print('Title is too short or generic: not checking for duplicates')
+              sys.exit(0)
+
+          listing = subprocess.run(
+              ['gh', 'issue', 'list', '--state', 'open', '--limit', '1000', '--json', 'number,title,body'],
+              check=True, capture_output=True, text=True).stdout
+          matches = []
+          for issue in json.loads(listing):
+              if issue['number'] >= me:
+                  continue
+              if mine is not None:
+                  if extensions(issue.get('body')) == mine:
+                      matches.append(issue['number'])
+              elif norm(issue['title']) == key:
+                  matches.append(issue['number'])
+          if not matches:
+              print('No duplicate found')
+              sys.exit(0)
+
+          original = min(matches)
+          if mine is not None:
+              reason = 'it asks for the same file extension (' + ', '.join('.' + e for e in sorted(mine)) + ')'
+          else:
+              reason = 'it has the same title'
+          print(f'Duplicate of #{original}: {reason}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'original={original}\n')
+              out.write(f'reason={reason}\n')
+          PY
+
+      - name: Comment with a link to the original and add the label
+        if: ${{ steps.find.outputs.original != '' }}
+        env:
+          ORIGINAL: ${{ steps.find.outputs.original }}
+          REASON: ${{ steps.find.outputs.reason }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          body=$(printf '%s\n\n%s\n\n%s\n\n%s\n' \
+            "Hi @$AUTHOR, thank you for opening this issue." \
+            "This issue may be a duplicate of #$ORIGINAL, because $REASON." \
+            "$MENTION, when you have a moment, could you please review it and confirm whether it is a duplicate? If it is, it can be closed in favor of #$ORIGINAL." \
+            "@$AUTHOR, if you believe this is not a duplicate, please add a comment describing what is different so that it can be reviewed again.")
+          gh issue comment "$ISSUE" --body "$body"
+          gh label create duplicate --description "This issue already exists" --color cfd3d7 2>/dev/null || true
+          gh issue edit "$ISSUE" --add-label duplicate
