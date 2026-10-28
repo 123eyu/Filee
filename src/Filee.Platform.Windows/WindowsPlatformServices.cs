@@ -40,6 +40,7 @@ public sealed class WindowsPlatformServices : IPlatformServices
         "OneCommander",
         "Q-Dir",
         "FreeCommander",
+        "FPilot",         // File Pilot (#633)
     };
 
     public void RaiseTopmost(nint windowHandle)
