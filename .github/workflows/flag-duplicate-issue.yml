@@ -1,6 +1,6 @@
 # Flags a new issue that asks for something already requested or already added: a comment links the original issue
-# and mentions the owner (or the collaborators listed in MENTION below), who decide. The issue gets the `duplicate`
-# label but is not closed.
+# and mentions the owner and the collaborators with write access (see MENTION below), who decide. The issue gets the
+# `duplicate` label but is not closed.
 # Trigger: an issue is opened. The `issues` event never fires for pull requests (those use `pull_request`), so this
 # workflow only ever runs for issues.
 # What counts as the same request, compared with the other issues:
@@ -25,6 +25,8 @@ on:
 
 permissions:
   issues: write
+  # Read-only: to read the date of the latest release.
+  contents: read
 
 jobs:
   duplicate:
@@ -35,8 +37,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       ISSUE: ${{ github.event.issue.number }}
-      # Who is mentioned in the comment: the repository owner. To also notify collaborators, list them here, for
-      # example '@owner @collaborator1 @collaborator2'.
+      # Always mentioned in the comment: the repository owner. The collaborators with write access are added to it
+      # automatically (see the comment step). To always mention someone else too, list them here, for example
+      # '@owner @someone'.
       MENTION: "@${{ github.repository_owner }}"
     steps:
       - name: Find an issue that asks for the same thing
@@ -129,6 +132,21 @@ jobs:
           EXT: ${{ steps.find.outputs.ext }}
           AUTHOR: ${{ github.event.issue.user.login }}
         run: |
+          # The owner (MENTION) and the collaborators with write access, at most 10 names, never the issue author.
+          # When the collaborator list can't be read with this token, only MENTION is used.
+          mentions="$MENTION"
+          count=$(wc -w <<< "$mentions")
+          collaborators=$(gh api --paginate "repos/$GH_REPO/collaborators" \
+            --jq '.[] | select(.type == "User" and .permissions.push == true) | .login' 2>/dev/null || true)
+          for login in $collaborators; do
+            [ "$count" -ge 10 ] && break
+            [ "$login" = "$AUTHOR" ] && continue
+            case " $mentions " in *" @$login "*) continue ;; esac
+            mentions="$mentions @$login"
+            count=$((count + 1))
+          done
+          MENTION="$mentions"
+
           if [ "$KIND" = release ]; then
             # Case 1: the format (or fix) is already merged and only waits for the next release.
             if [ -n "$EXT" ]; then
