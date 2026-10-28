@@ -490,7 +490,7 @@
   "update.install": "Güncelle",
   "update.notice_text_portable": "Bu taşınabilir sürümdür.\nYeni ZIP'i indirip bu klasörün üzerine çıkarın. Ayarlarınız korunur.",
   "update.downloading": "Güncelleme indiriliyor… %{0}",
-  "update.installing_short": "Kuruluyor…",
+  "update.installing_short": "Güncelleniyor…",
   "update.installing": "Kurulum çalışıyor. Tamamlanınca Filee yeniden açılır.",
   "update.failed": "Otomatik güncelleme yapılamadı. Yeni sürümü filee.sh adresinden indirin.",
   "update.failed_alert": "Güncelleme indirilemedi.\nTamam'a basarak filee.sh adresini açıp yeni sürümü oradan indirin.",
