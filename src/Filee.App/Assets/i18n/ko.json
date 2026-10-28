@@ -501,7 +501,7 @@
   "update.later": "나중에",
   "update.install": "업데이트",
   "update.notice_text_portable": "휴대용 버전이라 새 zip을 받아서 지금 폴더에 덮어 풀어야 해요.\n설정은 그대로 남아요.",
-  "update.downloading": "업데이트 다운로드 중… {0}%",
+  "update.downloading": "새 버전 받는 중… {0}%",
   "update.installing_short": "업데이트 중…",
   "update.installing": "설치 프로그램이 열렸어요. 설치가 끝나면 Filee가 다시 켜져요.",
   "update.failed": "자동 업데이트가 안 됐어요. filee.sh에서 새 버전을 받아 주세요.",

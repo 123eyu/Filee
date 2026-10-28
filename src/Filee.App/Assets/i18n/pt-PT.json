@@ -501,7 +501,7 @@
   "update.later": "Mais tarde",
   "update.install": "Atualizar",
   "update.notice_text_portable": "Esta é a versão portátil.\nDescarrega o novo ZIP e extrai-o para esta pasta, substituindo os ficheiros. As tuas definições são mantidas.",
-  "update.downloading": "A descarregar atualização… {0}%",
+  "update.downloading": "A descarregar a atualização… {0}%",
   "update.installing_short": "A atualizar…",
   "update.installing": "O instalador está em execução. O Filee volta a abrir quando terminar.",
   "update.failed": "Não foi possível atualizar automaticamente. Descarrega a nova versão em filee.sh.",

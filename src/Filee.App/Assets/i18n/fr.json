@@ -501,7 +501,7 @@
   "update.later": "Plus tard",
   "update.install": "Mettre à jour",
   "update.notice_text_portable": "Ceci est la version portable.\nTéléchargez le nouveau zip et décompressez-le par-dessus ce dossier. Vos paramètres sont conservés.",
-  "update.downloading": "Téléchargement de la mise à jour… {0} %",
+  "update.downloading": "Téléchargement de la mise à jour… {0} %",
   "update.installing_short": "Mise à jour…",
   "update.installing": "Le programme d'installation est en cours. Filee redémarre une fois terminé.",
   "update.failed": "Impossible de mettre à jour automatiquement. Téléchargez la nouvelle version sur filee.sh.",
