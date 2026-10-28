@@ -509,7 +509,7 @@
   "update.install": "更新",
   "update.notice_text_portable": "這是可攜版，請下載新的 zip 並解壓縮覆蓋當前資料夾，設定會保留。",
   "update.downloading": "正在下載更新… {0}%",
-  "update.installing_short": "正在安裝…",
+  "update.installing_short": "正在更新…",
   "update.installing": "安裝程式正在執行，完成後 Filee 會重新啟動。",
   "update.failed": "無法自動更新，請從 filee.sh 下載新版本。",
   "update.failed_alert": "無法下載更新。\n點擊「確定」後會開啟 filee.sh，可以在那裡下載新版本。",

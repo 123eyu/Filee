@@ -497,7 +497,7 @@
   "update.install": "Actualizar",
   "update.notice_text_portable": "Esta es la versión portátil.\nDescarga el ZIP nuevo y descomprímelo sobre esta carpeta. Tus ajustes se conservan.",
   "update.downloading": "Descargando la actualización… {0}%",
-  "update.installing_short": "Instalando…",
+  "update.installing_short": "Actualizando…",
   "update.installing": "El instalador se está ejecutando. Filee se reinicia cuando termina.",
   "update.failed": "No se pudo actualizar automáticamente. Descarga la versión nueva en filee.sh.",
   "update.failed_alert": "No se pudo descargar la actualización.\nPulsa Aceptar para abrir filee.sh y descargar allí la versión nueva.",
