@@ -41,7 +41,7 @@ internal sealed partial class CadSceneBuilder
                 color = ResolveColor(gradient.Colors[0].Color, layer, context);
                 second = gradient.Colors.Count > 1 ? ResolveColor(gradient.Colors[1].Color, layer, context) : Blend(color, SKColors.White, 0.8);
             }
-            var fill = new FillPrimitive { Color = color, GradientColor = second, GradientAngle = gradient?.Angle ?? 0 };
+            var fill = new FillPrimitive { Color = color, GradientColor = second, GradientAngle = gradient?.Angle ?? 0, IsArea = true };
             fill.Figures.AddRange(boundary);
             AddFill(fill);
             return;
@@ -56,7 +56,7 @@ internal sealed partial class CadSceneBuilder
         if (lines is null)
         {
             // Too dense (or no pattern data): a light tint of the hatch colour keeps the area recognisable.
-            var tint = new FillPrimitive { Color = Blend(color, SKColors.White, 0.75) };
+            var tint = new FillPrimitive { Color = Blend(color, SKColors.White, 0.75), IsArea = true };
             tint.Figures.AddRange(boundary);
             AddFill(tint);
             return;

@@ -165,15 +165,31 @@ internal static class SvgRenderer
         var longEdge = Math.Max(bounds.Width, bounds.Height);
         var dpi = Math.Clamp(pdf.RenderDpi, 36, 1200);
         var scale = Math.Max(dpi / CssDpi, MinimumLongEdge / longEdge);
-        switch (image.Resize)
+        // Same guard as ImageEncoder.ApplyOptions: a size of 0 or below from a hand-edited file is not a size.
+        if (image.CustomSize is { Width: > 0, Height: > 0 } custom)
         {
-            case ResizeMode.LongEdge when image.LongEdge > 0:
-                scale = image.LongEdge / longEdge;
-                break;
-            case ResizeMode.Percent when image.ResizePercent is > 0 and not 100:
-                scale *= image.ResizePercent / 100f;
-                break;
+            // Render at the size the custom resize asks for, so the box is not reached by stretching a default-size
+            // bitmap, which comes out soft. With the lock, at the fit-inside scale; without, at the larger side's
+            // scale, so the stretch that follows only ever shrinks the other side.
+            scale = custom.LockAspect
+                ? Math.Min(custom.ClampedWidth / bounds.Width, custom.ClampedHeight / bounds.Height)
+                : Math.Max(custom.ClampedWidth / bounds.Width, custom.ClampedHeight / bounds.Height);
         }
+        else if (image.ClampedMinShortEdge is { } minShortEdge)
+        {
+            // The usual render size, or larger where that leaves the shorter edge under the minimum: drawn at that
+            // size instead of enlarging a default-size bitmap afterwards, which comes out soft (issue #652).
+            scale = Math.Max(scale, minShortEdge / Math.Min(bounds.Width, bounds.Height));
+        }
+        else switch (image.Resize)
+            {
+                case ResizeMode.LongEdge when image.LongEdge > 0:
+                    scale = image.LongEdge / longEdge;
+                    break;
+                case ResizeMode.Percent when image.ResizePercent is > 0 and not 100:
+                    scale *= image.ResizePercent / 100f;
+                    break;
+            }
         var limit = Math.Min(MaximumLongEdge / longEdge, MathF.Sqrt(MaximumPixels / (bounds.Width * bounds.Height)));
         return Math.Max(Math.Min(scale, limit), 1e-3f);
     }

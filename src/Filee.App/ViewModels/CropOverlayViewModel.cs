@@ -520,8 +520,12 @@ public enum CropItemState
     Failed,
 }
 
-/// <summary>One file of the crop overlay's strip: a small thumbnail once it has been opened, and how it went.</summary>
-public sealed partial class CropQueueItem(ILocalizer loc, string name, int index) : ObservableObject, IDisposable
+/// <summary>
+/// One file of the strip of the crop overlay (and of the "Pixelate / blur" window): a small thumbnail once it has been
+/// opened, and how it went. <paramref name="doneKey"/> names a file that is done.
+/// </summary>
+public sealed partial class CropQueueItem(ILocalizer loc, string name, int index, string doneKey = "crop.state_done")
+    : ObservableObject, IDisposable
 {
     /// <summary>Longest side of a thumbnail in the strip (at twice its size on screen, for high-DPI displays).</summary>
     private const int ThumbnailSide = 72;
@@ -553,7 +557,7 @@ public sealed partial class CropQueueItem(ILocalizer loc, string name, int index
     public string StateText => loc[State switch
     {
         CropItemState.Current => "crop.state_current",
-        CropItemState.Done => "crop.state_done",
+        CropItemState.Done => doneKey,
         CropItemState.Skipped => "crop.state_skipped",
         CropItemState.Failed => "crop.state_failed",
         _ => "crop.state_waiting",

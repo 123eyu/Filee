@@ -61,6 +61,19 @@ public sealed class PresetKindJsonConverter : LenientEnumJsonConverter<PresetKin
 }
 
 /// <summary>
+/// Reads like the lenient converter and, when writing, never emits <see cref="ResizeMode.Custom"/> or
+/// <see cref="ResizeMode.MinShortEdge"/> (editor-only choices): a preset with custom sizing stores Resize None plus
+/// CustomSize, one with a minimum short edge Resize None plus MinShortEdge, so a version without the mode keeps
+/// reading presets.json instead of rejecting it as broken and overwriting the user's presets with the built-in
+/// ones (issues #576, #652).
+/// </summary>
+public sealed class ResizeModeJsonConverter : LenientEnumJsonConverter<ResizeMode>
+{
+    public override void Write(Utf8JsonWriter writer, ResizeMode value, JsonSerializerOptions options) =>
+        writer.WriteStringValue((value is ResizeMode.Custom or ResizeMode.MinShortEdge ? ResizeMode.None : value).ToString());
+}
+
+/// <summary>
 /// A named conversion recipe. The donut toolbar shows presets; dropping files on one runs it.
 /// </summary>
 /// <remarks>
@@ -99,7 +112,7 @@ public sealed class Preset
     /// <summary>Options used when a raster image is traced into vector shapes (PNG → SVG, DXF ...).</summary>
     public TracingOptions Trace { get; set; } = new();
 
-    /// <summary>Options used when a DWG or DXF is written.</summary>
+    /// <summary>Options used when a DWG or DXF is written or drawn.</summary>
     public CadOptions Cad { get; set; } = new();
 
     /// <summary>Where and how output files are written.</summary>
@@ -184,6 +197,15 @@ public sealed class Preset
     public bool JoinsIntoOneMedia =>
         (Media.JoinIntoOne || Media.Slideshow) && MediaOptions.JoinTargets.Contains(TargetFormat);
 
+    /// <summary>
+    /// True for "Merge images": every dropped picture goes, in order, into one image (<see cref="ImageOptions.JoinIntoOne"/>)
+    /// of a picture format, or of the first picture's format for <see cref="BuiltInData.SameAsSource"/>.
+    /// </summary>
+    [JsonIgnore]
+    public bool JoinsImages =>
+        Image.JoinIntoOne
+        && (TargetFormat == BuiltInData.SameAsSource || Formats.FormatRegistry.FindById(TargetFormat)?.Category == Formats.FormatCategory.Image);
+
     /// <summary>True for a <see cref="PresetKind.Tool"/>.</summary>
     [JsonIgnore]
     public bool IsTool => Kind == PresetKind.Tool;
@@ -195,9 +217,20 @@ public sealed class Preset
     public const string ClipTool = "clip";
 
     /// <summary>
+    /// <see cref="Tool"/> of "Edit pictures": the size, format, turn and colour of pictures, chosen in a small window each
+    /// time (#584).
+    /// </summary>
+    public const string ImageEditTool = "image-edit";
+
+    /// <summary>
+    /// <see cref="Tool"/> of "Pixelate / blur": parts of a picture covered before it is shared (names, faces, numbers).
+    /// </summary>
+    public const string HideTool = "hide";
+
+    /// <summary>
     /// <see cref="PresetKind.Tool"/>: which window it opens, <see cref="CropTool"/> (or null, as saved before there were
-    /// other tools) or <see cref="ClipTool"/>. A tool this version doesn't know (from a newer Filee) opens nothing.
-    /// Ignored for other kinds.
+    /// other tools), <see cref="ClipTool"/>, <see cref="ImageEditTool"/> or <see cref="HideTool"/>. A tool this version
+    /// doesn't know (from a newer Filee) opens nothing. Ignored for other kinds.
     /// </summary>
     public string? Tool { get; set; }
 
@@ -208,6 +241,14 @@ public sealed class Preset
     /// <summary>True for "Cut a clip".</summary>
     [JsonIgnore]
     public bool IsClipTool => IsTool && Tool == ClipTool;
+
+    /// <summary>True for "Edit pictures".</summary>
+    [JsonIgnore]
+    public bool IsImageEditTool => IsTool && Tool == ImageEditTool;
+
+    /// <summary>True for "Pixelate / blur".</summary>
+    [JsonIgnore]
+    public bool IsHideTool => IsTool && Tool == HideTool;
 
     /// <summary>
     /// True if converting a <paramref name="sourceFormat"/> file cuts a clip of it (<see cref="MediaOptions.Clip"/>,
@@ -265,6 +306,19 @@ public enum ResizeMode
     LongEdge,
     /// <summary>Scale to <see cref="ImageOptions.Width"/> pixels wide, height in proportion (never upscales).</summary>
     Width,
+    /// <summary>
+    /// Scale to the free width x height in <see cref="ImageOptions.CustomSize"/>: stretched to exactly that size, or
+    /// with the aspect kept, scaled (up or down) to the largest size that fits inside (issue #576). An editor choice
+    /// only: a preset with custom sizing stores <see cref="ImageOptions.Resize"/> None plus
+    /// <see cref="ImageOptions.CustomSize"/>, so a version without the mode still reads the file.
+    /// </summary>
+    Custom,
+    /// <summary>
+    /// Scale up so the shorter edge is at least <see cref="ImageOptions.MinShortEdge"/>, in proportion; a picture
+    /// that already reaches it is left as it is (never shrinks; issue #652). An editor choice only, stored like
+    /// <see cref="Custom"/>: <see cref="ImageOptions.Resize"/> None plus <see cref="ImageOptions.MinShortEdge"/>.
+    /// </summary>
+    MinShortEdge,
 }
 
 /// <summary>How an image is turned, after its EXIF orientation is applied.</summary>
@@ -288,6 +342,24 @@ public enum ImageFlip
     Vertical,
 }
 
+/// <summary>Which way merged pictures follow each other (<see cref="ImageOptions.JoinIntoOne"/>).</summary>
+public enum ImageJoinDirection
+{
+    /// <summary>One under another, the first at the top.</summary>
+    Vertical,
+    /// <summary>Side by side, the first on the left.</summary>
+    Horizontal,
+}
+
+/// <summary>How merged pictures of different sizes line up (<see cref="ImageOptions.JoinIntoOne"/>).</summary>
+public enum ImageJoinFit
+{
+    /// <summary>Scaled to the widest picture (one under another) or the tallest (side by side), so the edges line up.</summary>
+    SameSize,
+    /// <summary>Each at its own size, centred.</summary>
+    Original,
+}
+
 /// <summary>TIFF compression schemes.</summary>
 public enum TiffCompression
 {
@@ -305,6 +377,29 @@ public enum FitsTiffMode
     Stretched,
 }
 
+/// <summary>How "Pixelate / blur" covers the parts of a picture it hides (<see cref="ImageOptions.HideStyle"/>).</summary>
+public enum HideStyle
+{
+    /// <summary>Squares of the average colour of what is under them.</summary>
+    Pixelate,
+    /// <summary>A strong blur.</summary>
+    Blur,
+}
+
+/// <summary>
+/// A part of a picture to hide, in parts of the picture as it is seen (EXIF orientation applied): 0 to 1 from its left
+/// and top edges.
+/// </summary>
+public sealed class HiddenArea
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
+
+    public HiddenArea Clone() => (HiddenArea)MemberwiseClone();
+}
+
 /// <summary>Raster image encoding options.</summary>
 public sealed class ImageOptions
 {
@@ -317,6 +412,13 @@ public sealed class ImageOptions
     /// </summary>
     public double MaxSizeMb { get; set; }
 
+    /// <summary>
+    /// How the picture is scaled. A preset with <see cref="CustomSize"/> or <see cref="MinShortEdge"/> set stores None
+    /// here (that sizing wins), so a version without it simply does not resize instead of rejecting a name it does
+    /// not know. The lenient converter also reads a name a future version might add as None, and the writer maps
+    /// Custom and MinShortEdge down to None (see <see cref="ResizeModeJsonConverter"/>).
+    /// </summary>
+    [JsonConverter(typeof(ResizeModeJsonConverter))]
     public ResizeMode Resize { get; set; } = ResizeMode.None;
 
     /// <summary>Turns the image (after its EXIF orientation is applied).</summary>
@@ -331,9 +433,16 @@ public sealed class ImageOptions
     [JsonIgnore]
     public bool TurnsOrMirrors => Rotation != ImageRotation.None || Flip != ImageFlip.None;
 
+    /// <summary>
+    /// Turns, mirrors or covers parts of the image (<see cref="HidesAreas"/>): done once, in the first step of a route whose
+    /// engine applies image options (<see cref="Conversion.IImageTransformer"/>); a file is never passed on as it is.
+    /// </summary>
+    [JsonIgnore]
+    public bool ReworksPixels => TurnsOrMirrors || HidesAreas;
+
     /// <summary>Whether the preset edits picture content, size, or playback speed.</summary>
     [JsonIgnore]
-    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed;
+    public bool EditsPicture => Resize != ResizeMode.None || Grayscale || TrimTransparent || RemoveBackground || MaxCompression || ChangesSpeed || CustomSize is not null || MinShortEdge is not null;
 
     /// <summary>Scale in percent when <see cref="Resize"/> is <see cref="ResizeMode.Percent"/>.</summary>
     public int ResizePercent { get; set; } = 50;
@@ -343,6 +452,32 @@ public sealed class ImageOptions
 
     /// <summary>Target width in pixels when <see cref="Resize"/> is <see cref="ResizeMode.Width"/>.</summary>
     public int Width { get; set; } = 1200;
+
+    /// <summary>
+    /// Free width x height resizing (issue #576): stretched to exactly that size, or with
+    /// <see cref="CustomImageSize.LockAspect"/> scaled (up or down) to the largest size that fits inside. When set it
+    /// wins over <see cref="Resize"/>; null leaves <see cref="Resize"/> in charge. Stored as one object so a
+    /// presets.json written by this version never carries a resize name an older version rejects: older versions skip
+    /// the unknown property and simply do not resize.
+    /// </summary>
+    public CustomImageSize? CustomSize { get; set; }
+
+    /// <summary>
+    /// The shortest the shorter edge may be, in pixels (issue #652): a smaller picture is scaled up in proportion
+    /// until its shorter edge reaches this, a picture that already does is left as it is. When set it wins over
+    /// <see cref="Resize"/> (only <see cref="CustomSize"/> comes first); null leaves <see cref="Resize"/> in charge.
+    /// A separate field for the same reason as <see cref="CustomSize"/>: older versions skip it and do not resize.
+    /// </summary>
+    public int? MinShortEdge { get; set; }
+
+    /// <summary>
+    /// <see cref="MinShortEdge"/> as it is used: within the editor's range (<see cref="CustomImageSize.MinSide"/> to
+    /// <see cref="CustomImageSize.MaxSide"/>), or null when it is unset or, from a hand-edited file, 0 or below.
+    /// </summary>
+    [JsonIgnore]
+    public int? ClampedMinShortEdge => MinShortEdge is > 0 and var edge
+        ? Math.Clamp(edge, CustomImageSize.MinSide, CustomImageSize.MaxSide)
+        : null;
 
     /// <summary>Output DPI written into the file. <c>null</c> keeps the source value.</summary>
     public int? Dpi { get; set; }
@@ -407,6 +542,40 @@ public sealed class ImageOptions
     public bool WebpLossless { get; set; }
 
     /// <summary>
+    /// "Merge images": every dropped picture goes, in order, into one image named after the first (<see cref="Preset.JoinsImages"/>),
+    /// one under another or side by side (<see cref="JoinDirection"/>). Each picture is turned as its EXIF and
+    /// <see cref="Rotation"/> say first; the other options (resize, grayscale, quality …) apply to the merged image.
+    /// </summary>
+    public bool JoinIntoOne { get; set; }
+
+    /// <summary>With <see cref="JoinIntoOne"/>: one under another or side by side. A direction from a newer Filee reads as vertical.</summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<ImageJoinDirection>))]
+    public ImageJoinDirection JoinDirection { get; set; }
+
+    /// <summary>With <see cref="JoinIntoOne"/>: pictures of different sizes scaled to line up, or kept as they are, centred.</summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<ImageJoinFit>))]
+    public ImageJoinFit JoinFit { get; set; }
+
+    /// <summary>Largest <see cref="JoinGap"/>.</summary>
+    public const int MaxJoinGap = 1000;
+
+    /// <summary>With <see cref="JoinIntoOne"/>: pixels of <see cref="JoinBackground"/> between two pictures (0 to <see cref="MaxJoinGap"/>).</summary>
+    public int JoinGap { get; set; }
+
+    /// <summary><see cref="JoinBackground"/> for a see-through background (in a format that holds one).</summary>
+    public const string TransparentJoin = "transparent";
+
+    /// <summary>
+    /// With <see cref="JoinIntoOne"/>: the colour of the gaps and of the room around smaller pictures, <c>#RRGGBB</c>, or
+    /// <see cref="TransparentJoin"/>. A format without transparency (JPG) gets <see cref="Background"/> there instead.
+    /// </summary>
+    public string JoinBackground { get; set; } = "#FFFFFF";
+
+    /// <summary><see cref="JoinGap"/> within its limits (a hand-edited preset file may hold anything).</summary>
+    [JsonIgnore]
+    public int JoinSpacing => Math.Clamp(JoinGap, 0, MaxJoinGap);
+
+    /// <summary>
     /// FITS → TIFF: the data as it is (the default) or stretched. Either way the TIFF follows the file's BITPIX: 8 and
     /// 16 bits stay so, 32-bit integer and floating-point data become 32-bit floating point.
     /// </summary>
@@ -421,6 +590,30 @@ public sealed class ImageOptions
 
     /// <summary>Icon sizes embedded in an ICO file.</summary>
     public List<int> IcoSizes { get; set; } = [256, 128, 64, 48, 32, 16];
+
+    /// <summary>
+    /// "Pixelate / blur": how <see cref="HiddenAreas"/> are covered. Kept in the tool, so its window opens with the last
+    /// one. A field of its own (not a value added to another option), read leniently: an older Filee skips it.
+    /// </summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<HideStyle>))]
+    public HideStyle HideStyle { get; set; }
+
+    /// <summary>
+    /// How large the squares or how wide the blur over <see cref="HiddenAreas"/> is, <see cref="HideTool.MinStrength"/>
+    /// to <see cref="HideTool.MaxStrength"/> (see <see cref="HideTool.EffectSize"/>). Kept in the tool, as
+    /// <see cref="HideStyle"/>.
+    /// </summary>
+    public int HideStrength { get; set; } = HideTool.DefaultStrength;
+
+    /// <summary>
+    /// The parts of the picture "Pixelate / blur" covers. Set by its window on the conversion it starts, never on a
+    /// saved preset.
+    /// </summary>
+    public List<HiddenArea>? HiddenAreas { get; set; }
+
+    /// <summary>The picture gets parts of it covered (<see cref="HiddenAreas"/>).</summary>
+    [JsonIgnore]
+    public bool HidesAreas => HiddenAreas is { Count: > 0 };
 
     /// <summary>The playback speeds the preset editor offers (<see cref="AnimationSpeed"/>).</summary>
     public static readonly double[] AnimationSpeeds = [0.25, 0.5, 0.75, 1, 1.5, 2, 4];
@@ -446,8 +639,46 @@ public sealed class ImageOptions
     {
         var copy = (ImageOptions)MemberwiseClone();
         copy.IcoSizes = [.. IcoSizes];
+        copy.HiddenAreas = HiddenAreas?.Select(area => area.Clone()).ToList();
+        copy.CustomSize = CustomSize is { } size
+            ? new CustomImageSize { Width = size.Width, Height = size.Height, LockAspect = size.LockAspect }
+            : null;
         return copy;
     }
+}
+
+/// <summary>The free width x height a preset resizes to: <see cref="ImageOptions.CustomSize"/> (issue #576). The
+/// editor keeps both sides within <see cref="MinSide"/>-<see cref="MaxSide"/>; a size read from a hand-edited file
+/// with a side of 0 or below is ignored where it is used, so the picture keeps the preset's own resize behavior
+/// instead, and any other side is brought into that range (<see cref="ClampedWidth"/>, <see cref="ClampedHeight"/>).</summary>
+public sealed class CustomImageSize
+{
+    /// <summary>The smallest side the editor offers.</summary>
+    public const int MinSide = 16;
+
+    /// <summary>The largest side the editor offers.</summary>
+    public const int MaxSide = 16384;
+
+    /// <summary>Target width in pixels.</summary>
+    public int Width { get; set; } = 1920;
+
+    /// <summary>Target height in pixels.</summary>
+    public int Height { get; set; } = 1080;
+
+    /// <summary>
+    /// Keep each file's own shape and scale it to the largest size that fits inside Width x Height, instead of
+    /// stretching it to exactly that size.
+    /// </summary>
+    public bool LockAspect { get; set; }
+
+    /// <summary><see cref="Width"/> within the editor's range, so a hand-edited 200000 cannot ask for a picture no
+    /// machine can hold.</summary>
+    [JsonIgnore]
+    public int ClampedWidth => Math.Clamp(Width, MinSide, MaxSide);
+
+    /// <summary><see cref="Height"/> within the editor's range (see <see cref="ClampedWidth"/>).</summary>
+    [JsonIgnore]
+    public int ClampedHeight => Math.Clamp(Height, MinSide, MaxSide);
 }
 
 /// <summary>Page size used when images are placed into a PDF.</summary>
@@ -940,12 +1171,33 @@ public enum CadVersion
     SameAsSource,
 }
 
-/// <summary>Options for writing DWG and DXF.</summary>
+/// <summary>How a DWG or DXF drawn to PDF, SVG or a picture is coloured (#411), like a plot style in AutoCAD.</summary>
+public enum CadColors
+{
+    /// <summary>The drawing's own colours; only white lines turn black on the white page.</summary>
+    AsDrawn,
+    /// <summary>
+    /// Lines, text and arrowheads in black like monochrome.ctb; filled hatches in the gray of their brightness, so a
+    /// light fill doesn't become a black block.
+    /// </summary>
+    BlackAndWhite,
+    /// <summary>Every colour as the gray of its brightness, lines and text kept dark enough to read.</summary>
+    Grayscale,
+}
+
+/// <summary>Options for DWG and DXF: the version they are written in and the colours they are drawn in.</summary>
 public sealed class CadOptions
 {
     /// <summary>A version from a newer Filee reads as <see cref="CadVersion.AutoCad2018"/>.</summary>
     [JsonConverter(typeof(LenientEnumJsonConverter<CadVersion>))]
     public CadVersion Version { get; set; }
+
+    /// <summary>
+    /// Colours of a drawing rendered to PDF, SVG or a picture. Filee 2.1.0 skips the property it doesn't know, and
+    /// a choice from a newer Filee reads as <see cref="CadColors.AsDrawn"/>.
+    /// </summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<CadColors>))]
+    public CadColors Colors { get; set; }
 
     public CadOptions Clone() => (CadOptions)MemberwiseClone();
 }

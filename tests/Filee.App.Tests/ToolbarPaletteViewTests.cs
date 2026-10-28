@@ -486,15 +486,21 @@ public class ToolbarPaletteViewTests
         Assert.Equal(PaletteTab.All, view.Selected);
         Assert.Contains("test-jpg", view.Chips);
 
-        // Back on JPG: All again. Its only edit preset goes on the donut, the Edit tab empties and All takes over.
+        // Back on JPG: All again. Its only edit presets go on the donut, the Edit tab empties and All takes over.
         profiles.SelectedItem = vm.Profiles.Single(p => p.Profile == jpg);
         RenderTests.Pump();
         Assert.Equal(PaletteTab.All, view.Selected);
         view.ClickTab(PaletteTab.Edit);
-        Assert.Equal(["pdf-edit", "rotate", "flip", "test-group", "tool-crop"], view.Chips);
+        Assert.Equal(["pdf-edit", "rotate", "flip", "test-group", "tool-crop", "tool-image-edit", "tool-hide"], view.Chips);
         DoubleTap(view.Chip("tool-crop"));
         RenderTests.Pump();
         Assert.Equal(["tool-crop"], jpg.PresetIds);
+        DoubleTap(view.Chip("tool-image-edit"));
+        RenderTests.Pump();
+        Assert.Equal(["tool-crop", "tool-image-edit"], jpg.PresetIds);
+        DoubleTap(view.Chip("tool-hide"));
+        RenderTests.Pump();
+        Assert.Equal(["tool-crop", "tool-image-edit", "tool-hide"], jpg.PresetIds);
         Assert.DoesNotContain(PaletteTab.Edit, view.TabIds);
         Assert.Equal(PaletteTab.All, view.Selected);
         Assert.Equal(["pdf-edit", "rotate", "flip", "test-group", "extract-motion", "test-motion"], view.Chips);

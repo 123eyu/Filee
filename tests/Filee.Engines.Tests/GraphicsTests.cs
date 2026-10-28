@@ -11,6 +11,7 @@ using Filee.Engines.Vector;
 using ImageMagick;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
+using SkiaSharp;
 
 namespace Filee.Engines.Tests;
 
@@ -421,6 +422,86 @@ public class GraphicsTests(EngineFixture fx) : IClassFixture<EngineFixture>
         Assert.Equal(File.ReadAllBytes(svg), File.ReadAllBytes(unpacked.Outputs.Single()));
         using var png = new MagickImage(rendered.Outputs.Single());
         Assert.Equal(200u, png.Width);
+    }
+
+    [Fact]
+    public async Task Custom_resize_stretches_a_vector_picture()
+    {
+        var dir = fx.NewFolder();
+        var svg = Write(dir, "logo.svg", GraphicsBuilders.Svg);
+
+        var rendered = await fx.ConvertAsync([svg], new Preset
+        {
+            TargetFormat = "png",
+            Image = { CustomSize = new() { Width = 777, Height = 333 } },
+        });
+
+        AssertDone(rendered);
+        using var png = new MagickImage(rendered.Outputs.Single());
+        Assert.Equal((777u, 333u), (png.Width, png.Height));
+    }
+
+    [Fact]
+    public async Task Custom_resize_with_the_lock_renders_a_vector_picture_at_the_asked_size()
+    {
+        var dir = fx.NewFolder();
+        var svg = Write(dir, "logo.svg", GraphicsBuilders.Svg);
+
+        var rendered = await fx.ConvertAsync([svg], new Preset
+        {
+            TargetFormat = "png",
+            Image = { CustomSize = new() { Width = 777, Height = 333, LockAspect = true } },
+        });
+
+        AssertDone(rendered);
+        using var png = new MagickImage(rendered.Outputs.Single());
+        // The 400 x 200 drawing is rendered at min(777/400, 333/200) = 1.665: the largest 2:1 shape inside the box.
+        Assert.Equal((666u, 333u), (png.Width, png.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_renders_vectors_at_the_asked_scale_instead_of_stretching_a_default_raster()
+    {
+        var image = new ImageOptions { CustomSize = new() { Width = 777, Height = 333, LockAspect = true } };
+        // With the lock, the fit-inside scale: the raster already keeps the file's shape at the box's edge.
+        Assert.Equal(1.665f, SvgRenderer.RasterScale(new SKRect(0, 0, 400, 200), image, new PdfOptions()), 3);
+
+        // Without, the larger side's scale, so the stretch that follows only ever shrinks the other side.
+        image.CustomSize = new() { Width = 777, Height = 333 };
+        Assert.Equal(1.9425f, SvgRenderer.RasterScale(new SKRect(0, 0, 400, 200), image, new PdfOptions()), 3);
+
+        // A size of 0 or below from a hand-edited file is no size: the raster keeps the default DPI scale.
+        var zeroed = new ImageOptions { CustomSize = new() { Width = 0, Height = 333 } };
+        var bounds = new SKRect(0, 0, 400, 200);
+        Assert.Equal(SvgRenderer.RasterScale(bounds, new ImageOptions(), new PdfOptions()),
+            SvgRenderer.RasterScale(bounds, zeroed, new PdfOptions()));
+    }
+
+    [Fact]
+    public async Task Min_short_edge_renders_a_vector_picture_at_least_that_large()
+    {
+        var dir = fx.NewFolder();
+        var svg = Write(dir, "logo.svg", GraphicsBuilders.Svg);
+
+        var rendered = await fx.ConvertAsync([svg], new Preset { TargetFormat = "png", Image = { MinShortEdge = 1080 } });
+
+        AssertDone(rendered);
+        using var png = new MagickImage(rendered.Outputs.Single());
+        // The 400 x 200 drawing is drawn at 1080 / 200 = 5.4, not enlarged as a bitmap afterwards.
+        Assert.Equal((2160u, 1080u), (png.Width, png.Height));
+    }
+
+    [Fact]
+    public void Min_short_edge_renders_vectors_larger_only_where_the_usual_size_falls_short()
+    {
+        var bounds = new SKRect(0, 0, 400, 200);
+        var usual = SvgRenderer.RasterScale(bounds, new ImageOptions(), new PdfOptions());
+
+        Assert.Equal(5.4f, SvgRenderer.RasterScale(bounds, new ImageOptions { MinShortEdge = 1080 }, new PdfOptions()), 3);
+        // The usual render (1024 x 512 px here) already has a short edge of 300 or more: left at that size.
+        Assert.Equal(usual, SvgRenderer.RasterScale(bounds, new ImageOptions { MinShortEdge = 300 }, new PdfOptions()));
+        // A minimum of 0 or below from a hand-edited file is no minimum.
+        Assert.Equal(usual, SvgRenderer.RasterScale(bounds, new ImageOptions { MinShortEdge = 0 }, new PdfOptions()));
     }
 
     [Fact]

@@ -8,14 +8,15 @@ public static class AskedLocation
 {
     /// <summary>
     /// The batch makes one file, so the dialog asks for its name: one source, or several that become one (a merged
-    /// PDF, a multi-page TIFF, one archive, joined videos). Otherwise it asks for a folder.
+    /// PDF, a multi-page TIFF, one archive, joined videos, merged pictures). Otherwise it asks for a folder.
     /// </summary>
     public static bool MakesOneResult(Preset preset, int sources) =>
         sources == 1
         || preset.TargetFormat == "pdf" && preset.Pdf.MergeIntoSingle
         || preset.Image.MultiPageTiff && preset.TargetFormat == "tiff"
         || preset.PacksIntoOneArchive
-        || preset.JoinsIntoOneMedia;
+        || preset.JoinsIntoOneMedia
+        || preset.JoinsImages;
 
     /// <summary>
     /// The name the save dialog suggests for <paramref name="source"/>: the preset's name pattern and renames, and the

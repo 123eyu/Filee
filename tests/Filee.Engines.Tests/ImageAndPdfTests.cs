@@ -196,6 +196,20 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task Ico_resized_below_its_sizes_holds_that_size_and_the_smaller_ones()
+    {
+        // "Edit pictures" (#584): 512 × 512 → long edge 32 is a 32 px icon, not 256 and 48 blown up from 32 px.
+        var dir = fx.NewFolder();
+        var source = EngineFixture.MakeImage(dir, "logo.png", MagickFormat.Png, 512, 512);
+
+        var job = await fx.ConvertAsync([source], new Preset { TargetFormat = "ico", Image = { Resize = ResizeMode.LongEdge, LongEdge = 32 } });
+
+        AssertDone(job);
+        using var icons = new MagickImageCollection(job.Outputs.Single());
+        Assert.Equal([32u, 16u], icons.Select(i => i.Width));
+    }
+
+    [Fact]
     public async Task Multi_page_tiff_to_png_writes_one_file_per_page()
     {
         var dir = fx.NewFolder();
@@ -364,6 +378,207 @@ public class ImageAndPdfTests(EngineFixture fx) : IClassFixture<EngineFixture>
 
         Assert.Equal((1200u, 400u), (wide.Width, wide.Height));
         Assert.Equal((800u, 2000u), (narrow.Width, narrow.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_stretches_to_exactly_the_asked_size()
+    {
+        // The case from the issue: a 1080 x 1920 photo asked for a 500 x 2000 banner, distorted on purpose.
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
+        using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
+
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+
+        Assert.Equal((500u, 2000u), (portrait.Width, portrait.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_with_the_lock_fits_inside_without_distortion()
+    {
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000, LockAspect = true } };
+
+        // The width is the limit: 1080 x 1920 shrinks to the largest 9:16 fit inside the box, 500 x 889.
+        using var portrait = new MagickImage(MagickColors.White, 1080, 1920);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+        Assert.Equal((500u, 889u), (portrait.Width, portrait.Height));
+
+        // The lock grows as well: 250 x 444 doubles to 500 x 888, the same shape.
+        using var small = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(small, options, "png");
+        Assert.Equal((500u, 888u), (small.Width, small.Height));
+    }
+
+    [Fact]
+    public void Custom_resize_leaves_a_picture_that_already_has_the_asked_size()
+    {
+        var options = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
+        using var exact = new MagickImage(MagickColors.White, 500, 2000);
+
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(exact, options, "png");
+
+        Assert.Equal((500u, 2000u), (exact.Width, exact.Height));
+    }
+
+    [Fact]
+    public void A_custom_size_read_from_a_file_with_a_side_of_zero_or_below_is_skipped()
+    {
+        // The editor keeps both sides within 16-16384, but a hand-edited presets.json or an imported bundle can
+        // carry anything, and a width of 0 or below used to reach (uint)custom.Width and wrap to about 4 billion px.
+        var options = new ImageOptions { CustomSize = new() { Width = 0, Height = 2000 } };
+        using var zeroed = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(zeroed, options, "png");
+        Assert.Equal((250u, 444u), (zeroed.Width, zeroed.Height));
+
+        options.CustomSize = new() { Width = -5, Height = 2000 };
+        using var negative = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(negative, options, "png");
+        Assert.Equal((250u, 444u), (negative.Width, negative.Height));
+    }
+
+    [Fact]
+    public void A_custom_size_read_from_a_file_is_brought_into_the_editors_range()
+    {
+        // A hand-edited 200000 used to go straight into image.Resize; it now stops at the editor's 16384, and a side
+        // under 16 comes up to it, the same range the editor writes.
+        var options = new ImageOptions { CustomSize = new() { Width = 200000, Height = 10 } };
+        using var image = new MagickImage(MagickColors.White, 250, 444);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(image, options, "png");
+        Assert.Equal((16384u, 16u), (image.Width, image.Height));
+
+        var locked = new ImageOptions { CustomSize = new() { Width = 200000, Height = 200000, LockAspect = true } };
+        Assert.Equal(20.48, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, locked), 3);
+
+        var stretched = new ImageOptions { CustomSize = new() { Width = 500, Height = 200000 } };
+        Assert.Equal(20.48, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, stretched), 3);
+    }
+
+    [Fact]
+    public void Custom_resize_plans_pdf_page_runs_at_the_scale_the_resize_will_use()
+    {
+        // How PdfiumConverter.Split plans runs: the factor the stacked strip is scaled by (issue #576).
+        var locked = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000, LockAspect = true } };
+        Assert.Equal(1.25, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, locked), 3);
+
+        var stretched = new ImageOptions { CustomSize = new() { Width = 500, Height = 2000 } };
+        Assert.Equal(2.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, stretched), 3);
+
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions()), 3);
+
+        // A size of 0 or below from a hand-edited file is no size: the preset's own resize runs instead of it.
+        var zeroed = new ImageOptions { CustomSize = new() { Width = 0, Height = 2000 } };
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, zeroed), 3);
+
+        var negative = new ImageOptions { CustomSize = new() { Width = 500, Height = -1 } };
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, negative), 3);
+    }
+
+    [Fact]
+    public void Min_short_edge_enlarges_a_small_picture_in_proportion()
+    {
+        // The case from the issue (#652): a site wants at least 1080 px on the short side.
+        var options = new ImageOptions { MinShortEdge = 1080 };
+
+        using var landscape = new MagickImage(MagickColors.White, 400, 300);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(landscape, options, "png");
+        Assert.Equal((1440u, 1080u), (landscape.Width, landscape.Height));
+
+        using var portrait = new MagickImage(MagickColors.White, 300, 500);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(portrait, options, "png");
+        Assert.Equal((1080u, 1800u), (portrait.Width, portrait.Height));
+
+        // An uneven factor still lands the short edge exactly on the minimum, never a pixel under it.
+        using var uneven = new MagickImage(MagickColors.White, 333, 500);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(uneven, new ImageOptions { MinShortEdge = 1000 }, "png");
+        Assert.Equal((1000u, 1502u), (uneven.Width, uneven.Height));
+    }
+
+    [Fact]
+    public void Min_short_edge_never_shrinks_a_picture_that_already_reaches_it()
+    {
+        var options = new ImageOptions { MinShortEdge = 1080 };
+
+        using var large = new MagickImage(MagickColors.White, 4000, 3000);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(large, options, "png");
+        Assert.Equal((4000u, 3000u), (large.Width, large.Height));
+
+        using var exact = new MagickImage(MagickColors.White, 1080, 1920);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(exact, options, "png");
+        Assert.Equal((1080u, 1920u), (exact.Width, exact.Height));
+
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(4000, 3000, options), 3);
+    }
+
+    [Fact]
+    public void A_min_short_edge_read_from_a_file_is_skipped_at_zero_or_below_and_kept_in_the_editors_range()
+    {
+        // The editor writes 16-16384; a hand-edited presets.json or an imported bundle can carry anything.
+        foreach (var edge in new[] { 0, -5 })
+        {
+            using var image = new MagickImage(MagickColors.White, 250, 444);
+            Filee.Engines.Magick.ImageEncoder.ApplyOptions(image, new ImageOptions { MinShortEdge = edge }, "png");
+            Assert.Equal((250u, 444u), (image.Width, image.Height));
+            Assert.Null(new ImageOptions { MinShortEdge = edge }.ClampedMinShortEdge);
+        }
+
+        // Under 16 comes up to it...
+        using var tiny = new MagickImage(MagickColors.White, 8, 10);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(tiny, new ImageOptions { MinShortEdge = 5 }, "png");
+        Assert.Equal((16u, 20u), (tiny.Width, tiny.Height));
+
+        // ...and a hand-edited 200000 stops at 16384 (planned here: the picture itself would be 268 megapixels).
+        Assert.Equal(16384, new ImageOptions { MinShortEdge = 200000 }.ClampedMinShortEdge);
+        Assert.Equal(40.96, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 400, new ImageOptions { MinShortEdge = 200000 }), 3);
+    }
+
+    [Fact]
+    public void Min_short_edge_does_not_enlarge_a_hairline_strip_past_the_largest_custom_size()
+    {
+        // 16 x 4000 to a short edge of 4000 would be 4000 x 1,000,000 px: it stops at as many pixels as the largest
+        // custom size (16384 x 16384) holds.
+        var scale = Filee.Engines.Magick.ImageEncoder.MinShortEdgeScale(16, 4000, 4000);
+        Assert.Equal(16384.0 * 16384, 16 * scale * 4000 * scale, 0);
+        Assert.True(scale > 1);
+    }
+
+    [Fact]
+    public void Min_short_edge_still_fits_the_format_after_enlarging()
+    {
+        // WebP holds 16,383 px a side: a tall 100 x 2000 strip enlarged to a 1080 short edge (21,600 px tall) is
+        // brought back inside it, as after any other resize.
+        using var strip = new MagickImage(MagickColors.White, 100, 2000);
+        Filee.Engines.Magick.ImageEncoder.ApplyOptions(strip, new ImageOptions { MinShortEdge = 1080 }, "webp");
+        Assert.InRange(strip.Height, 16300u, 16383u);
+        Assert.Equal(20.0, strip.Height / (double)strip.Width, 1);
+    }
+
+    [Fact]
+    public async Task Min_short_edge_enlarges_in_a_conversion_and_an_icon_keeps_its_256_px_cap()
+    {
+        var dir = fx.NewFolder();
+        var source = EngineFixture.MakeImage(dir, "small.png", MagickFormat.Png, 300, 200);
+
+        var jpg = await fx.ConvertAsync([source], new Preset { TargetFormat = "jpg", Image = { MinShortEdge = 1080 } });
+        AssertDone(jpg);
+        using (var picture = new MagickImage(jpg.Outputs.Single()))
+            Assert.Equal((1620u, 1080u), (picture.Width, picture.Height));
+
+        var ico = await fx.ConvertAsync([source], new Preset { TargetFormat = "ico", Image = { MinShortEdge = 1080 } });
+        AssertDone(ico);
+        using var icons = new MagickImageCollection(ico.Outputs.Single());
+        Assert.Equal(256u, icons.Max(i => i.Width));
+    }
+
+    [Fact]
+    public void Min_short_edge_plans_pdf_page_runs_at_the_scale_the_resize_will_use()
+    {
+        // How PdfiumConverter.Split plans runs: the factor the stacked strip is scaled by.
+        Assert.Equal(2.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions { MinShortEdge = 1000 }), 3);
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions { MinShortEdge = 300 }), 3);
+        Assert.Equal(1, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, new ImageOptions { MinShortEdge = 0 }), 3);
+
+        // Custom sizing comes first when a hand-edited file carries both.
+        var both = new ImageOptions { MinShortEdge = 1000, CustomSize = new() { Width = 200, Height = 400 } };
+        Assert.Equal(0.5, Filee.Engines.Magick.ImageEncoder.ResizeScale(400, 800, both), 3);
     }
 
     [Fact]
