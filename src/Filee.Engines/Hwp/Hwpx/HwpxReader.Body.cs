@@ -29,7 +29,6 @@ internal sealed partial class HwpxReader
         var blocks = new List<HBlock>();
         if (subList is null)
             return blocks;
-        using var level = _budget.Enter();
         // Fields, highlighting and tracked deletions do not reach into or out of a nested paragraph list.
         var (fields, markpen, deleted) = (_fields, _markpen, _deleted);
         (_fields, _markpen, _deleted) = ([], null, false);
@@ -64,14 +63,11 @@ internal sealed partial class HwpxReader
         private readonly HParaFormat _format;
         private readonly int _heading;
         private readonly HListRef? _list;
-        private readonly bool _keepLayoutRuns;
         private bool _afterTable;
 
-        /// <param name="keepLayoutRuns">Texts are joined only when their layout detail is the same too (read for layout).</param>
-        public ParagraphBuilder(List<HBlock> output, List<OpenField> fields, HParaFormat format, int heading, HListRef? list, bool keepLayoutRuns)
+        public ParagraphBuilder(List<HBlock> output, List<OpenField> fields, HParaFormat format, int heading, HListRef? list)
         {
             _output = output;
-            _keepLayoutRuns = keepLayoutRuns;
             _fields = fields;
             _format = format;
             _heading = heading;
@@ -94,7 +90,7 @@ internal sealed partial class HwpxReader
             if (text.Length == 0)
                 return;
             var sink = Sink;
-            if (sink.Count > 0 && sink[^1] is HText last && (_keepLayoutRuns ? last.Format.SameLayout(format) : last.Format == format))
+            if (sink.Count > 0 && sink[^1] is HText last && last.Format == format)
                 sink[^1] = new HText(last.Text + text, format);
             else
                 sink.Add(new HText(text, format));
@@ -151,12 +147,9 @@ internal sealed partial class HwpxReader
 
     private void ReadParagraph(XElement p, List<HBlock> output, SectionState? section)
     {
-        _budget.Paragraph();
         var shape = ParaShapeOf(Attr(p, "paraPrIDRef"));
         var (heading, list) = HeadingAndList(shape, Attr(p, "styleIDRef"));
-        var builder = new ParagraphBuilder(output, _fields, shape.Format, heading, list, _forLayout) { MarkFormat = CharFormat(null) };
-        var first = output.Count;
-        HLineLayout? lines = null;
+        var builder = new ParagraphBuilder(output, _fields, shape.Format, heading, list) { MarkFormat = CharFormat(null) };
         builder.Current.PageBreakBefore = Flag(p, "pageBreak") || shape.PageBreakBefore;
         builder.Current.ColumnBreakBefore = Flag(p, "columnBreak");
 
@@ -168,26 +161,13 @@ internal sealed partial class HwpxReader
                     Run(child, builder, section);
                     break;
                 case "linesegarray":
-                    lines = LineLayout(child);
-                    break;
+                    break; // layout cache, computed again by every reader
                 default:
                     Skip(child);
                     break;
             }
         }
         builder.Finish();
-        // The stored lines belong to the whole 한글 paragraph: they go with its first part when a table splits it.
-        if (lines is not null && output.Skip(first).OfType<HParagraph>().FirstOrDefault() is { } part)
-            part.Lines = lines;
-    }
-
-    /// <summary>The layout cache 한글 stores with a paragraph (hp:linesegarray); null when it holds no lines.</summary>
-    private HLineLayout? LineLayout(XElement array)
-    {
-        var segments = Children(array, "lineseg").Select(s => new HLineSegment(
-            Int(s, "textpos"), Int(s, "vertpos"), Int(s, "vertsize"), Int(s, "textheight"), Int(s, "baseline"), Int(s, "spacing"),
-            Int(s, "horzpos"), Int(s, "horzsize"), Int(s, "flags"))).ToList();
-        return segments.Count == 0 ? null : new HLineLayout(segments, _estimatedLines);
     }
 
     /// <summary>
@@ -434,9 +414,7 @@ internal sealed partial class HwpxReader
                     builder.Add(new HBookmark(name));
                 break;
         }
-        // Other fields (click-here, date, file name, ...) keep their result text, which follows until fieldEnd. Every
-        // paragraph reopens the links of the open fields, so their number is limited.
-        _budget.Fields(_fields.Count + 1);
+        // Other fields (click-here, date, file name, ...) keep their result text, which follows until fieldEnd.
         _fields.Add(new OpenField(Attr(control, "id"), target));
         if (target is not null)
             builder.OpenLink(target);
@@ -494,20 +472,7 @@ internal sealed partial class HwpxReader
 
     private HTable Table(XElement tbl)
     {
-        _budget.Object();
-        // Column numbers and spans of damaged files stay within the limit, so they can't overflow.
-        var maxColumns = _budget.Limits.MaxTableColumns;
-        var table = new HTable
-        {
-            ColumnCount = Math.Clamp(Int(tbl, "colCnt"), 0, maxColumns),
-            PageBreak = Attr(tbl, "pageBreak") switch
-            {
-                "NONE" => HTablePageBreak.None,
-                "TABLE" => HTablePageBreak.Table,
-                "CELL" => HTablePageBreak.Cell,
-                _ => null,
-            },
-        };
+        var table = new HTable { ColumnCount = Math.Max(0, Int(tbl, "colCnt")) };
         var pos = Child(tbl, "pos");
         if (pos is not null && !Flag(pos, "treatAsChar"))
         {
@@ -542,8 +507,8 @@ internal sealed partial class HwpxReader
                 var subList = Child(tc, "subList");
                 var cell = new HCell
                 {
-                    Column = address is null ? -1 : Math.Clamp(Int(address, "colAddr"), 0, maxColumns - 1),
-                    ColSpan = Math.Clamp(Int(span, "colSpan", 1), 1, maxColumns),
+                    Column = address is null ? -1 : Math.Max(0, Int(address, "colAddr")),
+                    ColSpan = Math.Max(1, Int(span, "colSpan", 1)),
                     RowSpan = Math.Max(1, Int(span, "rowSpan", 1)),
                     VerticalAlign = VerticalAlign(Attr(subList, "vertAlign")),
                 };
@@ -573,20 +538,12 @@ internal sealed partial class HwpxReader
         // Cells with their own margins (hasMargin) set the table's padding when they all agree.
         if (cellMargins.Count == 1 && cellMargins.Single() is { } shared)
             table.CellMargin = shared;
-        // A cell can't span rows below the table (writers walk the rows it covers).
-        for (var r = 0; r < table.Rows.Count; r++)
-        {
-            foreach (var cell in table.Rows[r].Cells)
-                cell.RowSpan = Math.Min(cell.RowSpan, table.Rows.Count - r);
-        }
-        table.ColumnCount = Math.Min(maxColumns, Math.Max(table.ColumnCount, widths.Select(w => w.Column + w.Span).DefaultIfEmpty(1).Max()));
+        table.ColumnCount = Math.Max(table.ColumnCount, widths.Select(w => w.Column + w.Span).DefaultIfEmpty(1).Max());
         table.ColumnWidths = ColumnWidths(widths, table.ColumnCount);
         if (Child(Child(tbl, "caption"), "subList") is { } caption)
             table.Caption.AddRange(ReadSubList(caption));
         return table;
     }
-
-    private const long MaxCoveredColumns = 4_000_000;
 
     /// <summary>Column widths from the cell widths: single cells first, then what spanning cells leave over.</summary>
     private static int[]? ColumnWidths(List<(int Column, int Span, int Width)> cells, int columns)
@@ -599,10 +556,7 @@ internal sealed partial class HwpxReader
             if (span == 1 && column < columns && width > 0)
                 widths[column] ??= width;
         }
-        // Spanning cells are spread over the columns they cover; past a few million columns covered (a damaged or
-        // hostile table, real ones cover thousands) only the single cells count.
-        var covered = cells.Sum(c => c.Span > 1 ? (long)Math.Min(c.Span, columns) : 0);
-        for (var changed = covered <= MaxCoveredColumns; changed;)
+        for (var changed = true; changed;)
         {
             changed = false;
             foreach (var (column, span, width) in cells.Where(c => c.Span > 1 && c.Width > 0))
@@ -611,9 +565,9 @@ internal sealed partial class HwpxReader
                 var unknown = range.Where(i => widths[i] is null).ToList();
                 if (unknown.Count == 0)
                     continue;
-                var rest = width - range.Sum(i => (long)(widths[i] ?? 0));
+                var rest = width - range.Sum(i => widths[i] ?? 0);
                 foreach (var i in unknown)
-                    widths[i] = (int)Math.Clamp(rest / unknown.Count, 1, int.MaxValue);
+                    widths[i] = Math.Max(1, rest / unknown.Count);
                 changed = true;
             }
         }
