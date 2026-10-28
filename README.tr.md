@@ -79,6 +79,8 @@
 
 [Sürümler (Releases)](https://github.com/KnifeLemon/Filee/releases/latest) sayfasından indirin.
 
+<a href="https://apps.microsoft.com/detail/XPDCN05L89WS0C?referrer=appbadge&cid=github&mode=full"><img src="https://get.microsoft.com/images/tr%20dark.svg" alt="Microsoft Store" width="200"></a>
+
 - **Windows 10/11**: `Filee-<sürüm>-win-Setup.exe` dosyasını çalıştırın veya `win-Portable.zip` arşivini açıp `Filee.exe` dosyasını başlatın.
   - Kurulum sihirbazı, Filee'nin kendi dillerini içeren yerel yükleyicisidir ve bilgisayarda başka hiçbir şeye ihtiyaç duymaz.
   - Dosya Gezgini menüsünü, oturum açılışında başlatmayı, `filee` komutunu ve isteğe bağlı motorları ekleyebilir.
