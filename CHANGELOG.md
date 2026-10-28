@@ -419,7 +419,7 @@ pt-BR: Astrofotos FITS, iCalendar, HAR, vídeos de jogos USM, arquivos de bordad
 pt-BR: Francês, chinês tradicional, nepalês, tailandês, turco e português europeu, um tema Material You e zoom das janelas
 pt-BR: Linux: atualizações dentro do Filee e gestos de arrastar no GNOME e no Hyprland com Wayland (experimental)
 pt-BR: Corrigidos texto chinês lido como coreano, símbolos do Word que sumiam, uma segunda janela pela bandeja e mais
-tr: Windows dosyaları artık kod imzalıdır; böylece Akıllı Uygulama Denetimi ve antivirüslerin Filee'yi engellemesi önlenir
+tr: Windows dosyaları artık kod imzalı; Akıllı Uygulama Denetimi ve antivirüs programları Filee'yi daha seyrek engeller
 tr: Tarama ve görsellerdeki metinleri tanıyın (OCR): aranabilir PDF'ler ve düzenlenebilir belgeler oluşturun
 tr: Fotoğraf, video ve sesleri sıkıştırın, birleştirin, üstverilerini temizleyin ve videodan klip kesin
 tr: PDF sayfalarını düzenleyin; herhangi bir PDF'ye filigran, sayfa numarası veya parola ekleyin
@@ -762,7 +762,7 @@ tr: Filee'nin kendi Windows yükleyicisi; ayarlarınız, ön ayarlarınız ve mo
 tr: Web tarayıcısından resimleri ve dosya bağlantılarını doğrudan halkanın üzerine sürükleyin
 tr: Halkanın bir arka yüzü var: çevirmek için Tab tuşuna basın veya fare tekerleğini döndürün
 tr: Yeni bir kırpma aracı: tam oradayken oran seçmek için görselin üzerinde A tuşuna basın
-tr: Live ve Motion Photo'lardan videoyu çıkarın veya bir videodan fotoğraf oluşturun (deneysel)
+tr: Live ve Motion Photo'lardan videoyu çıkarın veya bir videodan Live/Motion Photo oluşturun (deneysel)
 tr: OFD, MHTML, POTM, FBX, JPEG XR ile Shapefile, GeoJSON, KML ve GPX harita desteği
 tr: İstenen vurgu rengi ve yarı saydam halka menü
 tr: İspanyolca, Hintçe, Japonca, Rusça, Arapça ve Brezilya Portekizcesi desteği
