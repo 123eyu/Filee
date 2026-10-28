@@ -821,7 +821,8 @@ internal sealed partial class PdfDocumentReader
     }
 
     /// <summary>
-    /// Words joined into runs of equal formatting; line ends become spaces (not inside CJK text or after a hyphen), or
+    /// Words joined into runs of equal formatting, with a space between words (not between two CJK words); line ends
+    /// become spaces (not inside CJK text or after a hyphen), or
     /// line breaks where the line ended early on purpose. Tabs of a tabbed row stay tabs.
     /// </summary>
     private static void Runs(Item item, List<HInline> output, bool rightToLeft)
@@ -845,7 +846,10 @@ internal sealed partial class PdfDocumentReader
                     }
                     else if (w > 0)
                     {
-                        pieces[^1] = (previousText + " ", previousFormat, previousLink);
+                        // Not between two Chinese or Japanese words: an OCR layer (Tesseract's) puts a space after
+                        // every word it found, also inside a sentence of Han characters (#691). Korean keeps them.
+                        if (!(IsCjk(previousText[^1]) && IsCjk(text[0])))
+                            pieces[^1] = (previousText + " ", previousFormat, previousLink);
                     }
                     else if (previousText.EndsWith('-') && previousText.Length > 1 && char.IsLetter(previousText[^2]) && text.Length > 0 && char.IsLower(text[0]))
                     {
