@@ -641,7 +641,7 @@ public sealed class ImageOptions
         copy.IcoSizes = [.. IcoSizes];
         copy.HiddenAreas = HiddenAreas?.Select(area => area.Clone()).ToList();
         copy.CustomSize = CustomSize is { } size
-            ? new CustomImageSize { Width = size.Width, Height = size.Height, LockAspect = size.LockAspect }
+            ? new CustomImageSize { Width = size.Width, Height = size.Height, LockAspect = size.LockAspect, Unit = size.Unit, Dpi = size.Dpi }
             : null;
         return copy;
     }
@@ -671,6 +671,16 @@ public sealed class CustomImageSize
     /// </summary>
     public bool LockAspect { get; set; }
 
+    /// <summary>
+    /// The unit the Edit pictures window shows the size in (#725). <see cref="Width"/> and <see cref="Height"/> stay in
+    /// pixels whatever it is; a size in cm, mm or inches was turned into pixels at <see cref="Dpi"/>.
+    /// </summary>
+    [JsonConverter(typeof(LenientEnumJsonConverter<SizeUnit>))]
+    public SizeUnit Unit { get; set; }
+
+    /// <summary>The resolution a size in cm, mm or inches is turned into pixels at, and written into the picture.</summary>
+    public int Dpi { get; set; } = 300;
+
     /// <summary><see cref="Width"/> within the editor's range, so a hand-edited 200000 cannot ask for a picture no
     /// machine can hold.</summary>
     [JsonIgnore]
@@ -679,6 +689,38 @@ public sealed class CustomImageSize
     /// <summary><see cref="Height"/> within the editor's range (see <see cref="ClampedWidth"/>).</summary>
     [JsonIgnore]
     public int ClampedHeight => Math.Clamp(Height, MinSide, MaxSide);
+
+    /// <summary>The resolutions a size in cm, mm or inches may be turned into pixels at.</summary>
+    public const int MinDpi = 1, MaxDpi = 9600;
+
+    /// <summary>How many <paramref name="unit"/> make an inch; 0 for pixels.</summary>
+    public static double PerInch(SizeUnit unit) => unit switch
+    {
+        SizeUnit.Centimetres => 2.54,
+        SizeUnit.Millimetres => 25.4,
+        SizeUnit.Inches => 1,
+        _ => 0,
+    };
+
+    /// <summary>A length of <paramref name="value"/> <paramref name="unit"/> in pixels at <paramref name="dpi"/>.</summary>
+    public static int ToPixels(double value, SizeUnit unit, int dpi) =>
+        (int)Math.Round(unit == SizeUnit.Pixels ? value : value / PerInch(unit) * dpi, MidpointRounding.AwayFromZero);
+
+    /// <summary>
+    /// <paramref name="pixels"/> in <paramref name="unit"/> at <paramref name="dpi"/>, rounded as the window shows it:
+    /// two decimals for cm and inches, one for mm.
+    /// </summary>
+    public static double FromPixels(int pixels, SizeUnit unit, int dpi) =>
+        unit == SizeUnit.Pixels ? pixels : Math.Round(pixels * PerInch(unit) / dpi, unit == SizeUnit.Millimetres ? 1 : 2);
+}
+
+/// <summary>The unit a <see cref="CustomImageSize"/> is entered in.</summary>
+public enum SizeUnit
+{
+    Pixels,
+    Centimetres,
+    Millimetres,
+    Inches,
 }
 
 /// <summary>Page size used when images are placed into a PDF.</summary>
