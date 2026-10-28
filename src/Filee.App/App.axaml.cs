@@ -98,6 +98,9 @@ public partial class App : Application
             _selectionPending = true;
             try
             {
+                // The clipboard shortcut: what is on the clipboard first, the selection when there is nothing.
+                if (e.Gesture is { Clipboard: true } && platform.SupportsClipboard && ShowForClipboard(radial, platform, e.X, e.Y, log))
+                    return;
                 var files = OperatingSystem.IsMacOS()
                     ? await Task.Run(platform.GetFileManagerSelection) : platform.GetFileManagerSelection();
                 if (files.Count > 0 && !store.Settings.Paused)
@@ -200,6 +203,41 @@ public partial class App : Application
         // say so once, next to the tray, and on the Home page for as long as it lasts.
         if (AppHost.Get<ElevationService>().ShellCannotReachFilee)
             DispatcherTimer.RunOnce(() => AppHost.Get<WindowService>().ShowElevationNotice(), TimeSpan.FromSeconds(2));
+    }
+
+    /// <summary>
+    /// Opens the donut for the files on the clipboard, else for its picture (a screenshot), which is saved when it
+    /// converts, like a picture from a browser, without keeping the original. The results go back on the clipboard.
+    /// False when the clipboard holds neither.
+    /// </summary>
+    private static bool ShowForClipboard(RadialController radial, IPlatformServices platform, int x, int y, ILogger log)
+    {
+        ClipboardContent? content;
+        try
+        {
+            content = platform.ReadClipboard();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            log.LogWarning(ex, "Could not read the clipboard");
+            return false;
+        }
+        if (content is { Files.Count: > 0 })
+        {
+            radial.ShowForFiles(x, y, content.Files, toClipboard: true);
+            return true;
+        }
+        if (content?.Picture is not { Length: > 0 } picture)
+            return false;
+        var name = $"Clipboard {DateTime.Now:yyyy-MM-dd HH.mm.ss}.{content.PictureExtension ?? "png"}";
+        var web = new Filee.Core.Web.WebDrop([Filee.Core.Web.WebDropItem.FromBytes(name, picture)], Filee.Core.Web.WebDrop.DefaultWorkRoot)
+        {
+            SaveOnlyConverted = true,
+        };
+        log.LogInformation("The clipboard shortcut opens the donut for a {Extension} picture of {Bytes} bytes",
+            content.PictureExtension, picture.Length);
+        radial.ShowForFiles(x, y, web.Placeholders, web: web, toClipboard: true);
+        return true;
     }
 
     private void ListenForLaterLaunches(SingleInstance instance, ILogger log)

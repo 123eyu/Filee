@@ -561,6 +561,8 @@
   "triggers.record": "录制",
   "triggers.recording": "请按下组合键…",
   "triggers.clear": "清除",
+  "triggers.clipboard": "转换剪贴板上的内容",
+  "triggers.clipboard_note": "先用复制的文件，否则用复制的图片（按住 Control 截的屏）。结果会替换剪贴板上的内容，可直接粘贴；图片的结果保存到浏览器文件所在的文件夹。两者都没有时，使用选中的文件。",
   "triggers.recording_key": "请按下一个键…",
   "triggers.flip_title": "翻转圆环",
   "triggers.flip_description": "圆环打开时，按下此键或转动鼠标滚轮即可显示背面。每个圆环的背面在环形工具栏中设置。",

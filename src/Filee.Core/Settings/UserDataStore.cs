@@ -438,7 +438,25 @@ internal static class SettingsMigrations
         if (settings.Triggers.Count == 0)
             settings.Triggers = TriggerGesture.Defaults();
 
+        // v55: macOS gets Shift + Cmd + V for the clipboard (a screenshot copied with Ctrl, files copied in Finder).
+        if (settings.SchemaVersion < 55 && OperatingSystem.IsMacOS())
+            AddClipboardShortcut(settings.Triggers);
+
         settings.SchemaVersion = AppSettings.CurrentSchemaVersion;
+    }
+
+    /// <summary>
+    /// Adds <see cref="TriggerGesture.ClipboardShortcut"/> unless a keyboard shortcut already takes its keys (the user's
+    /// own stays as it is). True when it was added.
+    /// </summary>
+    internal static bool AddClipboardShortcut(List<TriggerGesture> triggers)
+    {
+        var shortcut = TriggerGesture.ClipboardShortcut();
+        if (triggers.Any(g => g.Kind == TriggerKind.KeyChord && g.Modifiers == shortcut.Modifiers
+                              && string.Equals(g.Key, shortcut.Key, StringComparison.OrdinalIgnoreCase)))
+            return false;
+        triggers.Add(shortcut);
+        return true;
     }
 
     /// <summary>Upgrades presets and profiles written with settings schema <paramref name="from"/>.</summary>

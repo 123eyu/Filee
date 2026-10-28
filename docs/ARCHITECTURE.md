@@ -332,6 +332,15 @@ can't be received through Avalonia; for a browser drag Filee reads the address a
 registers too (see "Files dragged from a web browser"). A click-mode donut opened for a later launch or the service forgives one loss of
 focus within a second of opening (`ActivationGrace`): Filee becoming the active app can take focus away from it.
 
+A keyboard shortcut with `TriggerGesture.Clipboard` (macOS: Shift + Cmd + V everywhere, added by settings schema 55)
+reads the clipboard (`IPlatformServices.ReadClipboard`, `MacOSClipboard`) before the selection: copied files (file URLs,
+then `NSFilenamesPboardType`; copied files that are gone give nothing, not Finder's icon), else a picture
+(`PasteboardPaths.PictureTypes`, PNG first, TIFF last). A picture becomes a one-item `WebDrop` with
+`SaveOnlyConverted`, so it is saved into the browser-drop folder when it converts and only the result stays. The
+donut's jobs are started with `toClipboard`, and `ConversionService` puts their outputs back on the clipboard when they
+finish (`CopyToClipboard`: a file URL per item, a single picture also as itself). The global hook can't hold the keys
+back, so the app in front also gets Shift + Cmd + V (Paste and Match Style).
+
 The donut, the toast and the notices are transparent windows. On Windows Filee keeps Avalonia's rendering defaults
 (ANGLE on Direct3D 11 composed through WinUI composition, then DirectComposition, then the window's redirection
 surface; software rendering when Direct3D 11 fails): each of them keeps per-pixel transparency. The log says what was
