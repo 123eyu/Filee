@@ -1,23 +1,12 @@
-# Flags a new issue that asks for something already requested or already added: a comment links the original issue
-# and mentions the owner and the collaborators with write access (see MENTION below), who decide. The issue gets the
-# `duplicate` label but is not closed.
-# Trigger: an issue is opened. The `issues` event never fires for pull requests (those use `pull_request`), so this
-# workflow only ever runs for issues.
-# What counts as the same request, compared with the other issues:
-# - Format requests (the "File extension" field of .github/ISSUE_TEMPLATE/format_request.yml): the same file
-#   extension. ".NCM" and "ncm" are the same, and a list such as ".mp3, .wav" must match the other list exactly. The
-#   format it should convert to is not compared.
-# - Any other issue, or a format request without a usable extension: the same title, ignoring case, punctuation and
-#   spacing. Titles whose text is short or only the template tag (for example "[Bug]:") are never compared, so empty
-#   or generic titles are never flagged.
-# There are two cases, each with its own comment. When both exist, the first one is used:
-# 1. Already added, not released yet: the matching issue was closed as completed after the latest published release
-#    (or there is no release yet), so its change is merged and will be in the next release. The comment says so.
-#    Issues closed as "not planned", and issues closed before the latest release, are ignored.
-# 2. Duplicate request: the matching issue is still open and nothing was added yet. The comment asks the owner to
-#    review it.
-# When several issues match in a case, the oldest one is the original.
-name: Flag duplicate issue
+# Flags a new issue that may repeat an earlier one: a short comment links it (mentioning only the author) and the
+# issue gets the `possible duplicate` label. Nothing is closed. It runs for newly opened issues only, never for pull
+# requests.
+# Same request: for format requests the same "File extension" answer, for other issues the same title (ignoring case
+# and punctuation). Short or template-only titles are skipped.
+# Earlier issue still open: "may be the same request". Earlier issue closed by a pull request merged after the
+# latest release: the comment also links that pull request and says it comes in the next release. Issues closed any
+# other way are ignored.
+name: Flag possible duplicate issue
 
 on:
   issues:
@@ -25,8 +14,9 @@ on:
 
 permissions:
   issues: write
-  # Read-only: to read the date of the latest release.
+  # Read-only: the date of the latest release, and the pull request that closed an earlier issue.
   contents: read
+  pull-requests: read
 
 jobs:
   duplicate:
@@ -37,12 +27,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       ISSUE: ${{ github.event.issue.number }}
-      # Always mentioned in the comment: the repository owner. The collaborators with write access are added to it
-      # automatically (see the comment step). To always mention someone else too, list them here, for example
-      # '@owner @someone'.
-      MENTION: "@${{ github.repository_owner }}"
     steps:
-      - name: Find an issue that asks for the same thing
+      - name: Find an earlier issue that asks for the same thing
         id: find
         env:
           # Passed as environment variables, never written into the script, so the text can't run as code.
@@ -75,6 +61,28 @@ jobs:
                   found.add(part)
               return frozenset(found) or None
 
+          QUERY = ('query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){'
+                   'issue(number:$number){timelineItems(last:1,itemTypes:[CLOSED_EVENT]){nodes{'
+                   '... on ClosedEvent{closer{__typename ... on PullRequest{number merged mergedAt}}}}}}}}')
+
+          def closing_pr(number):
+              # The merged pull request that closed this issue, or None when it was closed any other way.
+              owner, name = os.environ['GH_REPO'].split('/', 1)
+              result = subprocess.run(
+                  ['gh', 'api', 'graphql', '-f', f'query={QUERY}', '-f', f'owner={owner}', '-f', f'name={name}',
+                   '-F', f'number={number}'], capture_output=True, text=True)
+              if result.returncode != 0:
+                  return None
+              try:
+                  nodes = json.loads(result.stdout)['data']['repository']['issue']['timelineItems']['nodes']
+              except (KeyError, TypeError, ValueError):
+                  return None
+              for node in nodes:
+                  closer = (node or {}).get('closer') or {}
+                  if closer.get('__typename') == 'PullRequest' and closer.get('merged') and closer.get('mergedAt'):
+                      return closer
+              return None
+
           title = os.environ['TITLE']
           me = int(os.environ['ISSUE'])
           mine = extensions(os.environ.get('BODY', ''))
@@ -90,10 +98,9 @@ jobs:
           released_at = latest.stdout.strip() if latest.returncode == 0 and latest.stdout.strip() else None
 
           listing = subprocess.run(
-              ['gh', 'issue', 'list', '--state', 'all', '--limit', '1000',
-               '--json', 'number,title,body,state,stateReason,closedAt'],
+              ['gh', 'issue', 'list', '--state', 'all', '--limit', '1000', '--json', 'number,title,body,state'],
               check=True, capture_output=True, text=True).stdout
-          unreleased, duplicates = [], []
+          unreleased, duplicates, closed = [], [], []
           for issue in json.loads(listing):
               if issue['number'] >= me:
                   continue
@@ -103,75 +110,53 @@ jobs:
                   same = norm(issue['title']) == key
               if not same:
                   continue
-              if issue['state'] == 'OPEN':
-                  duplicates.append(issue['number'])
-              elif issue.get('stateReason') == 'COMPLETED' and (released_at is None or issue['closedAt'] > released_at):
-                  unreleased.append(issue['number'])
+              (duplicates if issue['state'] == 'OPEN' else closed).append(issue['number'])
+
+          # Closed issues count only when a merged pull request closed them, after the latest release.
+          for number in sorted(closed)[:10]:
+              pr = closing_pr(number)
+              if pr and (released_at is None or pr['mergedAt'] > released_at):
+                  unreleased.append((number, pr['number']))
 
           if unreleased:
-              kind, original = 'release', min(unreleased)
+              kind = 'release'
+              original, pull = min(unreleased)
           elif duplicates:
-              kind, original = 'duplicate', min(duplicates)
+              kind, original, pull = 'duplicate', min(duplicates), ''
           else:
               print('No duplicate found')
               sys.exit(0)
 
           ext = ', '.join('.' + e for e in sorted(mine)) if mine is not None else ''
-          print(f'{kind} #{original} ({ext or "same title"})')
+          print(f'{kind} #{original} pr={pull or "-"} ({ext or "same title"})')
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write(f'original={original}\n')
               out.write(f'kind={kind}\n')
+              out.write(f'pull={pull}\n')
               out.write(f'ext={ext}\n')
           PY
 
-      - name: Comment with a link to the original and add the label
+      - name: Comment with a link to the earlier issue and add the label
         if: ${{ steps.find.outputs.original != '' }}
         env:
           ORIGINAL: ${{ steps.find.outputs.original }}
           KIND: ${{ steps.find.outputs.kind }}
+          PULL: ${{ steps.find.outputs.pull }}
           EXT: ${{ steps.find.outputs.ext }}
           AUTHOR: ${{ github.event.issue.user.login }}
         run: |
-          # The owner (MENTION) and the collaborators with write access, at most 10 names, never the issue author.
-          # When the collaborator list can't be read with this token, only MENTION is used.
-          mentions="$MENTION"
-          count=$(wc -w <<< "$mentions")
-          collaborators=$(gh api --paginate "repos/$GH_REPO/collaborators" \
-            --jq '.[] | select(.type == "User" and .permissions.push == true) | .login' 2>/dev/null || true)
-          for login in $collaborators; do
-            [ "$count" -ge 10 ] && break
-            [ "$login" = "$AUTHOR" ] && continue
-            case " $mentions " in *" @$login "*) continue ;; esac
-            mentions="$mentions @$login"
-            count=$((count + 1))
-          done
-          MENTION="$mentions"
-
-          if [ "$KIND" = release ]; then
-            # Case 1: the format (or fix) is already merged and only waits for the next release.
-            if [ -n "$EXT" ]; then
-              what="The format you asked for ($EXT) has already been added in #$ORIGINAL, but it is not released yet."
-            else
-              what="This request has already been addressed in #$ORIGINAL (same title), but the change is not released yet."
-            fi
-            body=$(printf '%s\n\n%s\n\n%s\n\n%s\n' \
-              "Hi @$AUTHOR, thank you for your request." \
-              "$what It will be available in the next release." \
-              "$MENTION, when you have a moment, could you please confirm this and close this issue in favor of #$ORIGINAL?" \
-              "@$AUTHOR, if you meant something different, please add a comment describing what is different so that it can be reviewed again.")
+          if [ -n "$EXT" ]; then
+            reason="same file extension: $EXT"
           else
-            # Case 2: the same request is still open and nothing was added yet.
-            if [ -n "$EXT" ]; then
-              reason="it asks for the same file extension ($EXT)"
-            else
-              reason="it has the same title"
-            fi
-            body=$(printf '%s\n\n%s\n\n%s\n\n%s\n' \
-              "Hi @$AUTHOR, thank you for opening this issue." \
-              "This issue may be a duplicate of #$ORIGINAL, because $reason." \
-              "$MENTION, when you have a moment, could you please review it and confirm whether it is a duplicate? If it is, it can be closed in favor of #$ORIGINAL." \
-              "@$AUTHOR, if you believe this is not a duplicate, please add a comment describing what is different so that it can be reviewed again.")
+            reason="same title"
+          fi
+          if [ "$KIND" = release ]; then
+            # Case 1: a merged pull request closed the earlier issue and it is not released yet.
+            body="@$AUTHOR, this may be the same request as #$ORIGINAL ($reason). It was added in #$PULL, which is merged but not released yet, so it will be available in the next release. If it's something different, please say how, and a maintainer will take a look."
+          else
+            # Case 2: the earlier issue is still open.
+            body="@$AUTHOR, this may be the same request as #$ORIGINAL ($reason). If it's something different, please say how, and a maintainer will take a look."
           fi
           gh issue comment "$ISSUE" --body "$body"
-          gh label create duplicate --description "This issue already exists" --color cfd3d7 2>/dev/null || true
-          gh issue edit "$ISSUE" --add-label duplicate
+          gh label create "possible duplicate" --description "May repeat an earlier issue; not confirmed by a maintainer" --color fbca04 2>/dev/null || true
+          gh issue edit "$ISSUE" --add-label "possible duplicate"
