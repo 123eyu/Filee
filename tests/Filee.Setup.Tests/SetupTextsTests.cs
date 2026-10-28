@@ -142,6 +142,41 @@ public partial class SetupTextsTests
         }
     }
 
+    [AvaloniaFact]
+    public void A_language_switch_through_apply_look_shows_the_new_texts()
+    {
+        var app = Application.Current!;
+        var texts = new SetupTexts("en");
+        App.ApplyLook(app, texts);
+        var block = new TextBlock();
+        block.Bind(TextBlock.TextProperty, block.GetResourceObservable("installer.install"));
+        var window = new Window { Content = block };
+        window.Show();
+        var changes = 0;
+        void Count(object? sender, ResourcesChangedEventArgs e) => changes++;
+        try
+        {
+            Assert.Equal("Install", block.Text);
+
+            app.ResourcesChanged += Count;
+            texts.SetLanguage("ko");
+
+            var korean = new SetupTexts("ko")["installer.install"];
+            Assert.True(app.TryGetResource("installer.install", null, out var install));
+            Assert.Equal(korean, install);
+            Assert.Equal(korean, block.Text);
+            // The texts are one change; the font and the flow direction add a few more. None of them grows with the
+            // number of keys (one change per key was over a thousand).
+            Assert.InRange(changes, 1, 10);
+        }
+        finally
+        {
+            window.Close();
+            app.ResourcesChanged -= Count;
+            texts.SetLanguage("en");
+        }
+    }
+
     [Fact]
     public void Every_key_setup_uses_exists_in_english()
     {
