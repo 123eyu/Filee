@@ -490,7 +490,7 @@
   "update.install": "更新",
   "update.notice_text_portable": "これはポータブル版です。\n新しいZIPをダウンロードし、このフォルダーに上書き展開してください。設定はそのまま引き継がれます。",
   "update.downloading": "更新をダウンロード中…{0}%",
-  "update.installing_short": "インストール中…",
+  "update.installing_short": "更新中…",
   "update.installing": "インストーラーを実行中です。完了するとFileeが再起動します。",
   "update.failed": "自動更新に失敗しました。filee.shから新しいバージョンをダウンロードしてください。",
   "update.failed_alert": "更新をダウンロードできませんでした。\n「OK」を押すとfilee.shを開き、新しいバージョンをダウンロードできます。",
