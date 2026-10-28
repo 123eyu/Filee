@@ -62,11 +62,11 @@ jobs:
               return frozenset(found) or None
 
           QUERY = ('query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){'
-                   'issue(number:$number){timelineItems(last:1,itemTypes:[CLOSED_EVENT]){nodes{'
-                   '... on ClosedEvent{closer{__typename ... on PullRequest{number merged mergedAt}}}}}}}}')
+                   'issue(number:$number){closedByPullRequestsReferences(first:10,includeClosedPrs:true){'
+                   'nodes{number merged mergedAt}}}}}')
 
           def closing_pr(number):
-              # The merged pull request that closed this issue, or None when it was closed any other way.
+              # The latest merged pull request that closes this issue, or None when no merged pull request does.
               owner, name = os.environ['GH_REPO'].split('/', 1)
               result = subprocess.run(
                   ['gh', 'api', 'graphql', '-f', f'query={QUERY}', '-f', f'owner={owner}', '-f', f'name={name}',
@@ -74,14 +74,12 @@ jobs:
               if result.returncode != 0:
                   return None
               try:
-                  nodes = json.loads(result.stdout)['data']['repository']['issue']['timelineItems']['nodes']
+                  issue = json.loads(result.stdout)['data']['repository']['issue']
+                  nodes = issue['closedByPullRequestsReferences']['nodes']
               except (KeyError, TypeError, ValueError):
                   return None
-              for node in nodes:
-                  closer = (node or {}).get('closer') or {}
-                  if closer.get('__typename') == 'PullRequest' and closer.get('merged') and closer.get('mergedAt'):
-                      return closer
-              return None
+              merged = [n for n in nodes or [] if n and n.get('merged') and n.get('mergedAt')]
+              return max(merged, key=lambda n: n['mergedAt']) if merged else None
 
           title = os.environ['TITLE']
           me = int(os.environ['ISSUE'])
