@@ -419,6 +419,17 @@ pt-BR: Astrofotos FITS, iCalendar, HAR, vídeos de jogos USM, arquivos de bordad
 pt-BR: Francês, chinês tradicional, nepalês, tailandês, turco e português europeu, um tema Material You e zoom das janelas
 pt-BR: Linux: atualizações dentro do Filee e gestos de arrastar no GNOME e no Hyprland com Wayland (experimental)
 pt-BR: Corrigidos texto chinês lido como coreano, símbolos do Word que sumiam, uma segunda janela pela bandeja e mais
+tr: Windows dosyaları artık kod imzalı; Akıllı Uygulama Denetimi ve antivirüs programları Filee'yi daha seyrek engeller
+tr: Tarama ve görsellerdeki metinleri tanıyın (OCR): aranabilir PDF'ler ve düzenlenebilir belgeler oluşturun
+tr: Fotoğraf, video ve sesleri sıkıştırın, birleştirin, üstverilerini temizleyin ve videodan klip kesin
+tr: PDF sayfalarını düzenleyin; herhangi bir PDF'ye filigran, sayfa numarası veya parola ekleyin
+tr: PDF'deki tablolar Excel çalışma sayfasına dönüşür ve büyük Excel dosyaları PDF'ye çok daha hızlı aktarılır
+tr: PDF olarak kaydetmeden önce elektronik tablo sayfalarını yerleştirin ve kaydedilecek AutoCAD sürümünü seçin
+tr: Orijinali değiştirin: sonuç dosya orijinalin yerini alır ve orijinal Geri Dönüşüm Kutusu'na gider
+tr: FITS uzay fotoğrafları, iCalendar, HAR, USM oyun videoları, nakış ve çizici dosyaları ile CAD yerleşimi başına bir PDF sayfası
+tr: Fransızca, Geleneksel Çince, Nepalce, Tayca, Türkçe ve Avrupa Portekizcesi dil desteği, Material You teması ve pencere yakınlaştırma
+tr: Linux: Filee içinden doğrudan güncelleme ve GNOME ile Hyprland Wayland üzerinde sürükleme hareketleri (deneysel)
+tr: Çince metnin Korece okunması, eksik Word simgeleri ve sistem tepsisinden iki pencere açılması gibi sorunlar düzeltildi
 -->
 
 ### New
@@ -747,6 +758,16 @@ pt-BR: Qualquer cor de destaque e um menu circular translúcido
 pt-BR: Espanhol, hindi, japonês, russo, árabe e português do Brasil
 pt-BR: Tabelas de PDF viram tabelas de verdade no Word, e documentos em árabe ou hindi viram PDFs corretos
 pt-BR: Correções de segurança para e-books, SVG, modelos 3D e e-mails, e muitos outros erros corrigidos
+tr: Filee'nin kendi Windows yükleyicisi; ayarlarınız, ön ayarlarınız ve motorlarınız aynen korunur
+tr: Web tarayıcısından resimleri ve dosya bağlantılarını doğrudan halkanın üzerine sürükleyin
+tr: Halkanın bir arka yüzü var: çevirmek için Tab tuşuna basın veya fare tekerleğini döndürün
+tr: Yeni bir kırpma aracı: tam oradayken oran seçmek için görselin üzerinde A tuşuna basın
+tr: Live ve Motion Photo'lardan videoyu çıkarın veya bir videodan Live/Motion Photo oluşturun (deneysel)
+tr: OFD, MHTML, POTM, FBX, JPEG XR ile Shapefile, GeoJSON, KML ve GPX harita desteği
+tr: İstenen vurgu rengi ve yarı saydam halka menü
+tr: İspanyolca, Hintçe, Japonca, Rusça, Arapça ve Brezilya Portekizcesi desteği
+tr: PDF'deki tablolar gerçek Word tablolarına dönüşür; Arapça ve Hintçe belgeler düzgün PDF'lere aktarılır
+tr: E-kitaplar, SVG, 3B modeller ve e-postalar için güvenlik düzeltmeleri ve birçok hata giderildi
 -->
 
 ### New
