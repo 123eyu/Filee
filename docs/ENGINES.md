@@ -797,7 +797,9 @@ in the preset library only). Video and audio need FFmpeg.
   is encoded to AAC.
 - **Merge videos** copies the clips with the concat demuxer only when all share the codec setup (ffprobe's extradata
   hash), size, pixel format, frame rate, turn and kind of sound; otherwise every clip is fitted into the first clip's
-  frame and encoded, a clip without sound silent for its length. **Merge audio** always decodes and joins the sound
+  frame and encoded, a clip without sound silent for its length. Sound tracks FFmpeg can't decode are skipped: each
+  clip gives its first track FFmpeg can decode, and the clips are copied only when that track has the same number in
+  every clip. **Merge audio** always decodes and joins the sound
   into one M4A, so no encoder padding or gap is left between files. Both are in `Media/MediaJoining.cs`.
 - **Video from images**: each picture is fitted into 1920 × 1080 as a JPEG, then shown for the preset's seconds with
   crossfades (`xfade`) of 1 s, at most half a picture's time, or cuts. At most `MediaOptions.MaxSlides` (300)
@@ -1578,7 +1580,9 @@ format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fa
   subtitle engine (ASS and WebVTT extraction cost 11 so SRT is the hub).
 - The first video stream (cover pictures excluded) is converted. Video to video keeps every audio track (languages,
   commentary), each copied where the target takes its codec or encoded on its own, with its language tag; FLV and DV
-  hold one and keep the first. Video to audio takes the first. Files without sound still convert to video. Title, artist
+  hold one and keep the first. Video to audio takes the first. Tracks FFmpeg can't decode (no decoder, like the spatial
+  APAC track of iPhone recordings, or a codec ffprobe can't name) are skipped, unless the file has no other sound; the
+  clip window's waveform, *Remove silence* and clip music take the same track. Files without sound still convert to video. Title, artist
   and other tags and chapters are kept, album art too for MP3, M4A, M4B and FLAC. Portrait phone videos are turned
   upright. Odd sizes are evened out, frame rates that MPEG-2/MXF/MPEG-4 part 2 cannot store are converted, and channels
   WMA or AMR cannot hold are mixed down.
