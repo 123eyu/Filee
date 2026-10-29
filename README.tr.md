@@ -58,7 +58,7 @@
       Formatlar zaten bulunduğunuz yerde görünür; yalnızca sürüklediğiniz dosyalara uygun olanlar listelenir.
     </td>
     <td width="33%" valign="top">
-      <b>268 format, başka yazılım gerekmez</b><br>
+      <b>269 format, başka yazılım gerekmez</b><br>
       Görseller, PDF, Word, Excel, PowerPoint, HWP, e-kitaplar, arşivler, yazı tipleri, CAD, 3B modeller ve coğrafi veriler; Office, Hancom Office veya LibreOffice olmadan çalışır.
     </td>
     <td width="33%" valign="top">

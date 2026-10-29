@@ -49,6 +49,20 @@ public class ClipTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void Clips_take_the_sound_track_the_probe_chose()
+    {
+        var info = Movie with { Audio = new AudioStreamInfo(2, 48000, "aac", 1) };
+        var fast = MediaEncoding.ClipCopy("in.mp4", "out.mp4", "mp4", new ClipRange(12.5, 42.5), new MediaOptions(), info);
+        Assert.Equal(["0:V:0", "0:a:1"], fast.Where((a, i) => i > 0 && fast[i - 1] == "-map"));
+        var exact = MediaEncoding.Plan("in.mp4", "out.mp4", "mp4", new MediaOptions(), info, "work",
+            clip: new ClipRange(12.5, 42.5)).Single().Arguments;
+        Assert.Equal(["0:V:0", "0:a:1"], exact.Where((a, i) => i > 0 && exact[i - 1] == "-map"));
+        var edited = MediaEncoding.ClipEditArguments("in.mp4", "out.mp4", "mp4", Parts(), new MediaOptions(), info);
+        Assert.Contains("[0:a:1]asplit=2", After(edited, "-filter_complex"));
+        Assert.Contains("[0:a:1]", After(MediaEncoding.ClipPreviewAudio("in.mp4", Parts(), Hd, audioTrack: 1), "-filter_complex"));
+    }
+
+    [Fact]
     public void A_fast_clip_without_sound_leaves_the_audio_out()
     {
         var args = MediaEncoding.ClipCopy("in.mkv", "out.mkv", "mkv", new ClipRange(0, 15), new MediaOptions { RemoveAudio = true }, Movie);

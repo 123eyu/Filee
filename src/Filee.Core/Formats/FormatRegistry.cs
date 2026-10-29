@@ -268,6 +268,8 @@ public static class FormatRegistry
         new("dff", "DFF", FormatCategory.Audio, ["dff"], Writable: false),
         new("dts", "DTS", FormatCategory.Audio, ["dts"], Writable: false),
         new("spx", "Speex", FormatCategory.Audio, ["spx"], Writable: false),
+        // Apple Voice Memos recordings (#646): QuickTime audio, read by FFmpeg's mov demuxer.
+        new("qta", "QTA", FormatCategory.Audio, ["qta"], Writable: false),
 
         // Archives
         // ANSYS Workbench project archives use the ZIP container (issue #294).

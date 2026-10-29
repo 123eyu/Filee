@@ -463,6 +463,16 @@ public class HardwareEncodingTests(EngineFixture fx) : IClassFixture<EngineFixtu
     }
 
     [Fact]
+    public void Decoder_queries_give_up_on_a_missing_or_hanging_ffmpeg()
+    {
+        Assert.Null(FfmpegConverter.DecodableCodecsOf(Path.Combine(fx.NewFolder(), "missing-ffmpeg"), TimeSpan.FromSeconds(1)));
+        var hanging = HangingProgram(fx.NewFolder());
+        var watch = Stopwatch.StartNew();
+        Assert.Null(FfmpegConverter.DecodableCodecsOf(hanging, TimeSpan.FromSeconds(1)));
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(20), $"took {watch.Elapsed}");
+    }
+
+    [Fact]
     public void Encoder_lists_are_read()
     {
         var encoders = FfmpegConverter.ParseEncoders(
@@ -472,6 +482,24 @@ public class HardwareEncodingTests(EngineFixture fx) : IClassFixture<EngineFixtu
         Assert.Contains("h264_qsv", encoders);
         Assert.Contains("aac", encoders);
         Assert.DoesNotContain("Video", encoders);
+    }
+
+    [Fact]
+    public void Decodable_codec_lists_are_read()
+    {
+        var codecs = FfmpegConverter.ParseDecodableCodecs(
+            "Codecs:\n D..... = Decoding supported\n ..A... = Audio codec\n -------\n" +
+            " D.VI.S 012v                 Uncompressed 4:2:2 10-bit\n" +
+            " DEA.L. aac                  AAC (Advanced Audio Coding) (decoders: aac aac_fixed)\n" +
+            " ..A.L. apple_apac           Apple Positional Audio Codec\r\n" +
+            " DEAIL. mp3                  MP3 (MPEG audio layer 3) (decoders: mp3float mp3) (encoders: libmp3lame)\n");
+        Assert.Contains("aac", codecs);
+        Assert.Contains("mp3", codecs);
+        Assert.Contains("012v", codecs);
+        Assert.DoesNotContain("apple_apac", codecs);
+        Assert.DoesNotContain("=", codecs);
+        Assert.DoesNotContain("Decoding", codecs);
+        Assert.DoesNotContain("Audio", codecs);
     }
 
     /// <summary>A program that writes nothing and runs for a minute, keeping its output open (a hung FFmpeg).</summary>
