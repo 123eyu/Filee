@@ -934,6 +934,9 @@ internal static class SettingsMigrations
         // v55: Apple Voice Memos recordings (.qta, #646) learn the audio donut; custom claims stay put.
         if (from < 55)
             changed |= LearnExtensions(profiles, out _, ["qta"]);
+        // v56: .lst lists (#767) learn the text donut and Bink videos (.bik, #751) the video donut; custom claims stay put.
+        if (from < 56)
+            changed |= LearnExtensions(profiles, out _, ["lst", "bik"]);
         return changed;
     }
 
