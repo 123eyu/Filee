@@ -28,7 +28,8 @@ internal static class MediaJoining
     /// <summary>
     /// True when the clips can be joined without an encode: every one is a video MP4 takes as it is, all with the same
     /// codec setup (parameter sets: the MP4 keeps only the first clip's), picture size, pixel format, frame rate, turn
-    /// and pixel shape, and the same kind of sound (or none at all). Videos from one phone usually are.
+    /// and pixel shape, and the same kind of sound at the same audio track number (or none at all). The concat
+    /// demuxer maps one track number across every clip. Videos from one phone usually are.
     /// </summary>
     public static bool CanCopyVideos(IReadOnlyList<MediaInfo> clips, MediaOptions options)
     {
@@ -43,7 +44,7 @@ internal static class MediaJoining
         if (clips[0].Audio is not { } sound)
             return clips.All(c => c.Audio is null);
         return clips.All(c => c.Audio is { } a && MediaEncoding.CanCopyAudio("mp4", a, options)
-            && a.Codec == sound.Codec && a.SampleRate == sound.SampleRate && a.Channels == sound.Channels);
+            && a.Codec == sound.Codec && a.SampleRate == sound.SampleRate && a.Channels == sound.Channels && a.Ordinal == sound.Ordinal);
     }
 
     /// <summary>The list of the concat demuxer: one <c>file '…'</c> line per clip, quotes escaped.</summary>
@@ -54,8 +55,8 @@ internal static class MediaJoining
     public static List<string> CopyVideos(string listFile, string output, MediaInfo first)
     {
         List<string> args = [.. MediaEncoding.Common, "-f", "concat", "-safe", "0", "-i", listFile, "-map", "0:V:0"];
-        if (first.Audio is not null)
-            args.AddRange(["-map", "0:a:0"]);
+        if (first.Audio is { } sound)
+            args.AddRange(["-map", $"0:a:{sound.Ordinal}"]);
         args.AddRange(["-c", "copy"]);
         if (first.Video?.Codec == "hevc")
             args.AddRange(["-tag:v", "hvc1"]);
@@ -103,7 +104,7 @@ internal static class MediaJoining
             segments += $"[v{i}]";
             if (!withSound)
                 continue;
-            graph.Add(info.Audio is not null ? $"[{i}:a:0]{Resample("stereo")}[a{i}]" : $"{Silence(path, info, "stereo")}[a{i}]");
+            graph.Add(info.Audio is { } sound ? $"[{i}:a:{sound.Ordinal}]{Resample("stereo")}[a{i}]" : $"{Silence(path, info, "stereo")}[a{i}]");
             segments += $"[a{i}]";
         }
         graph.Add($"{segments}concat=n={clips.Count}:v=1:a={(withSound ? 1 : 0)}[v]{(withSound ? "[a]" : "")}");
@@ -142,7 +143,7 @@ internal static class MediaJoining
         for (var i = 0; i < clips.Count; i++)
         {
             var (path, info) = clips[i];
-            graph.Add(info.Audio is not null ? $"[{i}:a:0]{Resample(layout)}[a{i}]" : $"{Silence(path, info, layout)}[a{i}]");
+            graph.Add(info.Audio is { } sound ? $"[{i}:a:{sound.Ordinal}]{Resample(layout)}[a{i}]" : $"{Silence(path, info, layout)}[a{i}]");
             segments += $"[a{i}]";
         }
         graph.Add($"{segments}concat=n={clips.Count}:v=0:a=1[a]");

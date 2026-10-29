@@ -142,6 +142,34 @@ public class MediaToolRealTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task Clips_whose_sound_is_on_another_track_keep_every_parts_sound_when_merged()
+    {
+        SkipUnlessInstalled();
+        var folder = fx.NewFolder();
+        var first = Path.Combine(folder, "a.mov");
+        await FfmpegAsync(["-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=25:duration=1",
+            "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=1",
+            "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000:duration=1",
+            "-map", "0:v", "-map", "1:a", "-map", "2:a", "-ac:a:0", "4", "-ac:a:1", "2",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-f", "mov", first]);
+        MediaTests.WithoutDecoder(first);
+        var second = await MakeClipAsync(folder, "b.mov", 1, extra: ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-f", "mov"]);
+        var a = await MediaInfo.ProbeAsync(Tools!.Value.Ffprobe, first, TestContext.Current.CancellationToken);
+        var b = await MediaInfo.ProbeAsync(Tools.Value.Ffprobe, second, TestContext.Current.CancellationToken);
+        Assert.Equal(a.Video, b.Video);
+        Assert.Equal(new AudioStreamInfo(2, 48000, "aac", 1), a.Audio);
+        Assert.Equal(new AudioStreamInfo(2, 48000, "aac", 0), b.Audio);
+
+        var output = await RunAsync([first, second], BuiltIn("merge-videos"));
+        var duration = await ProcessRunner.RunAsync(Tools.Value.Ffprobe,
+            ["-v", "error", "-select_streams", "a:0", "-show_entries", "stream=duration", "-of", "csv=p=0", output],
+            TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+        Assert.True(duration.ExitCode == 0, duration.StandardError);
+        Assert.InRange(double.Parse(duration.StandardOutput.Trim(), CultureInfo.InvariantCulture), 1.8, 2.2);
+    }
+
+    [Fact]
     public async Task Clips_of_one_size_but_other_encoder_settings_still_play_after_merging()
     {
         SkipUnlessInstalled();

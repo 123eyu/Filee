@@ -77,7 +77,7 @@ public static partial class ClipPreview
         {
             if ((info.Audio is not null || clip.Music is not null) && Player() is { } ffplay)
             {
-                decoder = Start(ffmpeg, MediaEncoding.ClipPreviewAudio(input, clip, video, info.Audio is not null), stdin: false);
+                decoder = Start(ffmpeg, MediaEncoding.ClipPreviewAudio(input, clip, video, info.Audio is not null, info.Audio?.Ordinal ?? 0), stdin: false);
                 player = Start(ffplay, ["-hide_banner", "-loglevel", "error", "-nodisp", "-autoexit",
                     .. PlayerVolume is { } volume ? new[] { "-volume", volume.ToString(CultureInfo.InvariantCulture) } : [], "-i", "-"], stdin: true);
                 pump = Pump(decoder, player, stop.Token);

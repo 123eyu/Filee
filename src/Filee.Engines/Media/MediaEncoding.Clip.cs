@@ -38,8 +38,9 @@ internal static partial class MediaEncoding
     /// </param>
     /// <param name="audio">The video's own sound is used (it has sound, and the preset keeps it).</param>
     /// <param name="music">The clip's music is mixed in (the preset keeps sound).</param>
+    /// <param name="audioTrack">The selected audio track's ordinal in the input file.</param>
     internal static ClipGraph ClipGraphOf(string input, ClipEdit edit, bool audio, int width, int height, string fps, string pixelFormat = "yuv420p",
-        bool video = true, bool music = true)
+        bool video = true, bool music = true, int audioTrack = 0)
     {
         var song = music ? edit.Music : null;
         var sound = audio || song is not null;
@@ -65,7 +66,7 @@ internal static partial class MediaEncoding
         }
         if (audio)
         {
-            graph.Append("[0:a:0]").Append(n > 1 ? $"asplit={n}" : "anull");
+            graph.Append($"[0:a:{audioTrack}]").Append(n > 1 ? $"asplit={n}" : "anull");
             for (var k = 0; k < n; k++)
                 graph.Append($"[as{k}]");
             graph.Append(';');
@@ -156,7 +157,7 @@ internal static partial class MediaEncoding
         var tenBit = video.IsHighBitDepth && encoder is "libx265" or "libsvtav1" or "libaom-av1";
         // "Remove audio" leaves the clip silent, music and all.
         var graph = ClipGraphOf(input, edit, !options.RemoveAudio && info.Audio is not null, width, height, fps, tenBit ? "yuv420p10le" : "yuv420p",
-            music: !options.RemoveAudio);
+            music: !options.RemoveAudio, audioTrack: info.Audio?.Ordinal ?? 0);
         var audio = graph.HasAudio;
         var pal = IsPal(video.FrameRate);
         var filter = target is "vob" or "dv"
@@ -192,10 +193,11 @@ internal static partial class MediaEncoding
 
     /// <summary>The arguments that play the sound of <paramref name="edit"/>: a WAV stream on stdout (for ffplay).</summary>
     /// <param name="hasAudio">The video has sound of its own (else only the music plays).</param>
-    internal static List<string> ClipPreviewAudio(string input, ClipEdit edit, VideoStreamInfo video, bool hasAudio = true)
+    /// <param name="audioTrack">The selected audio track's ordinal in the input file.</param>
+    internal static List<string> ClipPreviewAudio(string input, ClipEdit edit, VideoStreamInfo video, bool hasAudio = true, int audioTrack = 0)
     {
         var (width, height) = ClipSize(video, 90);
-        var graph = ClipGraphOf(input, edit, hasAudio, width, height, "10", video: false);
+        var graph = ClipGraphOf(input, edit, hasAudio, width, height, "10", video: false, audioTrack: audioTrack);
         return [.. Common, .. graph.Inputs, "-filter_complex", graph.Filter, "-map", "[a]", "-c:a", "pcm_s16le", "-f", "wav", "pipe:1"];
     }
 

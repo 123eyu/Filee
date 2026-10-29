@@ -1509,6 +1509,9 @@ format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fa
 
   Read only (FFmpeg's decoders): APE (Monkey's Audio), Musepack (MPC), TAK, DSF and DFF (DSD), DTS, Speex (SPX) and the
   formats above. No encoder for them is in the build, or (DTS) only an experimental one.
+  Apple Voice Memos recordings (`.qta`, read only, #646) are QuickTime audio: FFmpeg's mov demuxer reads them and
+  they go to every audio target, from the first audio track FFmpeg can decode, like any other source
+  (iOS 26 memos also carry a spatial APAC track FFmpeg has no decoder for).
 
 - **Rewrapping instead of re-encoding.** When the target container takes the source's codecs as they are
   (`MediaEncoding.Remuxable`: H.264/HEVC + AAC, ALAC, AC-3, E-AC-3 or MP3 for MP4/M4V/MOV, also ProRes and PCM for

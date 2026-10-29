@@ -45,6 +45,30 @@ public class MediaJoiningTests
     }
 
     [Fact]
+    public void Clips_whose_chosen_sound_is_another_track_are_encoded()
+    {
+        var first = Clip(PhoneVideo, new AudioStreamInfo(2, 48000, "aac", 1));
+        var second = Clip(PhoneVideo, new AudioStreamInfo(2, 48000, "aac", 0));
+        Assert.False(MediaJoining.CanCopyVideos([first, second], new MediaOptions()));
+        Assert.True(MediaJoining.CanCopyVideos([first, first], new MediaOptions()));
+    }
+
+    [Fact]
+    public void Joined_files_take_the_sound_track_the_probe_chose()
+    {
+        var clip = Clip(PhoneVideo, new AudioStreamInfo(2, 48000, "aac", 1));
+        Assert.Contains("0:a:1", MediaJoining.CopyVideos("clips.txt", "out.mp4", clip));
+        var video = MediaJoining.EncodeVideos([("a.mov", clip), ("b.mp4", Clip(PhoneVideo, new AudioStreamInfo(2, 48000, "aac")))],
+            "out.mp4", new MediaOptions(), "libx264", "work");
+        Assert.Contains("[0:a:1]", After(video, "-filter_complex"));
+        Assert.Contains("[1:a:0]", After(video, "-filter_complex"));
+        var audio = MediaJoining.EncodeAudio([("a.mp3", Clip(audio: new AudioStreamInfo(2, 48000, "mp3"))),
+            ("b.qta", Clip(audio: new AudioStreamInfo(2, 48000, "aac", 2)))], "out.m4a", new MediaOptions(), "work");
+        Assert.Contains("[0:a:0]", After(audio, "-filter_complex"));
+        Assert.Contains("[1:a:2]", After(audio, "-filter_complex"));
+    }
+
+    [Fact]
     public void Encoded_clips_fit_the_first_ones_frame_and_a_silent_one_gets_silence()
     {
         var portrait = PhoneVideo with { Rotation = -90 };

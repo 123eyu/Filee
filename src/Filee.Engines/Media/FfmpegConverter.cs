@@ -577,6 +577,26 @@ public sealed partial class FfmpegConverter(ILogger? logger = null) : IConverter
             }
         });
 
+    private static readonly ConcurrentDictionary<string, IReadOnlySet<string>?> Decoders = new();
+
+    /// <summary>
+    /// The decodable codec names of this ffmpeg, cached per executable. Null assumes every codec can be decoded
+    /// when the table cannot be read.
+    /// </summary>
+    internal static IReadOnlySet<string>? DecodableCodecsOf(string ffmpeg, TimeSpan? timeout = null) =>
+        Decoders.GetOrAdd($"{ffmpeg}|{File.GetLastWriteTimeUtc(ffmpeg).Ticks}", _ =>
+        {
+            try
+            {
+                var result = FfmpegRunner.RunBriefly(ffmpeg, ["-hide_banner", "-codecs"], timeout ?? QueryTimeout);
+                return result.ExitCode == 0 ? ParseDecodableCodecs(result.StandardOutput) : null;
+            }
+            catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or System.ComponentModel.Win32Exception or IOException)
+            {
+                return null;
+            }
+        });
+
     private static readonly ConcurrentDictionary<string, IReadOnlySet<string>?> Filters = new();
 
     /// <summary>
@@ -612,6 +632,17 @@ public sealed partial class FfmpegConverter(ILogger? logger = null) : IConverter
         list.Split('\n')
             .Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .Where(parts => parts.Length >= 2 && parts[0].Length == 6 && parts[0][0] is 'V' or 'A' or 'S')
+            .Select(parts => parts[1])
+            .ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>The decodable codec names in <c>ffmpeg -codecs</c> output.</summary>
+    internal static IReadOnlySet<string> ParseDecodableCodecs(string list) =>
+        // " DEA.L. aac  AAC (Advanced Audio Coding) (decoders: aac aac_fixed)"
+        // " ..A.L. apple_apac  Apple Positional Audio Codec"
+        list.Split('\n')
+            .Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Where(parts => parts.Length >= 2 && parts[0].Length == 6 && parts[0][0] == 'D'
+                && parts[0][2] is 'V' or 'A' or 'S' or 'D' or 'T')
             .Select(parts => parts[1])
             .ToHashSet(StringComparer.Ordinal);
 
