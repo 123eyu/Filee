@@ -233,6 +233,8 @@ public static class FormatRegistry
         // Dahua and similar DVR / NVR recordings (#594): FFmpeg's dhav demuxer reads them (H.264 / H.265 video, often
         // with G.711 or AAC sound).
         new("dav", "DAV", FormatCategory.Video, ["dav"], Writable: false),
+        // Bink Video, the game cutscene format of RAD Game Tools (#751): FFmpeg's bink demuxer reads it. Never a target.
+        new("bik", "BIK", FormatCategory.Video, ["bik"], Writable: false),
         // Raw H.265 / H.264 streams with no container, as security cameras and VMS software export them (issue #301).
         new("h265", "H.265", FormatCategory.Video, ["h265", "265", "hevc"], Writable: false),
         new("h264", "H.264", FormatCategory.Video, ["h264", "264"], Writable: false),

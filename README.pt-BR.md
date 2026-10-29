@@ -58,7 +58,7 @@
       Os formatos aparecem onde você já está, só os que fazem sentido para os arquivos que você arrasta.
     </td>
     <td width="33%" valign="top">
-      <b>269 formatos, sem outro programa</b><br>
+      <b>270 formatos, sem outro programa</b><br>
       Imagens, PDF, Word, Excel, PowerPoint, HWP, e-books, arquivos compactados, fontes, CAD, modelos 3D e dados geoespaciais funcionam sem Office, Hancom Office ou LibreOffice.
     </td>
     <td width="33%" valign="top">
