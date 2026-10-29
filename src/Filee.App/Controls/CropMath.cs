@@ -5,8 +5,84 @@ using Avalonia;
 
 namespace Filee.App.Controls;
 
+/// <summary>Four normalized picture corners, clockwise from the top left.</summary>
+public readonly record struct CropQuad(Point TopLeft, Point TopRight, Point BottomRight, Point BottomLeft)
+{
+    /// <summary>The whole picture.</summary>
+    public static CropQuad Full => new(new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(0, 1));
+
+    /// <summary>A corner in clockwise order, starting at the top left.</summary>
+    public Point this[int corner] => corner switch
+    {
+        0 => TopLeft,
+        1 => TopRight,
+        2 => BottomRight,
+        3 => BottomLeft,
+        _ => throw new ArgumentOutOfRangeException(nameof(corner)),
+    };
+
+    /// <summary>A copy with one corner replaced.</summary>
+    public CropQuad With(int corner, Point p) => corner switch
+    {
+        0 => this with { TopLeft = p },
+        1 => this with { TopRight = p },
+        2 => this with { BottomRight = p },
+        3 => this with { BottomLeft = p },
+        _ => throw new ArgumentOutOfRangeException(nameof(corner)),
+    };
+}
+
 public static class CropMath
 {
+    /// <summary>Minimum clockwise turn in square original pixels.</summary>
+    public const double TurnEpsilon = 1e-6;
+
+    /// <summary>Whether all corners are inside the picture and form a strictly convex clockwise quadrilateral.</summary>
+    public static bool IsValidQuad(CropQuad q, int width, int height)
+    {
+        for (var i = 0; i < 4; i++)
+        {
+            var p = q[i];
+            if (!(p.X >= 0 && p.X <= 1 && p.Y >= 0 && p.Y <= 1))
+                return false;
+            var next = q[(i + 1) % 4];
+            var last = q[(i + 2) % 4];
+            var cross = ((next.X - p.X) * width) * ((last.Y - next.Y) * height)
+                - ((next.Y - p.Y) * height) * ((last.X - next.X) * width);
+            if (!(cross > TurnEpsilon))
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>Moves one corner only when the resulting quadrilateral is valid.</summary>
+    public static CropQuad MoveCorner(CropQuad q, int corner, Point target, int width, int height)
+    {
+        var moved = q.With(corner, target);
+        return IsValidQuad(moved, width, height) ? moved : q;
+    }
+
+    /// <summary>Snaps one corner to the original pixel grid and moves it by whole pixels.</summary>
+    public static CropQuad NudgeCorner(CropQuad q, int corner, int dx, int dy, int width, int height)
+    {
+        if (width <= 0 || height <= 0)
+            return q;
+        var p = q[corner];
+        var target = new Point((Math.Round(p.X * width) + dx) / width, (Math.Round(p.Y * height) + dy) / height);
+        return MoveCorner(q, corner, target, width, height);
+    }
+
+    /// <summary>Output size from the longer opposing sides in original pixels, at least 1 by 1.</summary>
+    public static PixelSize PerspectiveSize(CropQuad q, int width, int height)
+    {
+        double Length(Point a, Point b) =>
+            Math.Sqrt(Math.Pow((a.X - b.X) * width, 2) + Math.Pow((a.Y - b.Y) * height, 2));
+
+        return new PixelSize(
+            Math.Max(1, (int)Math.Round(Math.Max(Length(q.TopLeft, q.TopRight), Length(q.BottomLeft, q.BottomRight)))),
+            Math.Max(1, (int)Math.Round(Math.Max(Length(q.TopLeft, q.BottomLeft), Length(q.TopRight, q.BottomRight)))));
+    }
+
     /// <summary>The aspect dial's choices, clockwise from the top.</summary>
     public static IReadOnlyList<string> AspectModes => Modes;
 

@@ -8,6 +8,108 @@ namespace Filee.App.Tests;
 
 public class CropMathTests
 {
+    [Fact]
+    public void A_corner_moves_only_to_a_convex_untwisted_shape_inside_the_picture()
+    {
+        var square = new CropQuad(new Point(0.2, 0.2), new Point(0.8, 0.2),
+            new Point(0.8, 0.8), new Point(0.2, 0.8));
+        var targets = new[]
+        {
+            new Point(0.9, 0.7), // twisted
+            new Point(0.6, 0.6), // concave
+            new Point(0.5, 0.5), // three collinear points
+            new Point(0.9, 0.2), // passes the neighbouring corner
+            new Point(-0.1, 0.2),
+            new Point(0.2, 1.1),
+        };
+        static Point Rotate(Point p) => new(1 - p.Y, p.X);
+
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var valid = new Point(0.3, 0.3);
+            foreach (var _ in Enumerable.Range(0, corner))
+                valid = Rotate(valid);
+            var moved = CropMath.MoveCorner(square, corner, valid, 1600, 1000);
+            for (var i = 0; i < 4; i++)
+                Assert.Equal(i == corner ? valid : square[i], moved[i]);
+
+            foreach (var initial in targets)
+            {
+                var target = initial;
+                foreach (var _ in Enumerable.Range(0, corner))
+                    target = Rotate(target);
+                Assert.Equal(square, CropMath.MoveCorner(square, corner, target, 1600, 1000));
+            }
+        }
+
+        var passing = new CropQuad(new Point(0.2, 0.2), new Point(0.6, 0.2),
+            new Point(0.6, 0.8), new Point(0.2, 0.8));
+        Assert.Equal(passing, CropMath.MoveCorner(passing, 0, new Point(0.7, 0.2), 1600, 1000));
+        Assert.False(CropMath.IsValidQuad(new CropQuad(new Point(0, 0), new Point(0, 1),
+            new Point(1, 1), new Point(1, 0)), 1600, 1000));
+
+        foreach (var (delta, expected) in new[] { (2.5e-9, true), (6.25e-10, false) })
+        {
+            var turn = 800 * delta;
+            Assert.Equal(expected, turn > 1e-6);
+            var thin = new CropQuad(new Point(0, 0), new Point(800 / 1600.0, 0),
+                new Point(1, delta / 1000), new Point(0, 1));
+            Assert.Equal(expected, CropMath.IsValidQuad(thin, 1600, 1000));
+        }
+
+        var fractional = new CropQuad(new Point(0.6, 0.2), new Point(1, 0), new Point(1, 1), new Point(0, 1));
+        Assert.Equal(fractional, CropMath.MoveCorner(CropQuad.Full, 0, fractional.TopLeft, 1, 1));
+    }
+
+    [Fact]
+    public void Perspective_size_is_the_longer_of_each_pair_of_sides()
+    {
+        Assert.Equal(new PixelSize(1600, 1000), CropMath.PerspectiveSize(CropQuad.Full, 1600, 1000));
+        var trapezoid = new CropQuad(new Point(0.2, 0.1), new Point(0.7, 0.2),
+            new Point(0.9, 0.8), new Point(0.1, 0.9));
+        double Distance(Point a, Point b) =>
+            Math.Sqrt(Math.Pow((a.X - b.X) * 1600, 2) + Math.Pow((a.Y - b.Y) * 1000, 2));
+        var expectedWidth = (int)Math.Round(Math.Max(Distance(trapezoid.TopLeft, trapezoid.TopRight),
+            Distance(trapezoid.BottomLeft, trapezoid.BottomRight)));
+        var expectedHeight = (int)Math.Round(Math.Max(Distance(trapezoid.TopLeft, trapezoid.BottomLeft),
+            Distance(trapezoid.TopRight, trapezoid.BottomRight)));
+        Assert.Equal(new PixelSize(expectedWidth, expectedHeight), CropMath.PerspectiveSize(trapezoid, 1600, 1000));
+        var rounded = new CropQuad(new Point(0, 0), new Point(0.126, 0),
+            new Point(0.126, 0.234), new Point(0, 0.234));
+        Assert.Equal(new PixelSize(13, 23), CropMath.PerspectiveSize(rounded, 100, 100));
+        var tiny = new CropQuad(new Point(0, 0), new Point(0.001, 0),
+            new Point(0.001, 0.001), new Point(0, 0.001));
+        Assert.Equal(new PixelSize(1, 1), CropMath.PerspectiveSize(tiny, 100, 100));
+    }
+
+    [Fact]
+    public void Arrow_keys_move_a_corner_by_whole_pixels_and_stop_where_the_shape_would_break()
+    {
+        var loose = new CropQuad(new Point(200.4 / 1000, 200.4 / 1000), new Point(0.8, 0.2),
+            new Point(0.8, 0.8), new Point(0.2, 0.8));
+        Assert.Equal(new Point(201 / 1000.0, 190 / 1000.0),
+            CropMath.NudgeCorner(loose, 0, 1, -10, 1000, 1000).TopLeft);
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var dx = corner is 0 or 3 ? 1 : -1;
+            var dy = corner is 0 or 1 ? 10 : -10;
+            var moved = CropMath.NudgeCorner(CropQuad.Full, corner, dx, dy, 1000, 1000);
+            for (var i = 0; i < 4; i++)
+            {
+                var p = CropQuad.Full[i];
+                var expected = i == corner ? new Point(p.X + dx / 1000.0, p.Y + dy / 1000.0) : p;
+                Assert.Equal(expected.X, moved[i].X, 9);
+                Assert.Equal(expected.Y, moved[i].Y, 9);
+            }
+            Assert.Equal(CropQuad.Full, CropMath.NudgeCorner(CropQuad.Full, corner, -dx, -dy, 1000, 1000));
+        }
+        var almostLine = new CropQuad(new Point(0.2, 0.799), new Point(0.8, 0.2),
+            new Point(0.8, 0.8), new Point(0.2, 0.8));
+        Assert.True(CropMath.IsValidQuad(almostLine, 1000, 1000));
+        Assert.Equal(almostLine, CropMath.NudgeCorner(almostLine, 0, 0, 1, 1000, 1000));
+        Assert.Equal(loose, CropMath.NudgeCorner(loose, 0, 1, 1, 0, 0));
+    }
+
     [Theory]
     [InlineData("free", false, 0.0)]
     [InlineData("1:1", true, 1.0)]
