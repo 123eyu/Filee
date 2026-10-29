@@ -39,6 +39,9 @@ public sealed class FileResult
     /// <summary>Localization key of the error (e.g. <c>error.no_route</c>), if any.</summary>
     public string? ErrorKey { get; set; }
 
+    /// <summary>The actual request whose initial route planning failed, or null for other failures.</summary>
+    public RouteRequest? FailedRoute { get; set; }
+
     /// <summary>The job's fetcher saves this source first (a file from a browser).</summary>
     public bool NeedsFetch { get; init; }
 
@@ -72,6 +75,10 @@ public sealed class FileResult
     /// </summary>
     public IReadOnlyList<string> MissingFonts { get; set; } = [];
 }
+
+/// <summary>The source, target and constraints of a route planning request.</summary>
+public sealed record RouteRequest(string Source, string Target, bool Frames = false, bool Shaping = false,
+    bool MotionPhoto = false, bool LivePhoto = false, bool Ocr = false);
 
 /// <summary>A batch of files converted with one preset.</summary>
 public sealed class ConversionJob
