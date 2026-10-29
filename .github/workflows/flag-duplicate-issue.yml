@@ -96,7 +96,7 @@ jobs:
           released_at = latest.stdout.strip() if latest.returncode == 0 and latest.stdout.strip() else None
 
           listing = subprocess.run(
-              ['gh', 'issue', 'list', '--state', 'all', '--limit', '1000', '--json', 'number,title,body,state'],
+              ['gh', 'issue', 'list', '--state', 'all', '--limit', '5000', '--json', 'number,title,body,state'],
               check=True, capture_output=True, text=True).stdout
           unreleased, duplicates, closed = [], [], []
           for issue in json.loads(listing):
@@ -110,8 +110,9 @@ jobs:
                   continue
               (duplicates if issue['state'] == 'OPEN' else closed).append(issue['number'])
 
-          # Closed issues count only when a merged pull request closed them, after the latest release.
-          for number in sorted(closed)[:10]:
+          # Closed issues count only when a merged pull request closed them, after the latest release. The newest
+          # ten are checked: those are the ones a pull request since the release can have closed.
+          for number in sorted(closed, reverse=True)[:10]:
               pr = closing_pr(number)
               if pr and (released_at is None or pr['mergedAt'] > released_at):
                   unreleased.append((number, pr['number']))
