@@ -339,10 +339,40 @@ internal static class Cli
             var targets = FormatRegistry.Known.Where(t => t.Writable && t.Id != from.Id).ToList();
             var now = targets.Where(t => installed.CanConvert(from.Id, t.Id)).Select(t => t.Id).ToList();
             var later = targets.Where(t => !now.Contains(t.Id) && everything.CanConvert(from.Id, t.Id)).Select(t => t.Id).ToList();
+            if (options.Json)
+            {
+                WriteJsonDocument(output, json =>
+                {
+                    json.WriteStartObject();
+                    WriteFormatFields(json, from);
+                    WriteStrings(json, "targets", now);
+                    WriteStrings(json, "withEngines", later);
+                    json.WriteEndObject();
+                });
+                return Success;
+            }
             output.WriteLine($"{from.DisplayName} ({string.Join(", ", from.Extensions)}) converts to:");
             output.WriteLine(now.Count > 0 ? "  " + string.Join(", ", now) : "  (nothing with the engines installed now)");
             if (later.Count > 0)
                 output.WriteLine($"With optional engines (install them in Filee, Settings → Engines):{Environment.NewLine}  {string.Join(", ", later)}");
+            return Success;
+        }
+
+        if (options.Json)
+        {
+            WriteJsonDocument(output, json =>
+            {
+                json.WriteStartObject();
+                json.WriteStartArray("formats");
+                foreach (var format in FormatRegistry.Known.Where(f => f.Id != FormatRegistry.Folder))
+                {
+                    json.WriteStartObject();
+                    WriteFormatFields(json, format);
+                    json.WriteEndObject();
+                }
+                json.WriteEndArray();
+                json.WriteEndObject();
+            });
             return Success;
         }
 
@@ -355,6 +385,32 @@ internal static class Cli
         output.WriteLine();
         output.WriteLine("Run 'filee formats <format>' to see what a format converts to.");
         return Success;
+    }
+
+    /// <summary>The fields of one format in the JSON of 'formats': the same names for the list and for one format.</summary>
+    private static void WriteFormatFields(Utf8JsonWriter json, FileFormat format)
+    {
+        json.WriteString("id", format.Id);
+        json.WriteString("name", format.DisplayName);
+        json.WriteString("category", format.Category.ToString().ToLowerInvariant());
+        WriteStrings(json, "extensions", format.Extensions);
+        json.WriteBoolean("writable", format.Writable);
+    }
+
+    private static void WriteStrings(Utf8JsonWriter json, string name, IEnumerable<string> values)
+    {
+        json.WriteStartArray(name);
+        foreach (var value in values)
+            json.WriteStringValue(value);
+        json.WriteEndArray();
+    }
+
+    private static void WriteJsonDocument(TextWriter output, Action<Utf8JsonWriter> write)
+    {
+        using var stream = new MemoryStream();
+        using (var json = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            write(json);
+        output.WriteLine(System.Text.Encoding.UTF8.GetString(stream.ToArray()));
     }
 
     private static int ListPresets(CliHost host, TextWriter output)
