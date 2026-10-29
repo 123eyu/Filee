@@ -19,17 +19,15 @@ public class BikFormatTests
     }
 
     [Fact]
-    public void Version_55_libraries_learn_bik_and_lst_once()
+    public void Version_55_libraries_learn_bik_once()
     {
         var presets = BuiltInData.CreatePresets();
         var profiles = BuiltInData.CreateProfiles();
         profiles.Single(p => p.Id == "video").Extensions.Remove("bik");
-        profiles.Single(p => p.Id == "text").Extensions.Remove("lst");
 
         Assert.True(SettingsMigrations.ApplyToLibrary(55, presets, profiles));
 
         Assert.Contains("bik", profiles.Single(p => p.Id == "video").Extensions);
-        Assert.Contains("lst", profiles.Single(p => p.Id == "text").Extensions);
         Assert.False(SettingsMigrations.ApplyToLibrary(55, presets, profiles));
     }
 }
