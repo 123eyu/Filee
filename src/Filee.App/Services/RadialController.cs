@@ -610,7 +610,13 @@ public sealed class RadialController(
         }
         _visible = true;
         if (activate)
+        {
             window.Activate();
+            // ShowActivated is false because the same window is also used during an OS drag, where taking focus would
+            // break Explorer's drag. Click mode is different: the donut owns the keyboard until it closes, so focus it
+            // explicitly for Tab/arrow/Enter handling.
+            window.DonutControl.Focus();
+        }
     }
 
     private static bool SameFiles(IReadOnlyList<string> a, IReadOnlyList<string> b) =>

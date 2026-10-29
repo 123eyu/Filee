@@ -143,6 +143,11 @@ public sealed partial class DonutMenu : Control
         FlowDirection = FlowDirection.LeftToRight;
         ClipToBounds = false;
         Cursor = new Cursor(StandardCursorType.Hand);
+        // The live click-mode donut handles Tab, arrows, Enter and Escape itself. It must be the focused control
+        // after a context-menu/shortcut launch; otherwise Avalonia has no focused target to which the key events can
+        // be routed. It is focused explicitly by RadialController, so it must not participate in normal Tab order.
+        Focusable = true;
+        IsTabStop = false;
     }
 
     public IReadOnlyList<DonutItem>? Items { get => GetValue(ItemsProperty); set => SetValue(ItemsProperty, value); }
