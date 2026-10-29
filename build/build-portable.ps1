@@ -60,8 +60,14 @@ if ((Test-Path -LiteralPath $archive) -or (Test-Path -LiteralPath $sums) -or (Te
 }
 # Magick.Native for Magick.NET 14.17.2 built for macOS 13 (#600). A Magick.NET update needs a new build and new pins.
 $magickNative = @{
-    'osx-arm64' = @{ url = ''; sha256 = '' }
-    'osx-x64' = @{ url = ''; sha256 = '' }
+    'osx-arm64' = @{
+        url = 'https://dl.filee.sh/engines/magick-native/2026.927.1314/Magick.Native-Q8-arm64.dll.dylib'
+        sha256 = '2299d76696d6c78dfbe856fc00118fbe30d684299524bbce328cc76003aa9c02'
+    }
+    'osx-x64' = @{
+        url = 'https://dl.filee.sh/engines/magick-native/2026.927.1314/Magick.Native-Q8-x64.dll.dylib'
+        sha256 = '11f5e26da1bc67bab6e3c0fdd0375bb756ac2db273356cd0e8f76248137fc5f6'
+    }
 }
 $stage = Join-Path $root ('build/.cache/portable/' + [Guid]::NewGuid().ToString('N'))
 $package = Join-Path $stage $packageName
