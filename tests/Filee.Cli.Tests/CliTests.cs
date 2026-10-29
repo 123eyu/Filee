@@ -329,6 +329,41 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public async Task Formats_json_lists_every_format()
+    {
+        var (code, output, _) = await Run("formats", "--json");
+        Assert.Equal(Cli.Success, code);
+
+        using var json = JsonDocument.Parse(output);
+        var formats = json.RootElement.GetProperty("formats").EnumerateArray().ToList();
+        var png = Assert.Single(formats, f => f.GetProperty("id").GetString() == "png");
+        Assert.Equal("image", png.GetProperty("category").GetString());
+        Assert.Contains("png", png.GetProperty("extensions").EnumerateArray().Select(e => e.GetString()));
+        Assert.True(png.GetProperty("writable").GetBoolean());
+        Assert.DoesNotContain(formats, f => f.GetProperty("id").GetString() == "folder");
+    }
+
+    [Fact]
+    public async Task Formats_json_of_one_format_matches_the_text()
+    {
+        var (code, text, _) = await Run("formats", "zip");
+        Assert.Equal(Cli.Success, code);
+        (code, var output, _) = await Run("formats", "zip", "--json");
+        Assert.Equal(Cli.Success, code);
+
+        using var json = JsonDocument.Parse(output);
+        var root = json.RootElement;
+        Assert.Equal("zip", root.GetProperty("id").GetString());
+        Assert.Equal("archive", root.GetProperty("category").GetString());
+        var targets = root.GetProperty("targets").EnumerateArray().Select(e => e.GetString()!).ToList();
+        var withEngines = root.GetProperty("withEngines").EnumerateArray().Select(e => e.GetString()!).ToList();
+        Assert.Contains("folder", targets.Concat(withEngines));
+        Assert.Empty(targets.Intersect(withEngines));
+        foreach (var id in targets.Concat(withEngines))
+            Assert.Contains(id, text);
+    }
+
+    [Fact]
     public async Task Jpeg_xr_converts_on_windows_and_is_no_download_away_elsewhere()
     {
         var (code, output, _) = await Run("formats", "jxr");

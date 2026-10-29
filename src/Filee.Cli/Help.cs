@@ -14,7 +14,8 @@ internal static class Help
     {
         "convert" => Convert,
         "watch" => Watch,
-        "formats" => "Usage: filee formats [<format>]\n\nLists every format, or what one format converts to.\n",
+        "formats" => "Usage: filee formats [<format>] [--json]\n\nLists every format, or what one format converts to.\n" +
+                     "With --json, prints the same as JSON (for scripts and other programs).\n",
         "presets" => "Usage: filee presets\n\nLists the presets saved in Filee (built-in and your own).\n",
         _ => General,
     };
@@ -26,7 +27,7 @@ internal static class Help
           filee convert <files or folders...> --to <format> [options]
           filee convert <files or folders...> --preset <preset> [options]
           filee watch <folder> --to <format> [options]
-          filee formats [<format>]
+          filee formats [<format>] [--json]
           filee presets
           filee help [<command>]
           filee version
