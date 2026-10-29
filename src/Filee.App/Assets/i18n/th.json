@@ -497,6 +497,7 @@
   "update.install": "อัปเดต",
   "update.notice_text_portable": "นี่คือเวอร์ชันพกพา (Portable)\nดาวน์โหลดไฟล์ zip ใหม่แล้วแตกไฟล์ทับโฟลเดอร์นี้ การตั้งค่าของคุณจะยังคงอยู่ครบถ้วน",
   "update.downloading": "กำลังดาวน์โหลดการอัปเดต… {0}%",
+  "update.downloading_short": "กำลังดาวน์โหลด… {0}%",
   "update.installing_short": "กำลังอัปเดต…",
   "update.installing": "ตัวติดตั้งกำลังทำงาน Filee จะเปิดใหม่อีกครั้งเมื่อเสร็จสิ้น",
   "update.failed": "ไม่สามารถอัปเดตอัตโนมัติได้ ดาวน์โหลดเวอร์ชันใหม่ได้ที่ filee.sh",

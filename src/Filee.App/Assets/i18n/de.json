@@ -497,6 +497,7 @@
   "update.install": "Aktualisieren",
   "update.notice_text_portable": "Dies ist die portable Version.\nLade die neue ZIP-Datei herunter und entpacke sie in diesen Ordner. Ersetze dabei die vorhandenen Programmdateien. Deine Einstellungen bleiben erhalten.",
   "update.downloading": "Update wird heruntergeladen… {0}%",
+  "update.downloading_short": "Wird heruntergeladen… {0}%",
   "update.installing_short": "Wird aktualisiert…",
   "update.installing": "Das Installationsprogramm läuft. Filee startet danach erneut.",
   "update.failed": "Automatisches Update fehlgeschlagen. Lade die neue Version von filee.sh herunter.",

@@ -509,6 +509,7 @@
   "update.install": "Update",
   "update.notice_text_portable": "This is the portable version.\nDownload the new zip and unpack it over this folder. Your settings are kept.",
   "update.downloading": "Downloading the update… {0}%",
+  "update.downloading_short": "Downloading… {0}%",
   "update.installing_short": "Updating…",
   "update.installing": "The installer is running. Filee starts again when it is done.",
   "update.failed": "Couldn't update automatically. Download the new version from filee.sh.",

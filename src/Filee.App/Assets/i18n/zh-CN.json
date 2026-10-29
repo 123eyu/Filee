@@ -509,6 +509,7 @@
   "update.install": "更新",
   "update.notice_text_portable": "这是便携版，请下载新的 zip 并解压覆盖当前文件夹，设置会保留。",
   "update.downloading": "正在下载更新… {0}%",
+  "update.downloading_short": "正在下载… {0}%",
   "update.installing_short": "正在更新…",
   "update.installing": "安装程序正在运行，完成后 Filee 会重新启动。",
   "update.failed": "无法自动更新，请从 filee.sh 下载新版本。",

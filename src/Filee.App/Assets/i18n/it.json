@@ -497,6 +497,7 @@
 "update.install": "Aggiorna",
 "update.notice_text_portable": "Questa è la versione portatile.\\nScarica il nuovo zip e decomprimilo sopra questa cartella. Le tue impostazioni vengono conservate.",
 "update.downloading": "Download dell'aggiornamento… {0}%",
+"update.downloading_short": "Download in corso… {0}%",
 "update.installing_short": "Installazione…",
 "update.installing": "Il programma di installazione è in esecuzione. Filee riparte al termine.",
 "update.failed": "Impossibile aggiornare automaticamente. Scarica la nuova versione da filee.sh.",
