@@ -19,6 +19,7 @@ public class ScriptTextTests
     [InlineData("router-export.rsc")]
     [InlineData("install.cmd")]
     [InlineData("query.sql")]
+    [InlineData("files.lst")]
     public void Scripts_and_style_sheets_are_text(string name) => Assert.Equal("txt", FormatRegistry.Detect(name)?.Id);
 
     [Fact]
