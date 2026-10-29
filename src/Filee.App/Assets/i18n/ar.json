@@ -497,6 +497,7 @@
   "update.install": "تحديث",
   "update.notice_text_portable": "هذه هي النسخة المحمولة.\nنزّل ملف ZIP الجديد وفك ضغطه فوق هذا المجلد. ستُحفَظ إعداداتك.",
   "update.downloading": "جارٍ تنزيل التحديث… {0}%",
+  "update.downloading_short": "جارٍ التنزيل… {0}%",
   "update.installing_short": "جارٍ التحديث…",
   "update.installing": "أداة التثبيت قيد التشغيل. سيبدأ Filee مجددًا عند اكتمالها.",
   "update.failed": "تعذّر التحديث تلقائيًا. نزّل الإصدار الجديد من filee.sh.",
