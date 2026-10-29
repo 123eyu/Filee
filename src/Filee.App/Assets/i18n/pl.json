@@ -509,6 +509,7 @@
   "update.install": "Aktualizuj",
   "update.notice_text_portable": "To wersja przenośna.\nPobierz nowy plik zip i rozpakuj go do tego folderu. Ustawienia zostaną zachowane.",
   "update.downloading": "Pobieranie aktualizacji… {0}%",
+  "update.downloading_short": "Pobieranie… {0}%",
   "update.installing_short": "Aktualizowanie…",
   "update.installing": "Instalator działa. Filee uruchomi się ponownie po zakończeniu.",
   "update.failed": "Nie udało się zaktualizować automatycznie. Pobierz nową wersję z filee.sh.",
