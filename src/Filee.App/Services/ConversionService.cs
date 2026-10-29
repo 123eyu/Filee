@@ -213,6 +213,8 @@ public sealed class ConversionService
     private void OnJobFinished(object? sender, ConversionJob job)
     {
         var entry = HistoryEntry.From(job);
+        if (string.IsNullOrWhiteSpace(job.Preset.Name) && job.Preset.NameKey is { } key && _loc[key] == job.PresetDisplayName)
+            entry.PresetNameKey = key;
         entry.WatchRuleId = _watchJobs.GetValueOrDefault(job.Id);
         _store.AddHistory(entry);
         if (_waiting.TryGetValue(job.Id, out var waiting))
