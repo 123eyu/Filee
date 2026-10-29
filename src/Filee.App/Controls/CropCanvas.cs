@@ -1,7 +1,9 @@
 // The crop overlay's stage: the picture on a dimmed backdrop with soft accent glows, the part outside the frame
 // frosted (a tiny copy of the preview drawn large, so nothing is decoded again while dragging), the frame in the
 // accent colour with round handles, a rule-of-thirds grid that fades in while dragging and a size chip that follows
-// the frame. Programmatic changes (reset, ratio, a new picture) ease in; dragging follows the pointer directly.
+// the frame. Programmatic changes (reset, ratio, a new picture) ease in; dragging follows the pointer directly. In the
+// perspective mode the frame gives way to four corners that move on their own (by pointer or keyboard), joined by the
+// outline of the quadrilateral to straighten, with the size chip showing the straightened size.
 
 using System.Diagnostics;
 using System.Globalization;

@@ -1,5 +1,6 @@
 // The crop overlay's arithmetic: ratios and their portrait forms, keyboard nudges, snapping to the centre, the frame
-// in pixels and where the size chip goes.
+// in pixels and where the size chip goes, and for the perspective mode the corners' allowed shapes and moves, the
+// straightened size and when the corners are still a plain rectangle.
 
 using Avalonia;
 using Filee.App.Controls;
@@ -9,7 +10,7 @@ namespace Filee.App.Tests;
 public class CropMathTests
 {
     [Fact]
-    public void A_corner_moves_only_to_a_convex_untwisted_shape_inside_the_picture()
+    public void A_corner_moves_only_to_a_convex_untwisted_shape()
     {
         var square = new CropQuad(new Point(0.2, 0.2), new Point(0.8, 0.2),
             new Point(0.8, 0.8), new Point(0.2, 0.8));
@@ -19,8 +20,6 @@ public class CropMathTests
             new Point(0.6, 0.6), // concave
             new Point(0.5, 0.5), // three collinear points
             new Point(0.9, 0.2), // passes the neighbouring corner
-            new Point(-0.1, 0.2),
-            new Point(0.2, 1.1),
         };
         static Point Rotate(Point p) => new(1 - p.Y, p.X);
 
@@ -59,6 +58,36 @@ public class CropMathTests
 
         var fractional = new CropQuad(new Point(0.6, 0.2), new Point(1, 0), new Point(1, 1), new Point(0, 1));
         Assert.Equal(fractional, CropMath.MoveCorner(CropQuad.Full, 0, fractional.TopLeft, 1, 1));
+    }
+
+    [Fact]
+    public void A_corner_pushed_past_the_edge_stops_on_it()
+    {
+        var nearEdge = new CropQuad(new Point(5 / 1600.0, 0.2), new Point(0.8, 0.2),
+            new Point(0.8, 0.8), new Point(0.2, 0.8));
+        Assert.Equal(nearEdge.With(0, new Point(0, 0.2)),
+            CropMath.MoveCorner(nearEdge, 0, new Point(-50 / 1600.0, 0.2), 1600, 1000));
+        Assert.Equal(nearEdge.With(0, new Point(0, 0)),
+            CropMath.MoveCorner(nearEdge, 0, new Point(-0.3, -0.4), 1600, 1000));
+        Assert.Equal(nearEdge.With(2, new Point(1, 1)),
+            CropMath.MoveCorner(nearEdge, 2, new Point(1.2, 1.5), 1600, 1000));
+
+        var threeFromEdge = nearEdge.With(0, new Point(3 / 1600.0, 0.2));
+        Assert.Equal(nearEdge.With(0, new Point(0, 0.2)), CropMath.NudgeCorner(threeFromEdge, 0, -10, 0, 1600, 1000));
+
+        // Stopped on the edge, the corner would cross the bottom side: still refused.
+        var leaning = new CropQuad(new Point(0.2, 0.2), new Point(0.8, 0.2), new Point(0.8, 0.8), new Point(0, 0.8));
+        Assert.Equal(leaning, CropMath.MoveCorner(leaning, 0, new Point(-1, 0.9), 1600, 1000));
+    }
+
+    [Fact]
+    public void Corners_on_a_whole_pixel_rectangle_are_a_plain_crop()
+    {
+        Assert.Equal(new PixelRect(0, 0, 1600, 1000), CropMath.AxisAlignedRect(CropQuad.Full, 1600, 1000));
+        var nudged = CropMath.NudgeCorner(CropMath.NudgeCorner(CropQuad.Full, 0, 7, 0, 1600, 1000), 3, 7, 0, 1600, 1000);
+        Assert.Equal(new PixelRect(7, 0, 1593, 1000), CropMath.AxisAlignedRect(nudged, 1600, 1000));
+        Assert.Null(CropMath.AxisAlignedRect(CropQuad.Full.With(0, new Point(7 / 1600.0, 0)), 1600, 1000));
+        Assert.Null(CropMath.AxisAlignedRect(CropQuad.Full.With(0, new Point(0.5 / 1600, 0)).With(3, new Point(0.5 / 1600, 1)), 1600, 1000));
     }
 
     [Fact]

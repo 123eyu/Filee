@@ -1,5 +1,7 @@
 // The crop overlay's arithmetic without a window: the ratios of the aspect dial, keyboard nudges, the frame's size in
-// pixels, where the size chip sits next to the frame and where the aspect dial opens.
+// pixels, where the size chip sits next to the frame and where the aspect dial opens. For the perspective mode it holds
+// the four corners (CropQuad), which shapes they may form and how they move, the straightened output size and whether
+// the corners still form a plain rectangle.
 
 using Avalonia;
 
@@ -55,10 +57,13 @@ public static class CropMath
         return true;
     }
 
-    /// <summary>Moves one corner only when the resulting quadrilateral is valid.</summary>
+    /// <summary>
+    /// Moves one corner, stopping it on the picture's edge when the target lies outside, and only when the resulting
+    /// quadrilateral is valid.
+    /// </summary>
     public static CropQuad MoveCorner(CropQuad q, int corner, Point target, int width, int height)
     {
-        var moved = q.With(corner, target);
+        var moved = q.With(corner, new Point(Math.Clamp(target.X, 0, 1), Math.Clamp(target.Y, 0, 1)));
         return IsValidQuad(moved, width, height) ? moved : q;
     }
 
@@ -81,6 +86,26 @@ public static class CropMath
         return new PixelSize(
             Math.Max(1, (int)Math.Round(Math.Max(Length(q.TopLeft, q.TopRight), Length(q.BottomLeft, q.BottomRight)))),
             Math.Max(1, (int)Math.Round(Math.Max(Length(q.TopLeft, q.BottomLeft), Length(q.TopRight, q.BottomRight)))));
+    }
+
+    /// <summary>
+    /// The quadrilateral as a rectangle in original pixels when it already is one: sides along the picture's edges and
+    /// every corner on a whole pixel, as the corners are until they're dragged off the grid. Saving it is then a plain
+    /// crop, with no resampling.
+    /// </summary>
+    public static PixelRect? AxisAlignedRect(CropQuad q, int width, int height)
+    {
+        static int? Whole(double v) => Math.Abs(v - Math.Round(v)) < 1e-6 ? (int)Math.Round(v) : null;
+        var left = Whole(q.TopLeft.X * width);
+        var top = Whole(q.TopLeft.Y * height);
+        var right = Whole(q.BottomRight.X * width);
+        var bottom = Whole(q.BottomRight.Y * height);
+        if (left is not { } l || top is not { } t || right is not { } r || bottom is not { } b
+            || Whole(q.TopRight.X * width) != r || Whole(q.TopRight.Y * height) != t
+            || Whole(q.BottomLeft.X * width) != l || Whole(q.BottomLeft.Y * height) != b
+            || r <= l || b <= t)
+            return null;
+        return new PixelRect(l, t, r - l, b - t);
     }
 
     /// <summary>The aspect dial's choices, clockwise from the top.</summary>

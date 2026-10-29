@@ -654,6 +654,51 @@ public class CropOverlayTests
     }
 
     [AvaloniaFact]
+    public async Task A_corner_dragged_or_nudged_past_the_edge_stops_on_it()
+    {
+        await WithOverlayAsync("en", false, ["harbour.jpg"], (window, vm, _) =>
+        {
+            ClickPerspective(window);
+            var canvas = window.CropCanvas;
+            var start = new CropQuad(new Point(5 / 1600.0, 0.2), new Point(0.6, 0.2), new Point(0.6, 0.8), new Point(0.2, 0.8));
+
+            canvas.NormalizedCorners = start;
+            Pump();
+            var image = canvas.CalculateImageBounds();
+            var from = canvas.TranslatePoint(canvas.CornerScreenPoint(0), window)!.Value;
+            Drag(window, from, from + new Vector(-55 / 1600.0 * image.Width, 0));
+            Assert.Equal(0, canvas.NormalizedCorners.TopLeft.X);
+            Assert.Equal(0.2, canvas.NormalizedCorners.TopLeft.Y, 3);
+
+            canvas.NormalizedCorners = start.With(0, new Point(3 / 1600.0, 0.2));
+            CornerButtons(window)[0].Focus(NavigationMethod.Tab);
+            Pump();
+            Press(window, Key.Left, RawInputModifiers.Shift);
+            Assert.Equal(start.With(0, new Point(0, 0.2)), canvas.NormalizedCorners);
+            return Task.CompletedTask;
+        });
+    }
+
+    [AvaloniaFact]
+    public async Task Only_the_ratio_and_perspective_buttons_fade_while_disabled()
+    {
+        await WithOverlayAsync("en", false, ["harbour.jpg", "tall.jpg"], (window, vm, _) =>
+        {
+            ClickPerspective(window);
+            var dial = window.FindControl<Button>("DialButton")!;
+            Assert.False(dial.IsEffectivelyEnabled);
+            Assert.Equal(0.45, dial.Opacity, 3);
+
+            var skip = window.GetVisualDescendants().OfType<Button>().Single(b => b.Command == vm.SkipCommand);
+            skip.IsEnabled = false;
+            Pump();
+            Assert.False(skip.IsEffectivelyEnabled);
+            Assert.Equal(1, skip.Opacity);
+            return Task.CompletedTask;
+        });
+    }
+
+    [AvaloniaFact]
     public async Task Tab_picks_a_corner_and_arrows_move_it()
     {
         await WithOverlayAsync("en", false, ["harbour.jpg", "tall.jpg"], async (window, vm, _) =>

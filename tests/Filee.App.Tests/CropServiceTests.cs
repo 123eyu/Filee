@@ -1,4 +1,5 @@
-// Tests for CropService and the crop overlay: output resolving, conflict policies, quality, failures and skips.
+// Tests for CropService and the crop overlay: output resolving, conflict policies, quality, failures and skips, and the
+// perspective crop (straightening, orientation, a plain rectangle saved without resampling).
 
 using System.IO;
 using Avalonia;
@@ -91,6 +92,36 @@ public class CropServiceTests
             using var image = new MagickImage(result.OutputPath!);
             Assert.Equal(MagickFormat.Png, image.Format);
             AssertQuadrants(image);
+        }
+        finally
+        {
+            try { Directory.Delete(folder, true); } catch (IOException) { }
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task A_perspective_crop_of_a_plain_rectangle_is_not_resampled()
+    {
+        TestServices.EnsureInitialized("en");
+        var folder = Directory.CreateTempSubdirectory("filee-perspective-rectangle-").FullName;
+        try
+        {
+            var preset = BuiltInData.CreatePresets().Single(p => p.Id == "tool-crop");
+            var plain = Tilted(Directory.CreateDirectory(Path.Combine(folder, "plain")).FullName, "tilted.png");
+            var quad = Tilted(Directory.CreateDirectory(Path.Combine(folder, "quad")).FullName, "tilted.png");
+            var rectangle = new CropQuad(new Point(100.0 / 800, 60.0 / 600), new Point(500.0 / 800, 60.0 / 600),
+                new Point(500.0 / 800, 420.0 / 600), new Point(100.0 / 800, 420.0 / 600));
+            var expected = await CropService.CropFileAsync(plain, 100, 60, 400, 360, preset,
+                AppHost.Get<UserDataStore>(), AppHost.Get<ILocalizer>());
+            var actual = await CropService.CropFileAsync(quad, 0, 0, 800, 600, preset,
+                AppHost.Get<UserDataStore>(), AppHost.Get<ILocalizer>(), corners: rectangle);
+            Assert.Equal(CropStatus.Success, expected.Status);
+            Assert.Equal(CropStatus.Success, actual.Status);
+            using var want = new MagickImage(expected.OutputPath!);
+            using var got = new MagickImage(actual.OutputPath!);
+            Assert.Equal(400u, got.Width);
+            Assert.Equal(360u, got.Height);
+            Assert.Equal(0, got.Compare(want, ErrorMetric.Absolute));
         }
         finally
         {

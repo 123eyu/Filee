@@ -66,10 +66,12 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
-    <Style Selector="Button.tool:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.tool:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <!-- Only the ratio button (off in the perspective mode) and the perspective toggle (off for a PDF) fade; the other
+         tool buttons keep their usual look while disabled, and the ratio boxes the usual look of a disabled number box. -->
+    <Style Selector="Button#DialButton:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton#PerspectiveButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
     </Style>
-    <Style Selector="Button.tool:disabled, ToggleButton.tool:disabled">
+    <Style Selector="Button#DialButton:disabled, ToggleButton#PerspectiveButton:disabled">
       <Setter Property="Opacity" Value="0.45" />
     </Style>
     <Style Selector="Button.corner">

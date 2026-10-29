@@ -150,7 +150,16 @@ public static class CropService
                 image.AutoOrient();
 
                 if (corners is { } quad)
-                    Straighten(image, quad);
+                {
+                    // Corners still on a whole-pixel rectangle need no resampling, which would only soften the picture.
+                    if (CropMath.AxisAlignedRect(quad, (int)image.Width, (int)image.Height) is { } rect)
+                    {
+                        image.Crop(new MagickGeometry(rect.X, rect.Y, (uint)rect.Width, (uint)rect.Height));
+                        image.ResetPage();
+                    }
+                    else
+                        Straighten(image, quad);
+                }
                 else
                 {
                     var clampedX = Math.Clamp(x, 0, Math.Max(0, (int)image.Width - 1));
