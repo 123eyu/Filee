@@ -48,6 +48,15 @@ public partial class GeneralPage : UserControl
             Vm.BrowserFolder = path;
     }
 
+    private async void OnBrowseDownloadFolder(object? sender, RoutedEventArgs e)
+    {
+        if (Vm is null || TopLevel.GetTopLevel(this) is not { } top) return;
+        var start = await top.StorageProvider.TryGetFolderFromPathAsync(
+            string.IsNullOrWhiteSpace(Vm.DownloadFolder) ? Vm.DownloadsFolder : Vm.DownloadFolder.Trim());
+        var folders = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { AllowMultiple = false, SuggestedStartLocation = start });
+        if (folders.FirstOrDefault()?.TryGetLocalPath() is { } path) Vm.DownloadFolder = path;
+    }
+
     private async void OnImport(object? sender, RoutedEventArgs e)
     {
         if (Vm is null || TopLevel.GetTopLevel(this) is not { } top)

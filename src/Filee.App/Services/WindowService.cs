@@ -87,6 +87,29 @@ public sealed class WindowService(ILocalizer loc, IServiceProvider services, Mem
         return dialog.Result;
     }
 
+    public async Task<string?> ChooseDownloadFileAsync(string startFolder, string name)
+    {
+        var owner = new Window
+        {
+            Title = loc["preset.browser_download"],
+            Width = 380,
+            Height = 120,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            Content = new TextBlock { Text = loc["general.download.Ask"], Margin = new Thickness(24) },
+        };
+        PrepareWindow(owner);
+        owner.Show();
+        owner.Activate();
+        try
+        {
+            var start = await owner.StorageProvider.TryGetFolderFromPathAsync(startFolder);
+            var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            { Title = loc["preset.browser_download"], SuggestedFileName = name, ShowOverwritePrompt = true, SuggestedStartLocation = start });
+            return file?.TryGetLocalPath();
+        }
+        finally { owner.Close(); }
+    }
+
     /// <summary>
     /// "Ask every time" (#521): one save dialog for the batch, starting in the first source's folder. One result is
     /// saved under a name (<see cref="AskedLocation.ForFile"/>), several go into a folder. Null when cancelled.

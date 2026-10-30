@@ -1,4 +1,12 @@
 {
+  "general.download_location": "Download save location",
+  "general.download.Default": "Default (Downloads folder)",
+  "general.download.Ask": "Choose a folder every time",
+  "general.download.Custom": "Specified folder",
+  "general.download_hint": "Applies only to Download in the ring. An empty specified folder prompts you to choose; cancelling saves nothing.",
+  "preset.browser_download": "Transferir",
+  "preset.browser_download_caption": "Sem conversão",
+
   "app.name": "Filee",
   "app.tagline": "Arrasta, larga, convertido.",
 

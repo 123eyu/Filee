@@ -337,6 +337,13 @@ public sealed class RadialController(
             return;
         }
 
+        if (preset.IsDownload && web is not null && conversions.DownloadNeedsPicker)
+        {
+            Close(animate: false);
+            _ = DownloadInFolderAsync(sources, preset.Clone(), web);
+            return;
+        }
+
         if (preset.IsTool)
         {
             log.LogInformation("Opening {Preset} for {Count} file(s)", preset.Id, sources.Count);
@@ -368,7 +375,7 @@ public sealed class RadialController(
 
         log.LogInformation("Converting {Count} file(s) with preset {Preset}{Web}{Clipboard}", sources.Count, preset.Id,
             web is null ? "" : " (from a browser)", _toClipboard ? " (from the clipboard)" : "");
-        var job = conversions.Start(sources, preset, showInToast: false, web, _toClipboard);
+        var job = conversions.Start(sources, preset, showInToast: false, web: web, toClipboard: _toClipboard);
         if (job is null || _window is null)
         {
             Close();
@@ -376,6 +383,13 @@ public sealed class RadialController(
         }
         _converted = true;
         ShowProgress(job);
+    }
+
+    private async Task DownloadInFolderAsync(IReadOnlyList<string> files, Preset preset, WebDrop web)
+    {
+        try { await conversions.ChooseNamedDownloadAsync(files, preset, web, windows.ChooseDownloadFileAsync); }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        { log.LogError(ex, "Could not choose the download folder"); }
     }
 
     private async Task MergeInOrderAsync(IReadOnlyList<string> files, Preset preset, WebDrop? web, bool toClipboard)
@@ -654,3 +668,4 @@ public sealed class RadialController(
         _web = web;
     }
 }
+

@@ -22,6 +22,9 @@ public enum PresetKind
     /// <see cref="Preset.Tool"/>). Like a group, never offered where a conversion is picked.
     /// </summary>
     Tool,
+
+    /// <summary>Saves browser-supplied files without conversion. Offered only for a live browser drop.</summary>
+    Download,
 }
 
 /// <summary>
@@ -141,6 +144,9 @@ public sealed class Preset
     /// <summary>True for a <see cref="PresetKind.Group"/>.</summary>
     [JsonIgnore]
     public bool IsGroup => Kind == PresetKind.Group;
+
+    [JsonIgnore]
+    public bool IsDownload => Kind == PresetKind.Download;
 
     /// <summary>True for "Compress into one archive": files and folders go into one archive as they are.</summary>
     [JsonIgnore]

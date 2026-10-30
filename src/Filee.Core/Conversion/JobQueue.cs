@@ -98,39 +98,52 @@ public sealed class JobQueue : IAsyncDisposable
         Directory.CreateDirectory(workDir);
         try
         {
+            if (job.Preset.IsDownload && job.Fetcher is null)
+                throw new InvalidOperationException("Download requires browser source data.");
             if (job.Fetcher is { } fetcher)
                 await FetchSourcesAsync(job, fetcher);
 
-            var planner = _catalog.CreatePlanner();
-            var merge = job.Preset.Pdf.MergeIntoSingle
-                        && job.Preset.TargetFormat == "pdf"
-                        && job.Files.Count > 1
-                        && _pdfMerger is not null;
-            // Any files, one of them or many, archives or not: they go into the archive as they are.
-            var combine = job.Preset.PacksIntoOneArchive && _combiner is not null;
-
-            // One file is enough: a 10-page PDF becomes one 10-page TIFF.
-            var multiPageTiff = job.Preset.Image.MultiPageTiff && job.Preset.TargetFormat == "tiff" && _tiffMerger is not null;
-            // Clips back to back, or pictures one after the other, in the order they were dropped.
-            var join = job.Preset.JoinsIntoOneMedia && _mediaJoiner is not null;
-            // Pictures one under another or side by side, in the order they were dropped.
-            var imageJoiner = job.Preset.JoinsImages ? _catalog.All.OfType<IImageJoiner>().FirstOrDefault() : null;
-
-            if (join)
-                await RunJoinedMediaAsync(job, planner, workDir);
-            else if (imageJoiner is not null)
-                await RunMergedImagesAsync(job, planner, workDir, imageJoiner);
-            else if (merge)
-                await RunMergedAsync(job, planner, workDir);
-            else if (multiPageTiff)
-                await RunMultiPageTiffAsync(job, planner, workDir);
-            else if (combine)
-                await RunCombinedAsync(job, workDir);
+            if (job.Preset.IsDownload)
+            {
+                foreach (var file in job.Files.Where(f => f.Saved && f.State == FileState.Pending))
+                {
+                    file.Outputs.Add(file.SourcePath);
+                    file.Progress = 1;
+                    file.State = FileState.Done;
+                }
+            }
             else
-                await Parallel.ForEachAsync(
-                    job.Files.Select((f, i) => (File: f, Index: i + 1)),
-                    new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = CancellationToken.None },
-                    async (item, _) => await RunFileAsync(job, item.File, item.Index, planner, workDir, finalOutput: true));
+            {
+                var planner = _catalog.CreatePlanner();
+                var merge = job.Preset.Pdf.MergeIntoSingle
+                            && job.Preset.TargetFormat == "pdf"
+                            && job.Files.Count > 1
+                            && _pdfMerger is not null;
+                // Any files, one of them or many, archives or not: they go into the archive as they are.
+                var combine = job.Preset.PacksIntoOneArchive && _combiner is not null;
+
+                // One file is enough: a 10-page PDF becomes one 10-page TIFF.
+                var multiPageTiff = job.Preset.Image.MultiPageTiff && job.Preset.TargetFormat == "tiff" && _tiffMerger is not null;
+                // Clips back to back, or pictures one after the other, in the order they were dropped.
+                var join = job.Preset.JoinsIntoOneMedia && _mediaJoiner is not null;
+
+                var imageJoiner = job.Preset.JoinsImages ? _catalog.All.OfType<IImageJoiner>().FirstOrDefault() : null;
+                if (join)
+                    await RunJoinedMediaAsync(job, planner, workDir);
+                else if (imageJoiner is not null)
+                    await RunMergedImagesAsync(job, planner, workDir, imageJoiner);
+                else if (merge)
+                    await RunMergedAsync(job, planner, workDir);
+                else if (multiPageTiff)
+                    await RunMultiPageTiffAsync(job, planner, workDir);
+                else if (combine)
+                    await RunCombinedAsync(job, workDir);
+                else
+                    await Parallel.ForEachAsync(
+                        job.Files.Select((f, i) => (File: f, Index: i + 1)),
+                        new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = CancellationToken.None },
+                        async (item, _) => await RunFileAsync(job, item.File, item.Index, planner, workDir, finalOutput: true));
+            }
 
             job.State = job.CancellationToken.IsCancellationRequested ? JobState.Cancelled
                 : job.Files.All(f => f.State is FileState.Done or FileState.Skipped) ? JobState.Completed
@@ -179,7 +192,7 @@ public sealed class JobQueue : IAsyncDisposable
                 if (file.State != FileState.Running || file.Saved)
                     return;
                 file.Transfer = p;
-                var value = (p.Fraction ?? 0) * FetchShare;
+                var value = (p.Fraction ?? 0) * (job.Preset.IsDownload ? 1 : FetchShare);
                 if (value > file.Progress)
                     file.Progress = value;
                 Notify(job);
@@ -189,7 +202,7 @@ public sealed class JobQueue : IAsyncDisposable
                 file.SourcePath = await fetcher.FetchAsync(file.SourcePath, progress, job.CancellationToken);
                 file.Saved = true;
                 file.State = FileState.Pending;
-                file.Progress = FetchShare;
+                file.Progress = job.Preset.IsDownload ? 1 : FetchShare;
             }
             catch (OperationCanceledException)
             {
