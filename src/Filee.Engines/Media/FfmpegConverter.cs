@@ -277,7 +277,15 @@ public sealed partial class FfmpegConverter(ILogger? logger = null) : IConverter
             }
             duration = TimeSpan.FromSeconds(clips.Sum(c => c.Info.Duration?.TotalSeconds ?? 0));
             start = 0.05;
-            if (format == "m4a")
+            if (format == "mp4" && MediaJoining.M4sPair(clips) is { } pair)
+            {
+                if (!MediaEncoding.CanCopyVideo("mp4", pair.Video.Info.Video!, media)
+                    || !MediaEncoding.CanCopyAudio("mp4", pair.Audio.Info.Audio!, media))
+                    throw new InvalidOperationException("The selected streams or settings cannot be copied into MP4.");
+                args = MediaJoining.MuxM4sPair(pair.Video, pair.Audio, outputPath);
+                duration = pair.Video.Info.Duration ?? TimeSpan.Zero;
+            }
+            else if (format == "m4a")
             {
                 if (clips.FirstOrDefault(c => c.Info.Audio is null && c.Info.Video is null) is { Path: { } silent })
                     throw new InvalidOperationException($"{Path.GetFileName(silent)} has no sound.");
