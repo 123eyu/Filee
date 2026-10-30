@@ -113,6 +113,13 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         // A speed set outside the editor (a hand-edited preset file) is offered too, instead of being lost.
         AnimationSpeeds = [.. ImageOptions.AnimationSpeeds.Append(_edit.Image.PlaybackSpeed).Distinct().Order()
             .Select(s => new Choice<double>(s, s == 1 ? loc["presets.animation_speed.original"] : SpeedLabel(s)))];
+        SpokenLanguageChoices =
+        [
+            new Choice<string>(WhisperLanguages.Auto, loc["presets.spoken_language.auto"]),
+            .. WhisperLanguages.All
+                .OrderBy(l => l.DisplayName, StringComparer.CurrentCulture)
+                .Select(l => new Choice<string>(l.Code, l.DisplayName))
+        ];
 
         _name = string.IsNullOrWhiteSpace(_edit.Name) ? loc.DisplayName(_edit) : _edit.Name;
         _target = Targets.FirstOrDefault(t => t.Value == _edit.TargetFormat) ?? Targets[1];
@@ -145,6 +152,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _audioCodecValue = _edit.Media.AudioCodec;
         _hardwareEncoding = _edit.Media.HardwareEncoding;
         _caption = _edit.Media.Caption;
+        _spokenLanguage = SpokenLanguageChoices.FirstOrDefault(l => string.Equals(l.Value, _edit.Media.SpokenLanguage, StringComparison.OrdinalIgnoreCase))
+            ?? SpokenLanguageChoices[0];
         _archiveLevel = ArchiveLevels.First(l => l.Value == _edit.Archive.Level);
         _combineIntoOne = _edit.Archive.CombineIntoOne;
         _saveEveryFrame = _edit.Media.SaveEveryFrame;
@@ -218,6 +227,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
 
     /// <summary>Languages Tesseract reads (PdfOptions.OcrLanguage), English first.</summary>
     public IReadOnlyList<Choice<string>> OcrLanguageChoices { get; }
+    /// <summary>The spoken languages Whisper recognizes (MediaOptions.SpokenLanguage), Auto first.</summary>
+    public IReadOnlyList<Choice<string>> SpokenLanguageChoices { get; }
 
     /// <summary>What "Recognize text" needs: Tesseract, or on a Mac Apple Vision (Tesseract only for other languages).</summary>
     public string OcrHint { get; }
@@ -513,6 +524,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     [ObservableProperty] private bool _hardwareEncoding;
     /// <summary>Burn subtitles from speech recognized by Whisper AI (MediaOptions.Caption).</summary>
     [ObservableProperty] private bool _caption;
+    /// <summary>Language spoken in the audio for Whisper transcription (MediaOptions.SpokenLanguage).</summary>
+    [ObservableProperty] private Choice<string> _spokenLanguage;
     [ObservableProperty] private Choice<ArchiveLevel> _archiveLevel;
     [ObservableProperty] private bool _combineIntoOne;
     [ObservableProperty] private bool _saveEveryFrame;
@@ -804,6 +817,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         media.AudioCodec = MediaCodecs.Effective(TargetId, _audioCodecValue);
         media.HardwareEncoding = HardwareEncoding;
         media.Caption = ShowCaption && Caption;
+        media.SpokenLanguage = SpokenLanguage.Value;
         // Only where the option is shown: a box ticked for PNG and left behind by another target saves nothing.
         media.SaveEveryFrame = ShowSaveEveryFrame && SaveEveryFrame;
         media.FrameInterval = media.SaveEveryFrame ? Math.Clamp(FrameInterval, 1, 1000) : 1;

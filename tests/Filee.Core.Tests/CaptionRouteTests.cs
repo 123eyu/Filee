@@ -93,16 +93,8 @@ public class CaptionRouteTests
         Assert.False(SettingsMigrations.ApplyToLibrary(56, presets, profiles)); // once only
 
         Assert.Contains(presets, p => p.Id == "caption-video");
-        if (OperatingSystem.IsWindows())
-        {
-            Assert.Contains("caption-video", video.PresetIds);
-            Assert.Contains("caption-video", audio.PresetIds);
-        }
-        else
-        {
-            Assert.DoesNotContain("caption-video", video.PresetIds);
-            Assert.DoesNotContain("caption-video", audio.PresetIds);
-        }
+        Assert.Contains("caption-video", video.PresetIds);
+        Assert.Contains("caption-video", audio.PresetIds);
     }
 
     [Fact]

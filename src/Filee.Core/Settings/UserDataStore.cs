@@ -962,11 +962,8 @@ internal static class SettingsMigrations
             presets.Insert(at < 0 ? presets.Count : at + 1, caption);
             changed = true;
         }
-        if (OperatingSystem.IsWindows())
-        {
-            changed |= Offer(presets, profiles, "video", caption.Id, "extract-subtitles");
-            changed |= Offer(presets, profiles, "audio", caption.Id, "to-aac");
-        }
+        changed |= Offer(presets, profiles, "video", caption.Id, "extract-subtitles");
+        changed |= Offer(presets, profiles, "audio", caption.Id, "to-aac");
         return changed;
     }
 

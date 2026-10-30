@@ -11,7 +11,7 @@ public class WhisperTests
         var converter = new WhisperConverter();
 
         Assert.Equal("whisper", converter.Id);
-        Assert.Equal("Whisper (AI Captions)", converter.DisplayName);
+        Assert.Equal("Whisper", converter.DisplayName);
         Assert.NotEmpty(converter.Edges);
 
         // Every edge must produce srt directly and require the Caption flag

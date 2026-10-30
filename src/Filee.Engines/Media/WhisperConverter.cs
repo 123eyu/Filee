@@ -1,6 +1,8 @@
 // Transcribes speech in video and audio using OpenAI Whisper (whisper.cpp) into SRT subtitles.
 
+using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Filee.Core.Conversion;
 using Filee.Core.Formats;
 using Filee.Engines.Infrastructure;
@@ -10,11 +12,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Filee.Engines.Media;
 
 /// <summary>
-/// AI-powered speech transcription engine powered by OpenAI Whisper.
+/// Speech transcription engine powered by OpenAI Whisper.
 /// Transcribes speech in video and audio files into SRT subtitles.
 /// </summary>
-public sealed class WhisperConverter : IConverter
+public sealed partial class WhisperConverter : IConverter
 {
+    private static readonly TimeSpan StallTimeout = TimeSpan.FromMinutes(5);
+
     private readonly ILogger _logger;
 
     public WhisperConverter(ILogger<WhisperConverter>? logger = null)
@@ -23,7 +27,7 @@ public sealed class WhisperConverter : IConverter
     }
 
     public string Id => "whisper";
-    public string DisplayName => "Whisper (AI Captions)";
+    public string DisplayName => "Whisper";
     public int MaxParallelism => 1;
 
     public IReadOnlyList<ConversionEdge> Edges { get; } = BuildEdges();
@@ -133,23 +137,24 @@ public sealed class WhisperConverter : IConverter
         var ffmpeg = ffmpegTools.Value.Ffmpeg;
 
         cancellationToken.ThrowIfCancellationRequested();
-        progress?.Report(0.05);
+        progress?.Report(0.02);
 
         // 1. Extract 16kHz mono WAV for Whisper inference (works for both video and audio files)
         var audioWav = Path.Combine(step.WorkDirectory, $"whisper_audio_{Guid.NewGuid():N}.wav");
         var extractArgs = new[]
         {
-            "-y", "-nostdin", "-hide_banner", "-v", "error",
+            "-hide_banner", "-nostdin", "-nostats", "-v", "error", "-y",
             "-i", step.InputPath,
             "-vn", "-ar", "16000", "-ac", "1",
+            "-progress", "pipe:1",
             audioWav
         };
 
-        var extractResult = await ProcessRunner.RunAsync(ffmpeg, extractArgs, TimeSpan.FromMinutes(10), cancellationToken);
+        var extractResult = await FfmpegRunner.RunAsync(ffmpeg, extractArgs, null, cancellationToken, StallTimeout);
         if (extractResult.ExitCode != 0 || !File.Exists(audioWav))
             throw new InvalidOperationException($"FFmpeg failed to extract audio: {extractResult.StandardError}");
 
-        progress?.Report(0.20);
+        progress?.Report(0.10);
         cancellationToken.ThrowIfCancellationRequested();
 
         // 2. Run Whisper CLI transcription (auto-detect language or preset's SpokenLanguage, srt output)
@@ -158,6 +163,7 @@ public sealed class WhisperConverter : IConverter
             ? "auto"
             : step.Preset.Media.SpokenLanguage.Trim();
 
+        var threads = Math.Clamp(Environment.ProcessorCount, 1, 8).ToString(CultureInfo.InvariantCulture);
         var whisperArgs = new[]
         {
             "-m", modelPath,
@@ -165,11 +171,19 @@ public sealed class WhisperConverter : IConverter
             "-osrt",
             "-of", outPrefix,
             "-l", lang,
-            "-t", "4",
-            "-sow"
+            "-t", threads,
+            "-sow",
+            "-pp"
         };
 
-        var whisperResult = await ProcessRunner.RunAsync(whisperCli, whisperArgs, TimeSpan.FromMinutes(30), cancellationToken);
+        var whisperResult = await ProcessRunner.RunAsync(
+            whisperCli,
+            whisperArgs,
+            Timeout.InfiniteTimeSpan,
+            cancellationToken,
+            onOutput: line => ReportWhisperProgress(line, progress),
+            stallTimeout: StallTimeout);
+
         var srtPath = outPrefix + ".srt";
 
         if (!File.Exists(srtPath) || whisperResult.ExitCode != 0)
@@ -177,7 +191,6 @@ public sealed class WhisperConverter : IConverter
 
         var srtContent = await File.ReadAllTextAsync(srtPath, cancellationToken);
 
-        progress?.Report(0.85);
         cancellationToken.ThrowIfCancellationRequested();
 
         // 3. Produce SRT output
@@ -189,4 +202,16 @@ public sealed class WhisperConverter : IConverter
         progress?.Report(1.0);
         return [srtOutput];
     }
+
+    private static void ReportWhisperProgress(string line, IProgress<double>? progress)
+    {
+        if (progress is not null && ProgressPercent().Match(line) is { Success: true } match
+            && int.TryParse(match.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var percent))
+        {
+            progress.Report(0.10 + (Math.Clamp(percent, 0, 100) / 100.0 * 0.88));
+        }
+    }
+
+    [GeneratedRegex(@"progress\s*=\s*(\d{1,3})%")]
+    private static partial Regex ProgressPercent();
 }
