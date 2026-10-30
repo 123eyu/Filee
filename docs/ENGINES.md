@@ -801,6 +801,8 @@ in the preset library only). Video and audio need FFmpeg.
   clip gives its first track FFmpeg can decode, and the clips are copied only when that track has the same number in
   every clip. **Merge audio** always decodes and joins the sound
   into one M4A, so no encoder padding or gap is left between files. Both are in `Media/MediaJoining.cs`.
+  As a special case, a pair of self-contained `.m4s` files, one with only video and one with only audio, is muxed
+  together into one MP4 without re-encoding (in either order). Both codecs and the preset's settings must allow copying.
 - **Video from images**: each picture is fitted into 1920 × 1080 as a JPEG, then shown for the preset's seconds with
   crossfades (`xfade`) of 1 s, at most half a picture's time, or cuts. At most `MediaOptions.MaxSlides` (300)
   pictures, not counting downloads that failed; the queue refuses more before any is converted. A filter graph too
