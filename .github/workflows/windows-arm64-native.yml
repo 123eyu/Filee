@@ -73,7 +73,7 @@ jobs:
           foreach ($file in $rhwp, $unhwp) {
             $name = Split-Path $file -Leaf
             if (-not (Select-String build/fetch-engines.ps1 -SimpleMatch "/$name'")) {
-              Write-Host "::error::build/fetch-engines.ps1 doesn't pin $name: update the url in `$arm64Pins."
+              Write-Host "::error::build/fetch-engines.ps1 doesn't pin ${name}: update the url in `$arm64Pins."
               exit 1
             }
           }
