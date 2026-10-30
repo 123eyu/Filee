@@ -37,10 +37,10 @@
       "kind": "msi"
     },
     "h2orestart": {
-      "version": "0.7.14",
-      "url": "https://github.com/ebandal/H2Orestart/releases/download/v0.7.14/H2Orestart.oxt",
-      "sha256": "CBEA23BC37861361BBC534BC0675E5BC67B36F712072490F82A9BF410D7C04D8",
-      "size": 606257,
+      "version": "0.8.0",
+      "url": "https://github.com/ebandal/H2Orestart/releases/download/v0.8.0/H2Orestart.oxt",
+      "sha256": "F36C19FA6B7DFF1CF34114D926BDC088E6BCFA7FDC93D67EAAFD3F572BE1D62C",
+      "size": 611297,
       "kind": "oxt"
     },
     "ghostscript": {
