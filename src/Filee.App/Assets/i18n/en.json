@@ -11,6 +11,8 @@
   "nav.theme": "Theme",
   "nav.engines": "Engines",
   "nav.about": "About",
+  "nav.collapse": "Collapse sidebar",
+  "nav.expand": "Expand sidebar",
 
   "tray.open": "Open Filee",
   "tray.pause": "Pause shortcuts",
