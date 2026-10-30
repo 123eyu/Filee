@@ -181,6 +181,16 @@ public sealed class Preset
         && Formats.FormatRegistry.FindById(sourceFormat)?.Category == Formats.FormatCategory.Video;
 
     /// <summary>
+    /// True if converting a <paramref name="sourceFormat"/> file transcribes speech into captions
+    /// (<see cref="MediaOptions.Caption"/>): the file is a video or audio.
+    /// </summary>
+    public bool CaptionsVideo(string sourceFormat) =>
+        Media.Caption && TargetFormat == "srt" && Formats.FormatRegistry.FindById(sourceFormat)?.Category is Formats.FormatCategory.Video or Formats.FormatCategory.Audio;
+
+
+
+
+    /// <summary>
     /// True if converting a <paramref name="sourceFormat"/> file recognizes its text first (<see cref="PdfOptions.Ocr"/>):
     /// the file is a PDF or a picture and the target one of <see cref="PdfOptions.OcrTargets"/>.
     /// </summary>
@@ -949,6 +959,17 @@ public sealed class MediaOptions
     /// fails with <c>error.no_motion_photo</c>.
     /// </summary>
     public bool ExtractMotionPhoto { get; set; }
+
+    /// <summary>
+    /// Transcribes speech using Whisper AI to an SRT subtitle file.
+    /// </summary>
+    public bool Caption { get; set; }
+
+    /// <summary>
+    /// Spoken language code for transcription (e.g. "auto", "en", "hi", "es", "fr", "de", "ja", "zh").
+    /// Passed to whisper.cpp (-l). Defaults to "auto".
+    /// </summary>
+    public string SpokenLanguage { get; set; } = "auto";
 
     /// <summary>
     /// Video → JPG (or HEIC for an iPhone): a Live / Motion Photo of a short clip instead of one still frame. Only for
