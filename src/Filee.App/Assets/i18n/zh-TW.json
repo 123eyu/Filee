@@ -1286,5 +1286,10 @@
   "whats_new.2_0_0.languages.text": "在英語、韓語、中文和波蘭語之外，新增西班牙語、印地語、日語、俄語、阿拉伯語和巴西葡萄牙語。",
   "whats_new.2_0_0.more.title": "還有更多",
   "whats_new.2_0_0.more.text": "可以只把一個環形工具列還原為初始設定、搜尋全部歷史記錄，並透過 LibreOffice 轉換古吉拉特語、印地語或阿拉伯語文件。",
-  "preset.extract_motion.donut": "擷取原況/動態相片影片"
+  "preset.extract_motion.donut": "擷取原況/動態相片影片",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

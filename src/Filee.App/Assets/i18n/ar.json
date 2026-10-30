@@ -1265,5 +1265,10 @@
   "whats_new.2_0_0.languages.text": "تتوفر الآن الإسبانية والهندية واليابانية والروسية والعربية والبرتغالية البرازيلية، إلى جانب الإنجليزية والكورية والصينية والبولندية.",
   "whats_new.2_0_0.more.title": "والمزيد من التحسينات",
   "whats_new.2_0_0.more.text": "يمكنك إعادة قائمة دائرية واحدة إلى إعداداتها الافتراضية، والبحث في سجل التحويلات بالكامل، وتحويل المستندات الغوجاراتية والهندية والعربية باستخدام LibreOffice.",
-  "preset.extract_motion.donut": "استخراج فيديو Live Photo"
+  "preset.extract_motion.donut": "استخراج فيديو Live Photo",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

@@ -1266,5 +1266,10 @@
   "whats_new.2_0_0.languages.text": "เพิ่มภาษาสเปน ฮินดี ญี่ปุ่น รัสเซีย อาหรับ และโปรตุเกสบราซิล ร่วมกับอังกฤษ เกาหลี จีน และโปแลนด์",
   "whats_new.2_0_0.more.title": "และอีกมากมาย",
   "whats_new.2_0_0.more.text": "รีเซ็ตโดนัทแต่ละอันกลับเป็นค่าเริ่มต้น ค้นหาประวัติการแปลงไฟล์ทั้งหมด และแปลงเอกสารภาษาคุชราต ฮินดี หรืออาหรับผ่าน LibreOffice",
-  "preset.extract_motion.donut": "ดึงวิดีโอจาก Live Photo"
+  "preset.extract_motion.donut": "ดึงวิดีโอจาก Live Photo",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

@@ -1264,5 +1264,10 @@
   "whats_new.2_0_0.languages.text": "Spanisch, Hindi, Japanisch, Russisch, Arabisch und brasilianisches Portugiesisch ergänzen Englisch, Koreanisch, Chinesisch und Polnisch.",
   "whats_new.2_0_0.more.title": "Und noch mehr",
   "whats_new.2_0_0.more.text": "Setze einzelne Ringmenüs zurück, durchsuche den gesamten Verlauf und konvertiere Dokumente auf Gujarati, Hindi oder Arabisch mit LibreOffice.",
-  "preset.extract_motion.donut": "Video extrahieren"
+  "preset.extract_motion.donut": "Video extrahieren",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

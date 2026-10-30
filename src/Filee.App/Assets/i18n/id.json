@@ -1264,5 +1264,10 @@
   "whats_new.2_0_0.languages.text": "Bahasa Spanyol, Hindi, Jepang, Rusia, Arab, dan Portugis Brasil bergabung dengan bahasa Inggris, Korea, Mandarin, dan Polandia.",
   "whats_new.2_0_0.more.title": "Dan masih banyak lagi",
   "whats_new.2_0_0.more.text": "Atur ulang satu menu donut ke bawaan, cari seluruh riwayat Anda, dan konversi dokumen Gujarati, Hindi, atau Arab melalui LibreOffice.",
-  "preset.extract_motion.donut": "Ekstrak video"
+  "preset.extract_motion.donut": "Ekstrak video",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

@@ -1286,5 +1286,10 @@
   "whats_new.2_0_0.languages.text": "O espanhol, o hindi, o japonês, o russo, o árabe e o português do Brasil juntam-se ao inglês, ao coreano, ao chinês e ao polaco.",
   "whats_new.2_0_0.more.title": "E mais algumas novidades",
   "whats_new.2_0_0.more.text": "Repõe os valores de origem de uma só barra, pesquisa em todo o histórico e converte documentos em guzerate, hindi ou árabe através do LibreOffice.",
-  "preset.extract_motion.donut": "Extrair vídeo"
+  "preset.extract_motion.donut": "Extrair vídeo",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

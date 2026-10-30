@@ -93,6 +93,55 @@ public class BrowserDropTests
         }
     }
 
+    [AvaloniaFact]
+    public void Browser_drop_on_a_back_face_folder_slice_copies_the_original_bytes()
+    {
+        TestServices.EnsureInitialized("en");
+        var store = AppHost.Get<UserDataStore>();
+        var destination = Directory.CreateTempSubdirectory("filee-copy-drop-").FullName;
+        var preset = new Filee.Core.Presets.Preset
+        {
+            Name = "Folder",
+            Kind = Filee.Core.Presets.PresetKind.CopyToFolder,
+            TargetFormat = Filee.Core.Presets.Preset.CopyTarget,
+            Output = new() { Location = Filee.Core.Presets.OutputLocation.CustomFolder, CustomFolder = destination }
+        };
+        var profile = store.Profiles.Single(p => p.Id == "images");
+        var before = profile.BackPresetIds;
+        var radial = AppHost.Get<RadialController>();
+        var motion = Motion.Enabled;
+        try
+        {
+            store.Presets.Add(preset); profile.BackPresetIds = [preset.Id];
+            Motion.Set(false);
+            var file = VirtualFile.Create("cat.png", Png);
+            using var data = ChromePicture(file);
+            radial.ShowForDrag(500, 500);
+            var window = radial.Window!;
+            var root = window.FindControl<Panel>("Root")!;
+            var donut = window.DonutControl;
+            root.RaiseEvent(new DragEventArgs(DragDrop.DragEnterEvent, data, root, new Point(5, 5), KeyModifiers.Control));
+            Pump(); donut.Flip(); Pump();
+            var model = AppHost.Get<RadialViewModel>();
+            Assert.True(model.IsBackFace);
+            var (at, id) = FirstSlice(donut, model);
+            Assert.Equal(preset.Id, id);
+            root.RaiseEvent(new DragEventArgs(DragDrop.DropEvent, data, root, donut.TranslatePoint(at, root)!.Value, KeyModifiers.Control));
+            var job = WaitFor(AppHost.Get<ConversionService>().Jobs[0]);
+            Assert.Equal(JobState.Completed, job.State);
+            var output = Assert.Single(job.Outputs);
+            Assert.Equal(Path.Combine(destination, "cat.png"), output);
+            Assert.Equal(Png, File.ReadAllBytes(output));
+            Assert.True(file.Disposed);
+        }
+        finally
+        {
+            radial.Close(animate: false); Motion.Set(motion);
+            profile.BackPresetIds = before; store.Presets.Remove(preset);
+            Directory.Delete(destination, recursive: true);
+        }
+    }
+
     private static ConversionJob WaitFor(JobViewModel vm)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(60);

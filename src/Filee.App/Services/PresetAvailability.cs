@@ -105,6 +105,9 @@ public sealed class PresetAvailability
     private PresetJudgement Evaluate(Preset preset, IReadOnlyList<FileFormat> formats,
         Func<RoutePlanner> installedPlanner, Func<Func<RoutePlanner, bool>, EnginePackageState?> packageEnabling)
     {
+        if (preset.IsCopyToFolder)
+            return new(PresetUse.Usable, null);
+
         if (preset.IsClipTool)
         {
             // Any video among the files: the others are left out when the clip window opens.

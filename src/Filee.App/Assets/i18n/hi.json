@@ -1266,5 +1266,10 @@
   "whats_new.2_0_0.languages.text": "अंग्रेज़ी, कोरियाई, चीनी और पोलिश के साथ अब स्पैनिश, हिन्दी, जापानी, रूसी, अरबी और ब्राज़ीलियाई पुर्तगाली भी।",
   "whats_new.2_0_0.more.title": "और भी थोड़ा",
   "whats_new.2_0_0.more.text": "एक ही डोनट को डिफ़ॉल्ट पर रीसेट करें, पूरा इतिहास खोजें, और गुजराती, हिन्दी या अरबी दस्तावेज़ LibreOffice से बदलें।",
-  "preset.extract_motion.donut": "लाइव फ़ोटो वीडियो निकालें"
+  "preset.extract_motion.donut": "लाइव फ़ोटो वीडियो निकालें",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

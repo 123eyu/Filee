@@ -86,6 +86,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
                     f.Id == FormatRegistry.Folder ? loc["presets.target_folder"] : f.DisplayName,
                     FormatLabels.Category(loc, f.Category))),
         ];
+        if (preset.IsCopyToFolder)
+            Targets = [new Choice<string>(Preset.CopyTarget, loc["presets.copy_to_folder"])];
         ResizeModes = Enum.GetValues<ResizeMode>().Select(v => new Choice<ResizeMode>(v, loc[$"presets.resize.{v}"])).ToList();
         Rotations = Enum.GetValues<ImageRotation>().Select(v => new Choice<ImageRotation>(v, loc[$"presets.rotation.{v}"])).ToList();
         Flips = Enum.GetValues<ImageFlip>().Select(v => new Choice<ImageFlip>(v, loc[$"presets.flip.{v}"])).ToList();
@@ -104,6 +106,13 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         Locations = [.. Enum.GetValues<OutputLocation>().Select(v => new Choice<OutputLocation?>(v, loc[$"presets.location.{v}"])),
             new Choice<OutputLocation?>(null, loc["presets.location.Ask"])];
         Conflicts = Enum.GetValues<ConflictPolicy>().Select(v => new Choice<ConflictPolicy>(v, loc[$"presets.conflict.{v}"])).ToList();
+        if (preset.IsCopyToFolder)
+        {
+            Locations = Locations.Where(l => l.Value is null or OutputLocation.CustomFolder).ToList();
+            Conflicts = Conflicts.Where(c => c.Value == ConflictPolicy.Rename).ToList();
+            _edit.Output.Location = OutputLocation.CustomFolder;
+            _edit.Output.Conflict = ConflictPolicy.Rename;
+        }
         TiffCompressions = Enum.GetValues<TiffCompression>().Select(v => new Choice<TiffCompression>(v, v.ToString().ToUpperInvariant())).ToList();
         FitsTiffModes = Enum.GetValues<FitsTiffMode>().Select(v => new Choice<FitsTiffMode>(v, loc[$"presets.fits_tiff.{v}"])).ToList();
         MediaQualities = Enum.GetValues<MediaQuality>().Select(v => new Choice<MediaQuality>(v, loc[$"presets.media_quality.{v}"])).ToList();
@@ -228,6 +237,11 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     }
 
     public string PresetId => _original.Id;
+    public bool IsCopyToFolder => _original.IsCopyToFolder;
+    public bool ShowConversionOutput => !IsCopyToFolder;
+    public string? DestinationError => IsCopyToFolder && Location.Value is not null && string.IsNullOrWhiteSpace(CustomFolder)
+        ? _loc["presets.copy_choose_folder"] : null;
+
     public bool IsTool => _original.IsTool;
     public bool CanChangeTarget => !IsTool;
 
@@ -415,6 +429,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     private Choice<PdfPageSize> _pageSize;
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowSubfolder), nameof(ShowCustomFolder))]
+    [NotifyPropertyChangedFor(nameof(DestinationError), nameof(IsValid))]
     private Choice<OutputLocation?> _location;
 
     [ObservableProperty] private Choice<ConflictPolicy> _conflict;
@@ -542,7 +557,9 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     [ObservableProperty] private string _subfolderName;
     /// <summary>The subfolder only for a file that becomes several (OutputRule.SubfolderOnlyForSeveralFiles).</summary>
     [ObservableProperty] private bool _subfolderOnlyForSeveralFiles;
-    [ObservableProperty] private string _customFolder;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DestinationError), nameof(IsValid))]
+    private string _customFolder;
     [ObservableProperty] private string _pattern;
     [ObservableProperty] private bool _keepDates;
     /// <summary>Geospatial targets: the result is saved as one ZIP (OutputRule.ZipResult).</summary>
@@ -753,7 +770,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     private static double SizeLimit(decimal? megabytes) => (double)Math.Clamp(megabytes ?? 0, 0, 4096);
 
     public string? NameError => string.IsNullOrWhiteSpace(Name) ? _loc["presets.name_required"] : null;
-    public bool IsValid => NameError is null && SizeRangeError is null;
+    public bool IsValid => NameError is null && SizeRangeError is null && DestinationError is null;
 
     /// <summary>A size from the range's boxes in megabytes.</summary>
     private decimal? Megabytes(decimal? size) => ImageSizeUnit.Value == FileSizeUnit.KB ? size / 1000 : size;
@@ -916,7 +933,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         output.KeepDates = KeepDates;
         // Only for geospatial targets, where it is offered: a box ticked for Shapefile must not zip a later PNG.
         output.ZipResult = ShowZipResult && ZipResult;
-        output.ReplaceOriginal = ReplaceOriginal;
+        output.ReplaceOriginal = !IsCopyToFolder && ReplaceOriginal;
         return true;
     }
 

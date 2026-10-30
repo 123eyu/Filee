@@ -1264,5 +1264,10 @@
 "whats_new.2_0_0.languages.text": "Spagnolo, hindi, giapponese, russo, arabo e portoghese brasiliano si uniscono a inglese, coreano, cinese e polacco.",
 "whats_new.2_0_0.more.title": "E qualcosa in più",
 "whats_new.2_0_0.more.text": "Ripristina un singolo donut ai valori predefiniti, cerca in tutta la cronologia e converti documenti in gujarati, hindi o arabo tramite LibreOffice.",
-"preset.extract_motion.donut": "Estrai video"
+"preset.extract_motion.donut": "Estrai video",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }
