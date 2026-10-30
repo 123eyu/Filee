@@ -566,6 +566,8 @@
 "triggers.record": "Registra",
 "triggers.recording": "Premi una combinazione di tasti…",
 "triggers.clear": "Cancella",
+"triggers.clipboard": "Converti il contenuto degli appunti",
+"triggers.clipboard_note": "Prima i file copiati, altrimenti un'immagine copiata (uno screenshot fatto tenendo premuto Control). Il risultato la sostituisce negli appunti, pronto da incollare; il risultato di un'immagine viene salvato dove finiscono i file dal browser. Se non c'è nessuno dei due, non succede nulla.",
 "triggers.recording_key": "Premi un tasto…",
 "triggers.flip_title": "Capovolgi il donut",
 "triggers.flip_description": "Mentre il donut è aperto, questo tasto o un giro della rotellina del mouse ne mostra il retro. Ogni donut ha il suo retro in Barra donut.",
