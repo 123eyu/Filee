@@ -497,7 +497,7 @@ public class RenderTests
             editor.Target = editor.Targets.Single(t => t.Value == "jpg");
             Assert.False(editor.ShowVideoMaxSize);
             Assert.True(editor.ShowQuality);
-            editor.ImageMaxSizeMb = 1.5m;
+            editor.ImageMaxSize = 1.5m;
             Assert.True(editor.Apply());
             Assert.Equal((0.0, 1.5), (added[^1].Media.MaxSizeMb, added[^1].Image.MaxSizeMb));
 

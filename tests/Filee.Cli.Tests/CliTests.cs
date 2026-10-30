@@ -381,6 +381,51 @@ public sealed class CliTests : IDisposable
         Assert.Equal(OperatingSystem.IsWindows(), output.Contains("optional engines", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task A_picture_under_the_minimum_is_written_with_its_notice_also_after_a_step_on_the_way()
+    {
+        // #662. A multi-page TIFF and a merge first turn the files into pages or PNGs: the line for the file the result
+        // belongs to is printed once, at the end, with the result and the notice.
+        AddPresets(
+            new Preset { Id = "min-png", Name = "Min PNG", TargetFormat = "png", Image = { MinSizeMb = 1 } },
+            new Preset { Id = "min-tiff", Name = "Min TIFF", TargetFormat = "tiff", Image = { MultiPageTiff = true, MinSizeMb = 1 } },
+            new Preset
+            {
+                Id = "min-merge",
+                Name = "Min merge",
+                TargetFormat = "png",
+                Image = { JoinIntoOne = true, MinSizeMb = 1 },
+                Output = { FileNamePattern = "{name}_merged" }
+            });
+        string notice;
+        await using (var host = CliHost.Create(_settings))
+            notice = host.Texts["notice.under_min_size"];
+        var a = Png("a.png");
+        var b = Png("b.png");
+        var logo = Path.Combine(_folder, "logo.svg");
+        File.WriteAllText(logo, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"30\"><rect width=\"40\" height=\"30\" fill=\"teal\"/></svg>");
+
+        foreach (var (args, first, result) in new (string[], string, string)[]
+                 {
+                     (["convert", a, "--preset", "min-png", "--output", Path.Combine(_folder, "out")], "a.png", Path.Combine("out", "a.png")),
+                     (["convert", a, b, "--preset", "min-tiff"], "a.png", "a.tiff"),
+                     (["convert", logo, b, "--preset", "min-merge"], "logo.svg", "logo_merged.png"),
+                 })
+        {
+            var (code, output, errors) = await Run(args);
+            Assert.True(code == Cli.Success, errors + output);
+            var line = Assert.Single(output.Split('\n'), l => l.StartsWith("ok", StringComparison.Ordinal) && l.Contains(first, StringComparison.Ordinal)
+                && l.IndexOf(first, StringComparison.Ordinal) < l.IndexOf("->", StringComparison.Ordinal));
+            Assert.Contains(result, line, StringComparison.Ordinal);
+            Assert.Contains(notice, line, StringComparison.Ordinal);
+
+            (code, output, _) = await Run([.. args, "--json", "--overwrite"]);
+            Assert.Equal(Cli.Success, code);
+            using var json = System.Text.Json.JsonDocument.Parse(output);
+            Assert.Equal(notice, json.RootElement.GetProperty("files")[0].GetProperty("notice").GetString());
+        }
+    }
+
     /// <summary>Adds presets to the settings folder the CLI runs with.</summary>
     private void AddPresets(params Preset[] presets)
     {
