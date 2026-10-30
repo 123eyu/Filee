@@ -87,7 +87,8 @@
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:NavItem">
               <!-- Fills the whole row, so the tooltip (collapsed only) shows anywhere on it -->
-              <Border Background="Transparent" Padding="12,9" ToolTip.Tip="{Binding Tip}" ToolTip.Placement="Right">
+              <Border Background="Transparent" Padding="12,9" ToolTip.Tip="{Binding Tip}" ToolTip.Placement="Right"
+                      AutomationProperties.Name="{Binding Title}">
                 <StackPanel Classes="navitem" Orientation="Horizontal" Spacing="12">
                   <PathIcon Classes="navicon" Width="17" Height="17" Data="{Binding Icon}" />
                   <TextBlock Text="{Binding Title}" VerticalAlignment="Center" IsVisible="{Binding ShowTitle}" />
