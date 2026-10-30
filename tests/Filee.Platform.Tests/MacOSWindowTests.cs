@@ -1,4 +1,4 @@
-// Raising an existing window must preserve its native class and avoid panel-only configuration (#805).
+// Topmost windows use a panel while shown, then restore their original class/style when hidden or before close (#805).
 // Objective-C test doubles exercise the real interop calls without creating AppKit UI on xUnit's worker thread.
 
 using System.Runtime.InteropServices;
@@ -9,7 +9,7 @@ namespace Filee.Platform.Tests;
 public sealed class MacOSWindowTests
 {
     [Fact]
-    public void Raising_a_window_repeatedly_preserves_its_native_class_and_space_behavior()
+    public void Raising_and_restoring_a_window_repeatedly_restores_its_native_class_and_style()
     {
         if (!OperatingSystem.IsMacOS())
         {
@@ -27,50 +27,111 @@ public sealed class MacOSWindowTests
         }
 
         nint behavior = (1 << 1) | (1 << 6) | (1 << 7) | (1 << 9) | (1 << 16) | (1 << 17) | (1 << 18);
+        const nint nonactivatingPanel = 1 << 7;
+        const nint unrelatedStyle = (1 << 2) | (1 << 11);
+        nint style = unrelatedStyle;
         nint level = 0;
         var orders = 0;
-        var panelConfigurationCalls = 0;
+        var hidesOnDeactivate = true;
+        var styleChanges = 0;
+        var hidesOnDeactivateChanges = 0;
         GetInteger getBehavior = (_, _) => behavior;
-        GetInteger getStyle = (_, _) => 0;
+        GetInteger getStyle = (_, _) => style;
         SetInteger setBehavior = (_, _, value) => behavior = value;
         SetInteger setLevel = (_, _, value) => level = value;
-        SetInteger configurePanel = (_, _, _) => panelConfigurationCalls++;
+        SetInteger setStyle = (_, _, value) =>
+        {
+            style = value;
+            styleChanges++;
+        };
+        SetInteger setHidesOnDeactivate = (_, _, value) =>
+        {
+            hidesOnDeactivate = value != 0;
+            hidesOnDeactivateChanges++;
+        };
         SendAction orderFront = (_, _) => orders++;
-        Delegate[] callbacks = [getBehavior, getStyle, setBehavior, setLevel, configurePanel, orderFront];
+        Delegate[] callbacks = [getBehavior, getStyle, setBehavior, setLevel, setStyle, setHidesOnDeactivate, orderFront];
 
         var baseClass = AllocateClass(GetClass("NSObject"), "FileeRaiseTopmostTestWindow", 0);
         Assert.NotEqual(0, baseClass);
-        nint windowClass = 0, panelClass = 0, window = 0;
+        nint windowClass = 0, panelClass = 0, window = 0, foreign = 0;
         try
         {
             AddMethod(baseClass, "collectionBehavior", getBehavior, "q@:");
             AddMethod(baseClass, "styleMask", getStyle, "q@:");
             AddMethod(baseClass, "setCollectionBehavior:", setBehavior, "v@:q");
             AddMethod(baseClass, "setLevel:", setLevel, "v@:q");
-            AddMethod(baseClass, "setStyleMask:", configurePanel, "v@:q");
-            AddMethod(baseClass, "setHidesOnDeactivate:", configurePanel, "v@:q");
+            AddMethod(baseClass, "setStyleMask:", setStyle, "v@:q");
+            AddMethod(baseClass, "setHidesOnDeactivate:", setHidesOnDeactivate, "v@:q");
             AddMethod(baseClass, "orderFrontRegardless", orderFront, "v@:");
             RegisterClass(baseClass);
+
+            var platform = new MacOSPlatformServices();
+            platform.RaiseTopmost(0);
+            platform.RestoreWindow(0);
+            foreign = Send(Send(baseClass, Selector("alloc")), Selector("init"));
+            Assert.NotEqual(0, foreign);
+            platform.RaiseTopmost(foreign);
+            platform.RestoreWindow(foreign);
+            Assert.Equal(baseClass, ObjectClass(foreign));
+            Assert.Equal(unrelatedStyle, style);
+            Assert.True(hidesOnDeactivate);
+            Assert.Equal(0, styleChanges);
+            Assert.Equal(0, hidesOnDeactivateChanges);
+            orders = 0;
+
             windowClass = RegisterSubclass(baseClass, "AvnWindow");
             panelClass = RegisterSubclass(baseClass, "AvnPanel");
             window = Send(Send(windowClass, Selector("alloc")), Selector("init"));
             Assert.NotEqual(0, window);
 
-            var platform = new MacOSPlatformServices();
             for (var i = 1; i <= 3; i++)
             {
                 platform.RaiseTopmost(window);
-                Assert.Equal(windowClass, ObjectClass(window));
+                Assert.Equal(panelClass, ObjectClass(window));
                 Assert.Equal((nint)(1 | (1 << 6) | (1 << 8)), behavior);
+                Assert.Equal(unrelatedStyle | nonactivatingPanel, style);
+                Assert.False(hidesOnDeactivate);
                 Assert.Equal((nint)3, level);
-                Assert.Equal(i, orders);
-                Assert.Equal(0, panelConfigurationCalls);
+                Assert.Equal(2 * i - 1, orders);
+                Assert.Equal(2 * i - 1, styleChanges);
+                Assert.Equal(i, hidesOnDeactivateChanges);
+
+                platform.RaiseTopmost(window);
+                Assert.Equal(panelClass, ObjectClass(window));
+                Assert.Equal(unrelatedStyle | nonactivatingPanel, style);
+                Assert.False(hidesOnDeactivate);
+                Assert.Equal(2 * i, orders);
+                Assert.Equal(2 * i - 1, styleChanges);
+                Assert.Equal(i, hidesOnDeactivateChanges);
+
+                platform.RestoreWindow(window);
+                Assert.Equal(windowClass, ObjectClass(window));
+                Assert.Equal(unrelatedStyle, style);
+                Assert.False(hidesOnDeactivate);
+                Assert.Equal(2 * i, styleChanges);
+
+                platform.RestoreWindow(window);
+                Assert.Equal(windowClass, ObjectClass(window));
+                Assert.Equal(unrelatedStyle, style);
+                Assert.Equal(2 * i, styleChanges);
             }
+
+            var styleChangesBeforeForeignRestore = styleChanges;
+            var hidesOnDeactivateChangesBeforeForeignRestore = hidesOnDeactivateChanges;
+            platform.RaiseTopmost(foreign);
+            platform.RestoreWindow(foreign);
+            Assert.Equal(baseClass, ObjectClass(foreign));
+            Assert.Equal(unrelatedStyle, style);
+            Assert.Equal(styleChangesBeforeForeignRestore, styleChanges);
+            Assert.Equal(hidesOnDeactivateChangesBeforeForeignRestore, hidesOnDeactivateChanges);
         }
         finally
         {
             if (window != 0)
                 Send(window, Selector("release"));
+            if (foreign != 0)
+                Send(foreign, Selector("release"));
             if (panelClass != 0)
                 DisposeClass(panelClass);
             if (windowClass != 0)

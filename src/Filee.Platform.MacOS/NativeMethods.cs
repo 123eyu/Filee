@@ -131,11 +131,33 @@ internal static class NativeMethods
         behavior &= ~((1 << 16) | (1 << 17) | (1 << 18));
         // Finder can occupy a full-screen Space that would otherwise hide another app's toolbar.
         SendInteger(window, sel_registerName("setCollectionBehavior:"), behavior);
-        // Keep the native class selected when Avalonia created the window. Changing an initialized AvnWindow into
-        // AvnPanel skips NSPanel initialization and breaks AppKit's KVO cleanup when the window is released (#805).
-        // A non-activating panel for another app's full-screen Space (#251) must be created as a panel from the start.
+        // A non-activating panel can join another app's full-screen Space while Filee remains in the Dock (#251).
+        // Restore AvnWindow when hidden and before close so AppKit's KVO cleanup sees the initialized class (#805).
+        var panel = objc_getClass("AvnPanel");
+        if (panel != 0 && object_getClass(window) == objc_getClass("AvnWindow"))
+        {
+            object_setClass(window, panel);
+            const nint nonactivatingPanel = 1 << 7;
+            SendInteger(window, sel_registerName("setStyleMask:"), Send(window, sel_registerName("styleMask")) | nonactivatingPanel);
+            SendInteger(window, sel_registerName("setHidesOnDeactivate:"), 0);
+        }
         SendInteger(window, sel_registerName("setLevel:"), 3);
         SendVoid(window, sel_registerName("orderFrontRegardless"));
+    }
+
+    internal static void RestoreWindow(nint window)
+    {
+        if (window == 0)
+            return;
+
+        var panel = objc_getClass("AvnPanel");
+        var avnWindow = objc_getClass("AvnWindow");
+        if (panel == 0 || avnWindow == 0 || object_getClass(window) != panel)
+            return;
+
+        const nint nonactivatingPanel = 1 << 7;
+        SendInteger(window, sel_registerName("setStyleMask:"), Send(window, sel_registerName("styleMask")) & ~nonactivatingPanel);
+        object_setClass(window, avnWindow);
     }
 
     /// <summary>
@@ -417,6 +439,12 @@ internal static class NativeMethods
 
     [DllImport(ObjC)]
     private static extern nint objc_getClass([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
+
+    [DllImport(ObjC)]
+    private static extern nint object_getClass(nint instance);
+
+    [DllImport(ObjC)]
+    private static extern nint object_setClass(nint instance, nint cls);
 
     [DllImport(ObjC)]
     private static extern nint sel_registerName([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
