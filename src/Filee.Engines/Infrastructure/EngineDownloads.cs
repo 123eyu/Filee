@@ -45,6 +45,7 @@ public static class EngineDownloads
         new("ffmpeg", ["ffmpeg"], 272_000_000, ["ffmpeg"]),
         new("calibre", ["calibre"], 663_000_000, ["calibre"]),
         new("tesseract", ["tesseract"], 168_000_000, ["tesseract"]),
+        .. (OperatingSystem.IsWindows() ? [new EnginePackage("whisper", ["whisper", "whisper-model"], 156_880_105, ["whisper"])] : Array.Empty<EnginePackage>()),
     ];
 
     /// <summary>Total download size of a package in bytes.</summary>
