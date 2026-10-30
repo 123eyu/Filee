@@ -23,8 +23,12 @@ public class ClipboardShortcutTests
     /// <summary>A shortcut as a user sets it up: their own keys, the clipboard switch on.</summary>
     private static TriggerGesture Chosen() => new()
     {
-        Kind = TriggerKind.KeyChord, Modifiers = ModifierKeys.Ctrl | ModifierKeys.Alt, Key = "V",
-        Button = TriggerMouseButton.None, Scope = TriggerScope.Anywhere, Clipboard = true,
+        Kind = TriggerKind.KeyChord,
+        Modifiers = ModifierKeys.Ctrl | ModifierKeys.Alt,
+        Key = "V",
+        Button = TriggerMouseButton.None,
+        Scope = TriggerScope.Anywhere,
+        Clipboard = true,
     };
 
     [Fact]

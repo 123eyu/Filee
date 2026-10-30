@@ -33,8 +33,12 @@ public class ClipboardShortcutTests
     {
         var chosen = new TriggerGesture
         {
-            Kind = TriggerKind.KeyChord, Modifiers = ModifierKeys.Ctrl | ModifierKeys.Alt, Key = "V",
-            Button = TriggerMouseButton.None, Scope = TriggerScope.Anywhere, Clipboard = true,
+            Kind = TriggerKind.KeyChord,
+            Modifiers = ModifierKeys.Ctrl | ModifierKeys.Alt,
+            Key = "V",
+            Button = TriggerMouseButton.None,
+            Scope = TriggerScope.Anywhere,
+            Clipboard = true,
         };
         Assert.True(chosen.Clone().Clipboard);
 
