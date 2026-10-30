@@ -55,7 +55,7 @@
 <table>
   <tr>
     <td width="33%" valign="top">
-      <b>Proprio dove hai il cursore</b><br>
+      <b>Proprio dove sta il cursore</b><br>
       Nessuna finestra dell'app da aprire.
       I formati compaiono dove ti trovi già, solo quelli che hanno senso per i file che trascini.
     </td>
@@ -88,10 +88,10 @@ Scarica da [Releases](https://github.com/KnifeLemon/Filee/releases/latest).
   - Setup è l'installer proprio di Filee, nelle lingue di Filee, e non richiede altro sul PC.
   - Può aggiungere la voce nel menu di Esplora risorse, l'avvio all'accesso, il comando `filee` ed engine opzionali.
   - Le installazioni silenziose accettano gli switch di Inno Setup (`/VERYSILENT /SUPPRESSMSGBOXES`).
-- **macOS 13+** (anteprima): decomprimi il pacchetto `osx-arm64` o `osx-x64` ed esegui `./install.sh`.
+- **macOS 13+** (anteprima): estrai il pacchetto `osx-arm64` o `osx-x64` ed esegui `./install.sh`.
   - Oppure apri il `.dmg` e trascina Filee in Applicazioni (il comando `filee` arriva con `install.sh`).
   - La build non è ancora notarizzata, quindi consenti il primo avvio in Impostazioni di Sistema → Privacy e sicurezza → **Apri comunque**.
-- **Linux x64/ARM64** (Ubuntu 22.04+): decomprimi il pacchetto ed esegui `./install.sh` (senza root, serve Python 3).
+- **Linux x64/ARM64** (Ubuntu 22.04+): estrai il pacchetto ed esegui `./install.sh` (senza root, serve Python 3).
   - I gesti di trascinamento richiedono X11.
     Su Wayland, usa la zona di rilascio e il menu contestuale del file manager.
 
@@ -116,8 +116,8 @@ Per annullare, rimuovi le voci in Sicurezza di Windows → Controllo app e brows
 
 ## Funzionalità
 
-- **Una ciambella al cursore**: tieni premuto un tasto, trascina i file e rilasciali su un formato.
-  Compaiono solo i formati adatti ai file.
+- **Una donut al cursore**: tieni premuto un tasto, trascina i file e rilasciali su un formato.
+  Compaiono solo i formati compatibili ai file.
 - **Direttamente dal browser**: trascina un'immagine, un link a un file o un download fuori da Chrome, Edge, Firefox o Safari allo stesso modo.
   - Filee lo salva nella cartella Download (oppure mantiene solo il file convertito) e lo converte.
   - I link vengono scaricati senza l'accesso del tuo browser.
@@ -126,7 +126,7 @@ Per annullare, rimuovi le voci in Sicurezza di Windows → Controllo app e brows
   - pagine PDF e compressione
   - video e audio
   - cartella di destinazione e nomi dei file
-- **Due facce per ogni ciambella**: premi <kbd>Tab</kbd> o gira la rotella del mouse mentre è aperta per passare ai formati e strumenti meno comuni.
+- **Due facce per ogni donut**: premi <kbd>Tab</kbd> o gira la rotella del mouse mentre è aperta per passare ai formati e strumenti meno comuni.
 - **Ritaglio prima della conversione**: la sezione Ritaglia apre le immagini una per volta.
   Trascina il riquadro, scegli un rapporto, e solo quella parte viene salvata.
 - **Molti file insieme**, in parallelo.
@@ -144,7 +144,7 @@ Per annullare, rimuovi le voci in Sicurezza di Windows → Controllo app e brows
     <td width="50%"><img src="docs/media/page-home-en.png" alt="Home screen with the drop zone and recent conversions"></td>
   </tr>
   <tr>
-    <td align="center"><sub>Organizza la ciambella trascinando, un profilo per ogni tipo di file</sub></td>
+    <td align="center"><sub>Organizza la donut trascinando, un profilo per ogni tipo di file</sub></td>
     <td align="center"><sub>Home: zona di rilascio e conversioni recenti</sub></td>
   </tr>
 </table>
