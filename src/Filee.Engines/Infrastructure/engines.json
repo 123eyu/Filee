@@ -23,10 +23,10 @@
       "kind": "zip"
     },
     "jre": {
-      "version": "21.0.12.1",
-      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_x64_windows_hotspot_21.0.12.1_1.zip",
-      "sha256": "D35F31E712F0FCF6AC5A093EDC90204FBFF22F720BA3950BD09D331D5E621636",
-      "size": 48999141,
+      "version": "21.0.13",
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jre_x64_windows_hotspot_21.0.13_9.zip",
+      "sha256": "2332C0B4CFF6BED722DA3567C91D5E47568BCBA863FA4945D0A8D6FC76158628",
+      "size": 49106397,
       "kind": "zip"
     },
     "libreoffice": {
