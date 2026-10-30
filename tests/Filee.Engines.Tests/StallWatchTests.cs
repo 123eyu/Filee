@@ -33,7 +33,8 @@ public sealed class StallWatchTests
                 Thread.Sleep(50);
             }
             exited.SetResult();
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         output.Start();
 
         Assert.True(await watch.WaitAsync(exited.Task, token, Interval));
