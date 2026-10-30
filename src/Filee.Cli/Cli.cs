@@ -132,7 +132,11 @@ internal static class Cli
                 return;
             lock (printed)
             {
-                foreach (var file in job.Files.Where(f => f.State is not (FileState.Pending or FileState.Running) && printed.Add(f)))
+                // While the job runs, a file done with no output yet is only a step on the way (a page of a multi-page TIFF,
+                // a picture made PNG to be joined): it is printed at the end, with what it became and its notice. The queue
+                // always raises the event as itself; only the last call below, after the job, has no sender.
+                foreach (var file in job.Files.Where(f => f.State is not (FileState.Pending or FileState.Running)
+                             && (sender is null || f.State != FileState.Done || f.Outputs.Count > 0) && printed.Add(f)))
                     output.WriteLine(Describe(file, host.Texts));
             }
         }
@@ -157,7 +161,7 @@ internal static class Cli
         return file.State switch
         {
             FileState.Done => $"ok    {source} -> {string.Join(", ", file.Outputs.Select(Shorten))}"
-                + (file.NoticeKey is null ? "" : $" ({Notice(file, texts)})")
+                + (file.HasNotice ? $" ({Notice(file, texts)})" : "")
                 + (file.MissingFonts.Count == 0 ? "" : $" (missing fonts: {string.Join(", ", file.MissingFonts)})"),
             FileState.Skipped => $"skip  {source} (the output file already exists)",
             FileState.Cancelled => $"stop  {source} (cancelled)",
@@ -204,7 +208,7 @@ internal static class Cli
                 json.WriteEndArray();
                 if (file.State is FileState.Failed or FileState.Cancelled)
                     json.WriteString("error", Error(file, texts));
-                else if (file.NoticeKey is not null)
+                else if (file.HasNotice)
                     json.WriteString("notice", Notice(file, texts));
                 if (file.MissingFonts.Count > 0)
                 {

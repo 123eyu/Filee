@@ -413,6 +413,12 @@ public sealed class ImageOptions
     public double MaxSizeMb { get; set; }
 
     /// <summary>
+    /// Keep each picture at least this many MB of 1,000,000 bytes; 0 = no minimum. A smaller one in a lossy format is
+    /// saved again at a higher quality (never padded or enlarged); one that stays under it is kept, with a notice (#662).
+    /// </summary>
+    public double MinSizeMb { get; set; }
+
+    /// <summary>
     /// How the picture is scaled. A preset with <see cref="CustomSize"/> or <see cref="MinShortEdge"/> set stores None
     /// here (that sizing wins), so a version without it simply does not resize instead of rejecting a name it does
     /// not know. The lenient converter also reads a name a future version might add as None, and the writer maps
