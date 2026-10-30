@@ -169,7 +169,9 @@ pinned source in `build/build-native.py` like rhwp (PR #113 did this for SharpHo
 `build/build-installer.ps1 -Runtime win-arm64` builds `Filee-<version>-win-arm64-Setup.exe` (and `-Portable.zip`): the
 app, the command line and Setup for win-arm64, the Explorer menu DLL for ARM64 (`build-explorer-menu.ps1
 -Architecture arm64`, packaged as `arm64`), and ARM64 builds of the bundled engines (`fetch-engines.ps1 -Runtime
-win-arm64`). The engines the app downloads stay x64; Windows 11 on ARM runs them under emulation.
+win-arm64`). The engines the app downloads stay x64: on Windows 11 on ARM, which runs them under emulation, the app
+offers the win-x64 downloads (`EngineDownloads.DownloadRuntime`); Windows 10 on ARM can't run them and gets none.
+Setup's engine list is made when it is packed (`build/tools/make-setup.cs`), so the ARM64 Setup offers the x64 one.
 
 - **7-Zip**: the official ARM64 installer of the version engines.json pins, a 7z self-extracting archive unpacked by
   the x64 7-Zip (Windows' `tar.exe` can't undo its ARM64 executable filter).
