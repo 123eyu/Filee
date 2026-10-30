@@ -10,6 +10,8 @@
   "nav.theme": "Tema",
   "nav.engines": "Motores",
   "nav.about": "Acerca de",
+  "nav.collapse": "Contraer barra lateral",
+  "nav.expand": "Expandir barra lateral",
   "tray.open": "Abrir Filee",
   "tray.pause": "Pausar atajos",
   "tray.resume": "Reanudar atajos",

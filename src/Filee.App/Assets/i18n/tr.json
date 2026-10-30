@@ -10,6 +10,8 @@
   "nav.theme": "Tema",
   "nav.engines": "Dönüştürme motorları",
   "nav.about": "Hakkında",
+  "nav.collapse": "Kenar çubuğunu daralt",
+  "nav.expand": "Kenar çubuğunu genişlet",
   "tray.open": "Filee'yi aç",
   "tray.pause": "Kısayolları duraklat",
   "tray.resume": "Kısayolları sürdür",

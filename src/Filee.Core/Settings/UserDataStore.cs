@@ -116,6 +116,16 @@ public sealed class UserDataStore
         Write(SettingsPath, Settings, FileeJsonContext.Default.AppSettings);
     }
 
+    /// <summary>
+    /// Remembers whether the main window's navigation is collapsed (<see cref="AppSettings.NavCollapsed"/>), quietly as
+    /// <see cref="SaveUiScale"/>: the window already shows it.
+    /// </summary>
+    public void SaveNavCollapsed(bool collapsed)
+    {
+        Settings.NavCollapsed = collapsed;
+        Write(SettingsPath, Settings, FileeJsonContext.Default.AppSettings);
+    }
+
     public void SaveLibrary()
     {
         EnsureConsistency();
