@@ -94,9 +94,9 @@ $arm64Pins = [ordered]@{
     }
     # The official ARM64 installer, a 7z self-extracting archive; it is unpacked, never run.
     '7zip' = @{
-        Version = '26.03'
-        Url = 'https://github.com/ip7z/7zip/releases/download/26.03/7z2603-arm64.exe'
-        Sha256 = 'E22CE71C11DCF503C448FE51E56F41830EB4E1344FA5C7731AE63BCE533A8E8E'
+        Version = '26.05'
+        Url = 'https://github.com/ip7z/7zip/releases/download/26.05/7z2605-arm64.exe'
+        Sha256 = '86D5790D5DD84CAB4636C3BB7FAB10D3ED7CD3E57E6119401BD2769E28165268'
     }
 }
 
