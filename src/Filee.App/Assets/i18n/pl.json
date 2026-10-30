@@ -562,7 +562,7 @@
   "triggers.recording": "Naciśnij kombinację klawiszy…",
   "triggers.clear": "Wyczyść",
   "triggers.clipboard": "Konwertuj zawartość schowka",
-  "triggers.clipboard_note": "Najpierw skopiowane pliki, a jeśli ich nie ma, skopiowany obraz (zrzut ekranu zrobiony z wciśniętym Control). Wynik zastępuje go w schowku i jest gotowy do wklejenia; wynik obrazu jest zapisywany tam, gdzie pliki z przeglądarki. Gdy nie ma żadnego z nich, zaznaczone pliki.",
+  "triggers.clipboard_note": "Najpierw skopiowane pliki, a jeśli ich nie ma, skopiowany obraz (zrzut ekranu zrobiony z wciśniętym Control). Wynik zastępuje go w schowku i jest gotowy do wklejenia; wynik obrazu jest zapisywany tam, gdzie pliki z przeglądarki. Gdy nie ma żadnego z nich, nic się nie dzieje.",
   "triggers.recording_key": "Naciśnij klawisz…",
   "triggers.flip_title": "Obracanie pierścienia",
   "triggers.flip_description": "Gdy pierścień jest otwarty, ten klawisz lub obrót kółka myszy pokazuje jego tył. Tył każdego pierścienia ustawisz w Pasku-pierścieniu.",

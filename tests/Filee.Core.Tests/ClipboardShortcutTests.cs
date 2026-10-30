@@ -1,5 +1,6 @@
-// The clipboard shortcut (Shift + Cmd + V on macOS, settings schema 55): converts what is on the clipboard and puts the
-// result back.
+// The clipboard switch of a keyboard shortcut: opt-in only. No shortcut converts the clipboard by default and no
+// upgrade adds one (Shift + Cmd + V is Paste and Match Style in most text fields); whoever wants it turns it on for
+// a shortcut with keys of their own choosing in Settings > Shortcuts.
 
 using System.Text.Json.Nodes;
 using Filee.Core.Settings;
@@ -9,55 +10,38 @@ namespace Filee.Core.Tests;
 public class ClipboardShortcutTests
 {
     [Fact]
-    public void The_clipboard_shortcut_is_shift_cmd_v_everywhere()
+    public void No_default_shortcut_converts_the_clipboard()
     {
-        var shortcut = TriggerGesture.ClipboardShortcut();
-
-        Assert.Equal(TriggerKind.KeyChord, shortcut.Kind);
-        Assert.Equal(ModifierKeys.Shift | ModifierKeys.Meta, shortcut.Modifiers);
-        Assert.Equal("V", shortcut.Key);
-        Assert.Equal(TriggerScope.Anywhere, shortcut.Scope);
-        Assert.True(shortcut.Clipboard);
-        Assert.True(shortcut.Clone().Clipboard);
+        Assert.All(TriggerGesture.Defaults(), g => Assert.False(g.Clipboard));
     }
 
     [Fact]
-    public void Only_macos_gets_it_by_default()
+    public void An_upgrade_adds_no_clipboard_shortcut()
     {
-        Assert.Equal(OperatingSystem.IsMacOS(), TriggerGesture.Defaults().Any(g => g.Clipboard));
-    }
+        var own = new TriggerGesture { Kind = TriggerKind.KeyChord, Modifiers = ModifierKeys.Ctrl | ModifierKeys.Alt, Key = "Space", Button = TriggerMouseButton.None };
+        var settings = new AppSettings { SchemaVersion = 54, Triggers = [own] };
 
-    [Fact]
-    public void An_upgrade_adds_it_once()
-    {
-        var triggers = TriggerGesture.Defaults().Where(g => !g.Clipboard).ToList();
+        SettingsMigrations.Apply(settings);
 
-        Assert.True(SettingsMigrations.AddClipboardShortcut(triggers));
-        Assert.False(SettingsMigrations.AddClipboardShortcut(triggers));
-        Assert.Single(triggers, g => g.Clipboard);
-    }
-
-    [Fact]
-    public void A_shortcut_of_the_users_own_on_those_keys_stays_as_it_is()
-    {
-        var own = new TriggerGesture
-        {
-            Kind = TriggerKind.KeyChord, Modifiers = ModifierKeys.Shift | ModifierKeys.Meta, Key = "v", Button = TriggerMouseButton.None,
-        };
-        List<TriggerGesture> triggers = [own];
-
-        Assert.False(SettingsMigrations.AddClipboardShortcut(triggers));
-        Assert.Same(own, Assert.Single(triggers));
+        Assert.Same(own, Assert.Single(settings.Triggers));
         Assert.False(own.Clipboard);
+        Assert.Equal(AppSettings.CurrentSchemaVersion, settings.SchemaVersion);
     }
 
     [Fact]
-    public void The_option_is_saved_and_read_back()
+    public void The_option_the_user_switched_on_is_saved_and_read_back()
     {
+        var chosen = new TriggerGesture
+        {
+            Kind = TriggerKind.KeyChord, Modifiers = ModifierKeys.Ctrl | ModifierKeys.Alt, Key = "V",
+            Button = TriggerMouseButton.None, Scope = TriggerScope.Anywhere, Clipboard = true,
+        };
+        Assert.True(chosen.Clone().Clipboard);
+
         using var dir = new TempDir();
         var store = new UserDataStore(dir.Path);
         store.Load();
-        store.Settings.Triggers = [TriggerGesture.ClipboardShortcut()];
+        store.Settings.Triggers = [chosen];
         store.SaveSettings();
 
         var json = JsonNode.Parse(File.ReadAllText(Path.Combine(dir.Path, "settings.json")))!;

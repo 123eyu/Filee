@@ -562,7 +562,7 @@
   "triggers.recording": "키 조합을 누르세요…",
   "triggers.clear": "지우기",
   "triggers.clipboard": "클립보드의 내용 변환",
-  "triggers.clipboard_note": "복사한 파일을 먼저, 없으면 복사한 그림(Control을 누른 채 찍은 스크린샷)을 씁니다. 결과는 클립보드의 내용을 대신해 바로 붙여넣을 수 있고, 그림의 결과는 브라우저 파일을 저장하는 폴더에 저장됩니다. 둘 다 없으면 선택한 파일을 씁니다.",
+  "triggers.clipboard_note": "복사한 파일을 먼저, 없으면 복사한 그림(Control을 누른 채 찍은 스크린샷)을 씁니다. 결과는 클립보드의 내용을 대신해 바로 붙여넣을 수 있고, 그림의 결과는 브라우저 파일을 저장하는 폴더에 저장됩니다. 둘 다 없으면 아무 일도 일어나지 않습니다.",
   "triggers.recording_key": "키를 누르세요…",
   "triggers.flip_title": "도넛 뒤집기",
   "triggers.flip_description": "도넛이 열려 있을 때 이 키를 누르거나 마우스 휠을 돌리면 뒷면이 나와요. 도넛마다 뒷면은 원형 툴바에서 정해요.",

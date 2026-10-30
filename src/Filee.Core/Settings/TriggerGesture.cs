@@ -75,7 +75,9 @@ public sealed class TriggerGesture
     /// <summary>
     /// <see cref="TriggerKind.KeyChord"/> only, where the platform has a clipboard (<c>SupportsClipboard</c>): the
     /// donut opens for the files on the clipboard, else the picture on it (a screenshot), and the results are put back
-    /// on the clipboard. With neither on it, the file manager's selection as without this.
+    /// on the clipboard. With neither on it, the shortcut does nothing. Off unless the user turns it on for a shortcut
+    /// of their own choosing: the hook can't hold the keys back, so a preset combination (Shift + Cmd + V is Paste and
+    /// Match Style in most text fields) would also reach the app in front.
     /// </summary>
     public bool Clipboard { get; set; }
 
@@ -86,24 +88,10 @@ public sealed class TriggerGesture
     {
         // On macOS Ctrl+click means right-click, and Option already means "copy" in Finder.
         var dragModifier = OperatingSystem.IsMacOS() ? ModifierKeys.Alt : ModifierKeys.Ctrl;
-        List<TriggerGesture> defaults =
+        return
         [
             new() { Kind = TriggerKind.Drag, Modifiers = dragModifier, Button = TriggerMouseButton.Left },
             new() { Kind = TriggerKind.KeyChord, Modifiers = ModifierKeys.Ctrl | ModifierKeys.Alt, Button = TriggerMouseButton.None, Key = "Space" },
         ];
-        if (OperatingSystem.IsMacOS())
-            defaults.Add(ClipboardShortcut());
-        return defaults;
     }
-
-    /// <summary>
-    /// macOS: Shift + Cmd + V everywhere converts what is on the clipboard (a screenshot taken with Ctrl, files copied
-    /// in Finder) and puts the result back, ready to paste. The hook can't hold the keys back, so the app in front
-    /// also sees them (Paste and Match Style).
-    /// </summary>
-    public static TriggerGesture ClipboardShortcut() => new()
-    {
-        Kind = TriggerKind.KeyChord, Modifiers = ModifierKeys.Shift | ModifierKeys.Meta, Button = TriggerMouseButton.None,
-        Key = "V", Scope = TriggerScope.Anywhere, Clipboard = true,
-    };
 }

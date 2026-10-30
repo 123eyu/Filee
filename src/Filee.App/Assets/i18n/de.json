@@ -549,7 +549,7 @@
   "triggers.recording": "Tastenkombination drücken…",
   "triggers.clear": "Leeren",
   "triggers.clipboard": "Inhalt der Zwischenablage umwandeln",
-  "triggers.clipboard_note": "Zuerst kopierte Dateien, sonst ein kopiertes Bild (ein Bildschirmfoto mit gedrückter Control-Taste). Das Ergebnis ersetzt es in der Zwischenablage und lässt sich sofort einfügen; das Ergebnis eines Bildes wird dort gespeichert, wo Dateien aus dem Browser landen. Ist keins von beiden da, die ausgewählten Dateien.",
+  "triggers.clipboard_note": "Zuerst kopierte Dateien, sonst ein kopiertes Bild (ein Bildschirmfoto mit gedrückter Control-Taste). Das Ergebnis ersetzt es in der Zwischenablage und lässt sich sofort einfügen; das Ergebnis eines Bildes wird dort gespeichert, wo Dateien aus dem Browser landen. Ist keins von beiden da, passiert nichts.",
   "triggers.recording_key": "Taste drücken…",
   "triggers.flip_title": "Ringmenü wenden",
   "triggers.flip_description": "Bei geöffnetem Ringmenü zeigt diese Taste oder das Mausrad die Rückseite. Die Rückseite jedes Ringmenüs wird unter Ringmenü eingerichtet.",

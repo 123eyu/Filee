@@ -253,17 +253,25 @@ public sealed class ConversionService
 
     /// <summary>
     /// Puts what a clipboard shortcut's job made on the clipboard, in place of what it was made from. A cancelled job,
-    /// or one that made nothing, leaves the clipboard alone. UI thread.
+    /// or one that made nothing, leaves the clipboard alone. A partly failed job still puts its outputs on the
+    /// clipboard; the log carries the failed count, so it shows why fewer files are pasted than were copied. UI thread.
     /// </summary>
-    private void CopyResults(ConversionJob job)
+    internal void CopyResults(ConversionJob job)
     {
         if (job.State == JobState.Cancelled)
             return;
+        var failed = job.Files.Count(f => f.State == FileState.Failed);
         var outputs = job.Outputs.Where(File.Exists).Distinct(StringComparer.Ordinal).ToList();
-        if (outputs.Count > 0 && !_platform.CopyToClipboard(outputs))
-            _log?.LogWarning("Could not put {Count} converted file(s) on the clipboard", outputs.Count);
-        else if (outputs.Count > 0)
-            _log?.LogInformation("Put {Count} converted file(s) on the clipboard", outputs.Count);
+        if (outputs.Count == 0)
+        {
+            if (failed > 0)
+                _log?.LogInformation("The clipboard job made nothing to put on the clipboard; {Failed} file(s) failed", failed);
+            return;
+        }
+        if (!_platform.CopyToClipboard(outputs))
+            _log?.LogWarning("Could not put {Count} converted file(s) on the clipboard; {Failed} file(s) failed", outputs.Count, failed);
+        else
+            _log?.LogInformation("Put {Count} converted file(s) on the clipboard; {Failed} file(s) failed", outputs.Count, failed);
     }
 
     /// <summary>Counts a fully successful conversion; true when the feedback card is due now (only once).</summary>
