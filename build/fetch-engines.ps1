@@ -85,12 +85,12 @@ $arm64Pins = [ordered]@{
     rhwp = @{
         Version = '0.8.7'
         Url = 'https://dl.filee.sh/engines/rhwp/0.8.7/rhwp-v0.8.7-windows-aarch64.zip'
-        Sha256 = ''
+        Sha256 = 'EAC4F747115AA061208FB20E2727E67C8A8AE6AAA60D74F139A9DD6BCBA83172'
     }
     unhwp = @{
         Version = '0.13.0'
         Url = 'https://dl.filee.sh/engines/unhwp/0.13.0/unhwp-0.13.0-win-arm64.dll'
-        Sha256 = ''
+        Sha256 = '2D9760720F281E49B5D472437849E7C66704F8DF0330F378CE350D1561F16621'
     }
     # The official ARM64 installer, a 7z self-extracting archive; it is unpacked, never run.
     '7zip' = @{
