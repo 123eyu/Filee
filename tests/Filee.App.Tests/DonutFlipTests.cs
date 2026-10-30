@@ -16,6 +16,7 @@ using Filee.App.Services;
 using Filee.App.ViewModels;
 using Filee.App.ViewModels.Pages;
 using Filee.App.Views;
+using Filee.Core.Conversion;
 using Filee.Core.Localization;
 using Filee.Core.Platform;
 using Filee.Core.Presets;
@@ -134,6 +135,7 @@ public class DonutFlipTests
             AppHost.Get<IPlatformServices>(), triggers, NullLogger<RadialController>.Instance);
         var folder = Directory.CreateTempSubdirectory("filee-wave-drop-");
         var conversions = AppHost.Get<ConversionService>();
+        ConversionJob? started = null;
         try
         {
             var file = Path.Combine(folder.FullName, "photo.jpg");
@@ -158,6 +160,7 @@ public class DonutFlipTests
             window.DragDrop(inWindow, RawDragEventType.Drop, data, DragDropEffects.Copy, RawInputModifiers.Control);
             var job = Assert.Single(conversions.Jobs, j => !before.Contains(j.Job.Id));
             Assert.Equal(preset.Id, job.Job.Preset.Id);
+            started = job.Job;
             job.CancelCommand.Execute(null);
             radial.Close(animate: false);
             window.Close();
@@ -165,7 +168,10 @@ public class DonutFlipTests
         finally
         {
             radial.Close(animate: false);
-            folder.Delete(recursive: true);
+            // The cancelled conversion may still be reading photo.jpg: the folder goes once it has stopped.
+            if (started is not null)
+                ClipWindowTests.WaitFor(() => started.State is not (JobState.Queued or JobState.Running));
+            try { folder.Delete(recursive: true); } catch (IOException) { }
         }
     });
 
