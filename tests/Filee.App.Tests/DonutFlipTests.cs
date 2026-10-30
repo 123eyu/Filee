@@ -524,7 +524,7 @@ public class DonutFlipTests
         TestServices.EnsureInitialized();
         Motion.Configure(false, () => false);
         var originalBack = Images.BackPresetIds?.ToList();
-        using var main = new MainWindowViewModel(AppHost.Services, AppHost.Get<ILocalizer>(), AppHost.Get<UpdateService>());
+        using var main = new MainWindowViewModel(AppHost.Services, AppHost.Get<ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
         main.Navigate("toolbar");
         var window = new MainWindow { DataContext = main, Width = 1080, Height = 1000 };
         try
@@ -1234,7 +1234,7 @@ public class DonutFlipTests
         {
             if (dark)
                 theme.Apply(new ThemeSettings { Mode = ThemeMode.Dark }, language);
-            using var main = new MainWindowViewModel(AppHost.Services, AppHost.Get<ILocalizer>(), AppHost.Get<UpdateService>());
+            using var main = new MainWindowViewModel(AppHost.Services, AppHost.Get<ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             main.Navigate("toolbar");
             window = new MainWindow { DataContext = main, Width = 1080, Height = 1000 };
             window.Show();
