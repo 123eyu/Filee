@@ -131,17 +131,9 @@ internal static class NativeMethods
         behavior &= ~((1 << 16) | (1 << 17) | (1 << 18));
         // Finder can occupy a full-screen Space that would otherwise hide another app's toolbar.
         SendInteger(window, sel_registerName("setCollectionBehavior:"), behavior);
-        // While Filee shows in the Dock, AppKit keeps its windows off another app's full-screen Space and lets only a
-        // non-activating panel join it (#251). AvnPanel is Avalonia's NSPanel build of AvnWindow, same ivars and methods
-        // but canBecomeMainWindow, so the donut becomes one in place.
-        var panel = objc_getClass("AvnPanel");
-        if (panel != 0 && object_getClass(window) == objc_getClass("AvnWindow"))
-        {
-            object_setClass(window, panel);
-            const nint nonactivatingPanel = 1 << 7;
-            SendInteger(window, sel_registerName("setStyleMask:"), Send(window, sel_registerName("styleMask")) | nonactivatingPanel);
-            SendInteger(window, sel_registerName("setHidesOnDeactivate:"), 0);
-        }
+        // Keep the native class selected when Avalonia created the window. Changing an initialized AvnWindow into
+        // AvnPanel skips NSPanel initialization and breaks AppKit's KVO cleanup when the window is released (#805).
+        // A non-activating panel for another app's full-screen Space (#251) must be created as a panel from the start.
         SendInteger(window, sel_registerName("setLevel:"), 3);
         SendVoid(window, sel_registerName("orderFrontRegardless"));
     }
@@ -425,12 +417,6 @@ internal static class NativeMethods
 
     [DllImport(ObjC)]
     private static extern nint objc_getClass([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
-
-    [DllImport(ObjC)]
-    private static extern nint object_getClass(nint instance);
-
-    [DllImport(ObjC)]
-    private static extern nint object_setClass(nint instance, nint cls);
 
     [DllImport(ObjC)]
     private static extern nint sel_registerName([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
