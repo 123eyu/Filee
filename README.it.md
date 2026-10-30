@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>Un convertitore di file gratuito e open source che si usa trascinando.</b><br>
-  Tieni premuto un tasto (<kbd>Ctrl</kbd>, <kbd>Option</kbd> su macOS), trascina i file e rilasciali su un formato nel menu a ciambella che si apre al cursore.
+  Tieni premuto un tasto (<kbd>Ctrl</kbd>, <kbd>Option</kbd> su macOS), trascina i file e rilasciali su un formato nel menu a donut che si apre sul cursore.
 </p>
 
 <p align="center">
