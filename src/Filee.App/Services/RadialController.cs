@@ -338,14 +338,7 @@ public sealed class RadialController(
             return;
         }
 
-        if (preset.IsDownload && web is not null && conversions.DownloadNeedsPicker)
-        {
-            Close(animate: false);
-            _ = DownloadInFolderAsync(sources, preset.Clone(), web);
-            return;
-        }
-
-        if (preset.IsTool)
+        if (preset.IsTool && !preset.IsCopyToFolder)
         {
             log.LogInformation("Opening {Preset} for {Count} file(s)", preset.Id, sources.Count);
             var near = _window?.Position;
@@ -367,16 +360,16 @@ public sealed class RadialController(
 
         // "Ask every time" (#521): the save dialog first; the toast shows the job, the donut has closed for the dialog.
         // shortcut: files from a browser aren't asked about, they save into the download folder as "next to the source".
-        if (preset.Output.AskEveryTime && web is null)
+        if (preset.Output.AskEveryTime && (web is null || preset.IsCopyToFolder))
         {
             Close(animate: false);
-            _ = AskThenConvertAsync(sources, preset, _toClipboard);
+            _ = AskThenConvertAsync(sources, preset, _toClipboard, web);
             return;
         }
 
         log.LogInformation("Converting {Count} file(s) with preset {Preset}{Web}{Clipboard}", sources.Count, preset.Id,
             web is null ? "" : " (from a browser)", _toClipboard ? " (from the clipboard)" : "");
-        var job = conversions.Start(sources, preset, showInToast: false, web: web, toClipboard: _toClipboard);
+        var job = conversions.Start(sources, preset, showInToast: false, web, _toClipboard);
         if (job is null || _window is null)
         {
             Close();
@@ -384,13 +377,6 @@ public sealed class RadialController(
         }
         _converted = true;
         ShowProgress(job);
-    }
-
-    private async Task DownloadInFolderAsync(IReadOnlyList<string> files, Preset preset, WebDrop web)
-    {
-        try { await conversions.ChooseNamedDownloadAsync(files, preset, web, windows.ChooseDownloadFileAsync); }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        { log.LogError(ex, "Could not choose the download folder"); }
     }
 
     private async Task MergeInOrderAsync(IReadOnlyList<string> files, Preset preset, WebDrop? web, bool toClipboard)
@@ -444,17 +430,12 @@ public sealed class RadialController(
         }
     }
 
-    private async Task AskThenConvertAsync(IReadOnlyList<string> sources, Preset preset, bool toClipboard)
+    private async Task AskThenConvertAsync(IReadOnlyList<string> sources, Preset preset, bool toClipboard, WebDrop? web = null)
     {
         try
         {
-            // Asked as it will run (a ZIP from Settings › General is a .zip), for one file or a folder as the job makes them.
-            var running = store.Settings.WithDefaultOutput(preset);
-            if (await windows.AskSaveLocationAsync(sources, running, AskedLocation.MakesOneResult(running, sources.Count)) is { } asked)
-            {
-                log.LogInformation("Converting {Count} file(s) with preset {Preset} where the user chose", sources.Count, preset.Id);
-                conversions.Start(sources, asked, toClipboard: toClipboard);
-            }
+            await conversions.AskThenStartAsync(sources, preset, web,
+                (running, one) => windows.AskSaveLocationAsync(sources, running, one), toClipboard);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -476,7 +457,7 @@ public sealed class RadialController(
     /// archive"; any other preset converts the files beside them (issue #186).
     /// </summary>
     internal static IReadOnlyList<string> SourcesFor(Preset preset, IReadOnlyList<string> files) =>
-        preset.PacksIntoOneArchive ? files : [.. files.Where(path => !Directory.Exists(path))];
+        preset.PacksIntoOneArchive || preset.IsCopyToFolder ? files : [.. files.Where(path => !Directory.Exists(path))];
 
     // ───────── Progress ring ─────────
 
@@ -669,4 +650,3 @@ public sealed class RadialController(
         _web = web;
     }
 }
-

@@ -98,7 +98,8 @@ public sealed class ConversionJob
     public ConversionJob(IReadOnlyList<string> sources, Preset preset, string presetDisplayName, ISourceFetcher? fetcher = null)
     {
         // A Shapefile's .dbf, .shx, .prj, ... dropped with its .shp are part of it, not files to convert on their own.
-        sources = Formats.CompanionFiles.WithoutCompanions(sources);
+        if (!preset.IsCopyToFolder)
+            sources = Formats.CompanionFiles.WithoutCompanions(sources);
         Preset = preset.Clone(); // later edits of the preset must not affect a running job
         PresetDisplayName = presetDisplayName;
         Fetcher = fetcher;

@@ -1,12 +1,4 @@
 {
-  "general.download_location": "Download save location",
-  "general.download.Default": "Default (Downloads folder)",
-  "general.download.Ask": "Choose a folder every time",
-  "general.download.Custom": "Specified folder",
-  "general.download_hint": "Applies only to Download in the ring. An empty specified folder prompts you to choose; cancelling saves nothing.",
-  "preset.browser_download": "İndir",
-  "preset.browser_download_caption": "Dönüştürme yok",
-
   "app.name": "Filee",
   "app.tagline": "Sürükle, bırak, dönüştür.",
   "nav.home": "Ana sayfa",
@@ -1272,5 +1264,10 @@
   "whats_new.2_0_0.languages.text": "İspanyolca, Hintçe, Japonca, Rusça, Arapça ve Brezilya Portekizcesi; İngilizce, Korece, Çince ve Lehçeye katılıyor.",
   "whats_new.2_0_0.more.title": "Ve biraz daha fazlası",
   "whats_new.2_0_0.more.text": "Tek bir halkayı varsayılanlarına sıfırlayın, tüm geçmişte arama yapın ve Guceratça, Hintçe veya Arapça belgeleri LibreOffice ile dönüştürün.",
-  "preset.extract_motion.donut": "Live Photo videosunu çıkar"
+  "preset.extract_motion.donut": "Live Photo videosunu çıkar",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

@@ -343,15 +343,10 @@ public sealed class DefaultOutputSettings
 }
 
 /// <summary>Files dragged out of a web browser (Settings → General).</summary>
-public enum DownloadLocation { Default, Ask, Custom }
-
 public sealed class BrowserDropSettings
 {
     /// <summary>Where they are saved; empty means the user's Downloads folder (looked up each time, as it can move).</summary>
     public string Folder { get; set; } = "";
-    public DownloadLocation DownloadLocation { get; set; }
-    public string DownloadFolder { get; set; } = "";
-    public string LastDownloadFolder { get; set; } = "";
 
     /// <summary>Keep only the converted file: the original goes into a work folder and is deleted after the conversion.</summary>
     public bool SaveOnlyConverted { get; set; }

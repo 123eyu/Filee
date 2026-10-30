@@ -10,7 +10,6 @@ using Filee.Core.Localization;
 using Filee.Core.Presets;
 using Filee.Core.Profiles;
 using Filee.Core.Settings;
-using Filee.Core.Web;
 
 namespace Filee.App.ViewModels;
 
@@ -158,7 +157,7 @@ public sealed partial class RadialViewModel(UserDataStore store, ILocalizer loc,
         var profile = ProfileSelector.Select(store.Profiles, counted);
         var formats = ProfileSelector.DetectFormats(counted);
         // Both faces follow the same rule: a slice that can't convert these files is greyed out and says why.
-        _front = BuildFace(profile?.PresetIds ?? [], formats, files.Count > 0 && files.All(WebDrop.IsPlaceholder));
+        _front = BuildFace(profile?.PresetIds ?? [], formats);
         (_back, _backIds, _formats) = (null, [.. profile?.BackPresetIds ?? []], formats);
         var load = ++_loads;
         if (backFace)
@@ -223,21 +222,12 @@ public sealed partial class RadialViewModel(UserDataStore store, ILocalizer loc,
 
     private bool HasGroups(IEnumerable<string> presetIds) => presetIds.Any(id => store.FindPreset(id)?.IsGroup == true);
 
-    private Face BuildFace(IEnumerable<string> presetIds, IReadOnlyList<FileFormat> formats, bool download = false)
+    private Face BuildFace(IEnumerable<string> presetIds, IReadOnlyList<FileFormat> formats)
     {
         var presets = presetIds
             .Select(store.FindPreset)
             .OfType<Preset>()
             .ToList();
-
-        if (download)
-            presets.Add(new Preset
-            {
-                Id = "browser-download",
-                NameKey = "preset.browser_download",
-                TargetFormat = "download",
-                Kind = PresetKind.Download
-            });
 
         var subPresets = presets
             .Select(p => (IReadOnlyList<Preset>)(p.IsGroup ? p.SubPresetIds : [])
@@ -246,13 +236,14 @@ public sealed partial class RadialViewModel(UserDataStore store, ILocalizer loc,
 
         DonutItem ItemOf(Preset p, bool caption = true)
         {
-            var reason = p.IsDownload ? null : availability.Check(p, formats);
+            var reason = availability.Check(p, formats);
             return new DonutItem
             {
                 Id = p.Id,
                 // On a group's ring the group's name gives the context: "Rotate" → Left / Right / 180°.
                 Label = caption ? loc.DonutName(p) : loc.RingName(p),
-                Caption = p.IsDownload ? loc["preset.browser_download_caption"] : !caption ? null
+                Caption = !caption ? null
+                    : p.IsCopyToFolder ? loc["presets.copy_to_folder"]
                     : p.TargetFormat == BuiltInData.SameAsSource
                         ? string.Join("/", formats.Select(f => f.DisplayName).Take(2))
                         : FormatLabels.NameOf(loc, p.TargetFormat),

@@ -74,13 +74,6 @@
             <TextBox Text="{Binding BrowserFolder}" PlaceholderText="{Binding DownloadsFolder}" Width="440" />
           </DockPanel>
         </StackPanel>
-        <TextBlock Classes="label" Text="{DynamicResource general.download_location}" />
-        <ComboBox ItemsSource="{Binding DownloadLocations}" SelectedItem="{Binding DownloadLocation}" MinWidth="240" />
-        <DockPanel IsVisible="{Binding ShowDownloadFolder}" MaxWidth="560" HorizontalAlignment="Stretch">
-          <Button DockPanel.Dock="Right" Margin="8,0,0,0" Content="{DynamicResource presets.browse}" Click="OnBrowseDownloadFolder" />
-          <TextBox Text="{Binding DownloadFolder}" PlaceholderText="{Binding DownloadsFolder}" />
-        </DockPanel>
-        <TextBlock Classes="caption" TextWrapping="Wrap" Text="{DynamicResource general.download_hint}" />
         <CheckBox Content="{DynamicResource general.browser_drops_only_converted}" IsChecked="{Binding SaveOnlyConverted}" />
         <TextBlock Classes="caption" TextWrapping="Wrap" Text="{DynamicResource general.browser_drops_only_converted_hint}" Margin="0,-6,0,0" />
       </StackPanel>

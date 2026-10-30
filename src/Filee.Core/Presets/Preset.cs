@@ -23,8 +23,8 @@ public enum PresetKind
     /// </summary>
     Tool,
 
-    /// <summary>Saves browser-supplied files without conversion. Offered only for a live browser drop.</summary>
-    Download,
+    /// <summary>Copies files and folders byte for byte to a chosen destination.</summary>
+    CopyToFolder,
 }
 
 /// <summary>
@@ -145,9 +145,6 @@ public sealed class Preset
     [JsonIgnore]
     public bool IsGroup => Kind == PresetKind.Group;
 
-    [JsonIgnore]
-    public bool IsDownload => Kind == PresetKind.Download;
-
     /// <summary>True for "Compress into one archive": files and folders go into one archive as they are.</summary>
     [JsonIgnore]
     public bool PacksIntoOneArchive =>
@@ -224,7 +221,12 @@ public sealed class Preset
 
     /// <summary>True for a <see cref="PresetKind.Tool"/>.</summary>
     [JsonIgnore]
-    public bool IsTool => Kind == PresetKind.Tool;
+    public bool IsTool => Kind is PresetKind.Tool or PresetKind.CopyToFolder;
+
+    [JsonIgnore]
+    public bool IsCopyToFolder => Kind == PresetKind.CopyToFolder;
+
+    public const string CopyTarget = "copy-to-folder";
 
     /// <summary><see cref="Tool"/> of the interactive crop (also a tool saved without one, from before clips).</summary>
     public const string CropTool = "crop";
@@ -252,7 +254,7 @@ public sealed class Preset
 
     /// <summary>True for the interactive crop.</summary>
     [JsonIgnore]
-    public bool IsCropTool => IsTool && Tool is null or CropTool;
+    public bool IsCropTool => Kind == PresetKind.Tool && Tool is null or CropTool;
 
     /// <summary>True for "Cut a clip".</summary>
     [JsonIgnore]

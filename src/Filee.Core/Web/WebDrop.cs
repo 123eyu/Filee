@@ -204,10 +204,7 @@ public sealed class WebDrop : IDisposable
 /// <summary>Where files dragged from a browser are saved (Settings → General).</summary>
 /// <param name="Folder">The download folder; "next to the source" means this folder for these files.</param>
 /// <param name="SaveOnlyConverted">The original goes into the work folder and is deleted after the conversion.</param>
-public sealed record WebDropOptions(string Folder, bool SaveOnlyConverted)
-{
-    public IReadOnlyDictionary<string, string>? SavePaths { get; init; }
-}
+public sealed record WebDropOptions(string Folder, bool SaveOnlyConverted);
 
 /// <summary>Saves a <see cref="WebDrop"/>'s files for the job that converts them, and cleans up after it.</summary>
 public sealed class WebDropFetcher(WebDrop drop, WebDropOptions options, WebDownloader downloader) : ISourceFetcher
@@ -230,16 +227,8 @@ public sealed class WebDropFetcher(WebDrop drop, WebDropOptions options, WebDown
 
     public bool Fetches(string path) => drop.Holds(path);
 
-    public async Task<string> FetchAsync(string placeholder, IProgress<TransferProgress> progress, CancellationToken cancellationToken)
-    {
-        if (options.SavePaths is null || !options.SavePaths.TryGetValue(placeholder, out var destination))
-            return await drop.ItemFor(placeholder).SaveAsync(SaveFolder, downloader, progress, cancellationToken);
-        var staging = Path.Combine(drop.WorkFolder, "named-downloads");
-        var saved = await drop.ItemFor(placeholder).SaveAsync(staging, downloader, progress, cancellationToken);
-        cancellationToken.ThrowIfCancellationRequested();
-        File.Move(saved, destination, overwrite: true);
-        return destination;
-    }
+    public Task<string> FetchAsync(string placeholder, IProgress<TransferProgress> progress, CancellationToken cancellationToken) =>
+        drop.ItemFor(placeholder).SaveAsync(SaveFolder, downloader, progress, cancellationToken);
 
     public void Release(ConversionJob job)
     {
@@ -248,4 +237,3 @@ public sealed class WebDropFetcher(WebDrop drop, WebDropOptions options, WebDown
         WebDrop.TryDeleteFolder(drop.WorkFolder);
     }
 }
-

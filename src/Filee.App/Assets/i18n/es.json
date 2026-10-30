@@ -1,12 +1,4 @@
 {
-  "general.download_location": "Download save location",
-  "general.download.Default": "Default (Downloads folder)",
-  "general.download.Ask": "Choose a folder every time",
-  "general.download.Custom": "Specified folder",
-  "general.download_hint": "Applies only to Download in the ring. An empty specified folder prompts you to choose; cancelling saves nothing.",
-  "preset.browser_download": "Descargar",
-  "preset.browser_download_caption": "Sin conversión",
-
   "app.name": "Filee",
   "app.tagline": "Arrastra, suelta y convierte.",
   "nav.home": "Inicio",
@@ -1274,5 +1266,10 @@
   "whats_new.2_0_0.languages.text": "El español, el hindi, el japonés, el ruso, el árabe y el portugués de Brasil se suman al inglés, el coreano, el chino y el polaco.",
   "whats_new.2_0_0.more.title": "Y un poco más",
   "whats_new.2_0_0.more.text": "Restablece un solo menú circular, busca en todo tu historial y convierte documentos en guyaratí, hindi o árabe con LibreOffice.",
-  "preset.extract_motion.donut": "Extraer vídeo de Live Photo"
+  "preset.extract_motion.donut": "Extraer vídeo de Live Photo",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

@@ -49,9 +49,6 @@ public sealed partial class GeneralPageViewModel : ObservableObject, IDisposable
         _keepFileDates = store.Settings.KeepFileDates;
         _browserFolder = store.Settings.BrowserDrops.Folder;
         _saveOnlyConverted = store.Settings.BrowserDrops.SaveOnlyConverted;
-        DownloadLocations = Enum.GetValues<Filee.Core.Settings.DownloadLocation>().Select(v => new Choice<DownloadLocation>(v, loc[$"general.download.{v}"])).ToList();
-        _downloadLocation = DownloadLocations.FirstOrDefault(v => v.Value == store.Settings.BrowserDrops.DownloadLocation) ?? DownloadLocations[0];
-        _downloadFolder = store.Settings.BrowserDrops.DownloadFolder;
         _zipGeoResults = store.Settings.ZipGeoResults;
         CloseChoices = Enum.GetValues<CloseAction>().Select(v => new Choice<CloseAction>(v, loc[$"general.close.{v}"])).ToList();
         _closeChoice = CloseChoices.First(c => c.Value == store.Settings.CloseAction);
@@ -99,18 +96,6 @@ public sealed partial class GeneralPageViewModel : ObservableObject, IDisposable
 
     /// <summary>Where files dragged from a browser are saved; empty for the Downloads folder.</summary>
     [ObservableProperty] private string _browserFolder;
-
-    public IReadOnlyList<Choice<DownloadLocation>> DownloadLocations { get; }
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowDownloadFolder))]
-    private Choice<DownloadLocation> _downloadLocation;
-    [ObservableProperty] private string _downloadFolder;
-    public bool ShowDownloadFolder => DownloadLocation.Value == Filee.Core.Settings.DownloadLocation.Custom;
-    partial void OnDownloadLocationChanged(Choice<DownloadLocation>? oldValue, Choice<DownloadLocation> newValue)
-    {
-        if (!Choices.Restore(oldValue, newValue, v => DownloadLocation = v))
-            Save(s => s.BrowserDrops.DownloadLocation = newValue.Value);
-    }
-    partial void OnDownloadFolderChanged(string value) => Save(s => s.BrowserDrops.DownloadFolder = value.Trim());
 
     [ObservableProperty] private bool _saveOnlyConverted;
 

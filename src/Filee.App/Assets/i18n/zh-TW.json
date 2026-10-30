@@ -1,12 +1,4 @@
 {
-  "general.download_location": "圓盤下載儲存位置",
-  "general.download.Default": "預設儲存（系統下載資料夾）",
-  "general.download.Ask": "每次選擇位置",
-  "general.download.Custom": "指定資料夾",
-  "general.download_hint": "僅用於圓盤中的「下載」。指定資料夾為空時會詢問；取消選擇不會下載。",
-  "preset.browser_download": "下載",
-  "preset.browser_download_caption": "不轉換",
-
   "app.name": "Filee",
   "app.tagline": "拖一拖，放一放，轉換完成。",
 
@@ -1294,5 +1286,10 @@
   "whats_new.2_0_0.languages.text": "在英語、韓語、中文和波蘭語之外，新增西班牙語、印地語、日語、俄語、阿拉伯語和巴西葡萄牙語。",
   "whats_new.2_0_0.more.title": "還有更多",
   "whats_new.2_0_0.more.text": "可以只把一個環形工具列還原為初始設定、搜尋全部歷史記錄，並透過 LibreOffice 轉換古吉拉特語、印地語或阿拉伯語文件。",
-  "preset.extract_motion.donut": "擷取原況/動態相片影片"
+  "preset.extract_motion.donut": "擷取原況/動態相片影片",
+  "presets.copy_to_folder": "Copy to folder",
+  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
+  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
+  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
+  "presets.copy_action": "Action"
 }

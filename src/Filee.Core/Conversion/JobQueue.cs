@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Filee.Core.Conversion;
 
 /// <summary>Background queue that executes <see cref="ConversionJob"/>s one after another.</summary>
-public sealed class JobQueue : IAsyncDisposable
+public sealed partial class JobQueue : IAsyncDisposable
 {
     private readonly ConverterCatalog _catalog;
     private readonly IPdfMerger? _pdfMerger;
@@ -98,20 +98,11 @@ public sealed class JobQueue : IAsyncDisposable
         Directory.CreateDirectory(workDir);
         try
         {
-            if (job.Preset.IsDownload && job.Fetcher is null)
-                throw new InvalidOperationException("Download requires browser source data.");
             if (job.Fetcher is { } fetcher)
                 await FetchSourcesAsync(job, fetcher);
 
-            if (job.Preset.IsDownload)
-            {
-                foreach (var file in job.Files.Where(f => f.Saved && f.State == FileState.Pending))
-                {
-                    file.Outputs.Add(file.SourcePath);
-                    file.Progress = 1;
-                    file.State = FileState.Done;
-                }
-            }
+            if (job.Preset.IsCopyToFolder)
+                await RunCopiesAsync(job);
             else
             {
                 var planner = _catalog.CreatePlanner();
@@ -126,8 +117,9 @@ public sealed class JobQueue : IAsyncDisposable
                 var multiPageTiff = job.Preset.Image.MultiPageTiff && job.Preset.TargetFormat == "tiff" && _tiffMerger is not null;
                 // Clips back to back, or pictures one after the other, in the order they were dropped.
                 var join = job.Preset.JoinsIntoOneMedia && _mediaJoiner is not null;
-
+                // Pictures one under another or side by side, in the order they were dropped.
                 var imageJoiner = job.Preset.JoinsImages ? _catalog.All.OfType<IImageJoiner>().FirstOrDefault() : null;
+
                 if (join)
                     await RunJoinedMediaAsync(job, planner, workDir);
                 else if (imageJoiner is not null)
@@ -192,7 +184,7 @@ public sealed class JobQueue : IAsyncDisposable
                 if (file.State != FileState.Running || file.Saved)
                     return;
                 file.Transfer = p;
-                var value = (p.Fraction ?? 0) * (job.Preset.IsDownload ? 1 : FetchShare);
+                var value = (p.Fraction ?? 0) * FetchShare;
                 if (value > file.Progress)
                     file.Progress = value;
                 Notify(job);
@@ -202,7 +194,7 @@ public sealed class JobQueue : IAsyncDisposable
                 file.SourcePath = await fetcher.FetchAsync(file.SourcePath, progress, job.CancellationToken);
                 file.Saved = true;
                 file.State = FileState.Pending;
-                file.Progress = job.Preset.IsDownload ? 1 : FetchShare;
+                file.Progress = FetchShare;
             }
             catch (OperationCanceledException)
             {
