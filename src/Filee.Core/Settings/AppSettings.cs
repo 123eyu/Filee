@@ -262,7 +262,7 @@ public sealed class AppSettings
     public double UiScale { get; set; } = 1;
 
     /// <summary>
-    /// The main window's navigation is collapsed to an icon rail (the button at its top). A missing value (settings from
+    /// The main window's navigation is collapsed to an icon rail (the button at its bottom). A missing value (settings from
     /// before it) reads as expanded, so it needs no schema step.
     /// </summary>
     public bool NavCollapsed { get; set; }

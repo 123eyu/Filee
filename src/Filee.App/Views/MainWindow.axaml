@@ -13,10 +13,6 @@
     <Border Classes="navpane" Classes.collapsed="{Binding IsNavCollapsed}" Width="{Binding NavWidth}" ClipToBounds="True"
             Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,0,1,0">
       <DockPanel Margin="{Binding NavPadding}">
-        <Button DockPanel.Dock="Top" Classes="icon navtoggle" Margin="0,0,0,10" Command="{Binding ToggleNavCommand}"
-                ToolTip.Tip="{Binding NavToggleTip}" ToolTip.Placement="Right" AutomationProperties.Name="{Binding NavToggleTip}">
-          <PathIcon Width="17" Height="17" Data="{StaticResource Icon.Sidebar}" />
-        </Button>
         <StackPanel DockPanel.Dock="Top" Classes="navheader" Orientation="Horizontal" Spacing="10">
           <Image Source="avares://Filee/Assets/Icons/filee.png" Width="30" Height="30" />
           <StackPanel VerticalAlignment="Center" IsVisible="{Binding !IsNavCollapsed}">
@@ -82,6 +78,11 @@
             <TextBlock x:Name="VersionLabel" Classes="caption" Margin="8,0,0,0" Text="{Binding VersionText}" />
           </StackPanel>
         </StackPanel>
+        <!-- Collapse / expand: sits just above the update / GitHub / Sponsor group; the logo and name stay at the top -->
+        <Button DockPanel.Dock="Bottom" Classes="icon navtoggle" Margin="0,8,0,0" Command="{Binding ToggleNavCommand}"
+                ToolTip.Tip="{Binding NavToggleTip}" ToolTip.Placement="Right" AutomationProperties.Name="{Binding NavToggleTip}">
+          <PathIcon Width="17" Height="17" Data="{StaticResource Icon.Sidebar}" />
+        </Button>
         <ListBox Classes="nav" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:NavItem">
