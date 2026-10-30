@@ -278,13 +278,20 @@ if ('7zip' -in $selected) {
         foreach ($name in $files) {
             if (-not (Test-Path (Join-Path $target $name))) { throw "$name not found in the 7-Zip ARM64 installer." }
         }
+        # Under x64 emulation 7z.dll stays locked for a moment after 7z.exe exits; the next run clears the rest.
+        foreach ($attempt in 1..10) {
+            Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+            if (-not (Test-Path $tmp)) { break }
+            Start-Sleep -Seconds 1
+        }
+        if (Test-Path $tmp) { Write-Warning "Could not remove $tmp yet." }
     }
     else {
         foreach ($name in $files) {
             Copy-Item (Join-Path $exe.DirectoryName $name) $target
         }
+        Remove-Item $tmp -Recurse -Force
     }
-    Remove-Item $tmp -Recurse -Force
 }
 
 if ('ffmpeg' -in $selected) {
