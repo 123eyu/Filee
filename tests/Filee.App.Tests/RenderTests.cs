@@ -63,7 +63,7 @@ public class RenderTests
     public void Main_window_pages_render(string page, string language)
     {
         TestServices.EnsureInitialized(language);
-        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
         vm.Navigate(page);
         var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
         window.Show();
@@ -133,7 +133,7 @@ public class RenderTests
         store.Settings.WatchFolders.Add(rule);
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("watch");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
             window.Show();
@@ -186,7 +186,7 @@ public class RenderTests
         };
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("watch");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 1000 };
             window.Show();
@@ -243,7 +243,7 @@ public class RenderTests
         store.Settings.WatchFolders.Add(rule);
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("watch");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 1500 };
             window.Show();
@@ -339,7 +339,7 @@ public class RenderTests
         store.AddHistory(entry);
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("home");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
             window.Show();
@@ -387,7 +387,7 @@ public class RenderTests
         store.History.AddRange(entries);
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, loc, AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, loc, AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("home");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
             window.Show();
@@ -432,7 +432,7 @@ public class RenderTests
     {
         TestServices.EnsureInitialized("en");
         var store = AppHost.Get<Filee.Core.Settings.UserDataStore>();
-        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
         vm.Navigate("presets");
         var page = (PresetsPageViewModel)vm.CurrentPage;
         page.Search = "zzz";
@@ -459,7 +459,7 @@ public class RenderTests
         TestServices.EnsureInitialized(language);
         var store = AppHost.Get<Filee.Core.Settings.UserDataStore>();
         var loc = AppHost.Get<Filee.Core.Localization.ILocalizer>();
-        using var vm = new MainWindowViewModel(AppHost.Services, loc, AppHost.Get<UpdateService>());
+        using var vm = new MainWindowViewModel(AppHost.Services, loc, AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
         vm.Navigate("presets");
         var page = (PresetsPageViewModel)vm.CurrentPage;
         Assert.Equal(["for-email", "for-discord", "for-whatsapp", "for-instagram"], page.PlacePresets.Select(p => p.Preset.Id));
@@ -526,7 +526,7 @@ public class RenderTests
         var before = store.Settings.HistoryLimit;
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("general");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
             window.Show();
@@ -567,7 +567,7 @@ public class RenderTests
         package.ProgressDetail = "176 MB / 422 MB · 8.4 MB/s · 30초 남음";
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("engines");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 1400 };
             window.Show();
@@ -599,7 +599,7 @@ public class RenderTests
         var profiles = store.Profiles.Select(p => p.Clone()).ToList();
         try
         {
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("toolbar");
             var page = (ToolbarPageViewModel)vm.CurrentPage!;
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
@@ -643,7 +643,7 @@ public class RenderTests
     public void Dragging_a_preset_opens_a_gap_with_a_preview_slice()
     {
         TestServices.EnsureInitialized("ko");
-        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
         vm.Navigate("toolbar");
         var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
         window.Show();
@@ -977,7 +977,7 @@ public class RenderTests
         Save(window, $"window-sponsor-supporters-{language}.png");
         window.Close();
 
-        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
         vm.Navigate("about");
         var main = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
         main.Show();
@@ -1109,7 +1109,7 @@ public class RenderTests
         TestServices.EnsureInitialized("en");
         var theme = new ThemeSettings { Mode = ThemeMode.Dark, Accent = "#1D9E75", CornerRadius = 22 };
         AppHost.Get<ThemeService>().Apply(theme, "en");
-        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
         vm.Navigate("toolbar");
         var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
         window.Show();
@@ -1133,7 +1133,7 @@ public class RenderTests
         try
         {
             service.Apply(dark, "en", custom);
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("theme");
             var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
             window.Show();
@@ -1740,7 +1740,7 @@ public class RenderTests
     {
         TestServices.EnsureInitialized(language);
         var updates = AppHost.Get<UpdateService>();
-        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), updates);
+        using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<Filee.Core.Localization.ILocalizer>(), updates, AppHost.Get<UserDataStore>());
         var window = new MainWindow { DataContext = vm, Width = 1080, Height = 820 };
         window.Show();
         Pump();
@@ -2571,7 +2571,7 @@ public class RenderTests
             change(store.Profiles);
             if (dark)
                 theme.Apply(new ThemeSettings { Mode = ThemeMode.Dark }, language);
-            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<ILocalizer>(), AppHost.Get<UpdateService>());
+            using var vm = new MainWindowViewModel(AppHost.Services, AppHost.Get<ILocalizer>(), AppHost.Get<UpdateService>(), AppHost.Get<UserDataStore>());
             vm.Navigate("toolbar");
             window = new MainWindow { DataContext = vm, Width = 1080, Height = height };
             window.Show();

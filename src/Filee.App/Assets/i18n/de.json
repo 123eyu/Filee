@@ -18,6 +18,8 @@
   "nav.theme": "Design",
   "nav.engines": "Module",
   "nav.about": "Über Filee",
+  "nav.collapse": "Seitenleiste einklappen",
+  "nav.expand": "Seitenleiste ausklappen",
   "tray.open": "Filee öffnen",
   "tray.pause": "Tastenkürzel pausieren",
   "tray.resume": "Tastenkürzel fortsetzen",

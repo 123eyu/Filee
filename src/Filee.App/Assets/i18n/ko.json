@@ -19,6 +19,8 @@
   "nav.theme": "테마",
   "nav.engines": "변환 엔진",
   "nav.about": "정보",
+  "nav.collapse": "사이드바 접기",
+  "nav.expand": "사이드바 펼치기",
 
   "tray.open": "Filee 열기",
   "tray.pause": "단축키 일시 중지",

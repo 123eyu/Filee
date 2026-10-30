@@ -19,6 +19,8 @@
   "nav.theme": "Tema",
   "nav.engines": "Motores",
   "nav.about": "Acerca de",
+  "nav.collapse": "Recolher barra lateral",
+  "nav.expand": "Expandir barra lateral",
 
   "tray.open": "Abrir o Filee",
   "tray.pause": "Pausar atalhos",

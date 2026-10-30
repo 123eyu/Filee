@@ -18,6 +18,8 @@
 "nav.theme": "Tema",
 "nav.engines": "Motori",
 "nav.about": "Informazioni",
+"nav.collapse": "Comprimi barra laterale",
+"nav.expand": "Espandi barra laterale",
 "tray.open": "Apri Filee",
 "tray.pause": "Sospendi le scorciatoie",
 "tray.resume": "Riattiva le scorciatoie",

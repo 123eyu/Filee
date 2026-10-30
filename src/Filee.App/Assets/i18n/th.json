@@ -18,6 +18,8 @@
   "nav.theme": "ธีม",
   "nav.engines": "เครื่องมือแปลงไฟล์",
   "nav.about": "เกี่ยวกับ",
+  "nav.collapse": "ย่อแถบด้านข้าง",
+  "nav.expand": "ขยายแถบด้านข้าง",
   "tray.open": "เปิด Filee",
   "tray.pause": "หยุดปุ่มลัดชั่วคราว",
   "tray.resume": "เปิดใช้งานปุ่มลัดต่อ",

@@ -19,6 +19,8 @@
   "nav.theme": "Motyw",
   "nav.engines": "Silniki",
   "nav.about": "O programie",
+  "nav.collapse": "Zwiń pasek boczny",
+  "nav.expand": "Rozwiń pasek boczny",
 
   "tray.open": "Otwórz Filee",
   "tray.pause": "Wstrzymaj skróty",

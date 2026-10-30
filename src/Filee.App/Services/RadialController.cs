@@ -137,9 +137,10 @@ public sealed class RadialController(
         viewModel.Load(files, clickMode: true);
         viewModel.FitToThisDonut();
         window.DonutControl.AllowContextEdit = true;
+        // Set the initial pose before showing the reused window, avoiding a fully-open flash.
+        window.DonutControl.PlayOpenAnimation();
         PlaceAndShow(window, x, y, activate: true);
         WatchFlipKey();
-        window.DonutControl.PlayOpenAnimation();
     }
 
     /// <summary>The mouse button of the drag gesture was released somewhere.</summary>

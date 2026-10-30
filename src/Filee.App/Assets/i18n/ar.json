@@ -18,6 +18,8 @@
   "nav.theme": "المظهر",
   "nav.engines": "المحركات",
   "nav.about": "حول التطبيق",
+  "nav.collapse": "طيّ الشريط الجانبي",
+  "nav.expand": "توسيع الشريط الجانبي",
   "tray.open": "فتح Filee",
   "tray.pause": "إيقاف الاختصارات مؤقتًا",
   "tray.resume": "استئناف الاختصارات",

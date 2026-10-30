@@ -135,7 +135,8 @@ table, e.g. `dumpbin /dependents`) and look for `MSVCP140*.dll`, `VCRUNTIME140*.
 
 To bump a version, change `url`, `sha256` and `size` in engines.json together, run
 `pwsh build/fetch-engines.ps1`, test, and update `THIRD-PARTY-NOTICES.md`. For rhwp, also update `RHWP_VERSION`,
-`RHWP_COMMIT` and `RUST_TOOLCHAIN` in `build/build-linux-native.py` (see below); CI fails until they match. When the
+`RHWP_COMMIT` and `RUST_TOOLCHAIN` in `build/build-native.py` (see below); CI fails until they match. The Windows
+ARM64 builds of rhwp and Unhwp need a new build and pin too (see [Windows on ARM64](#windows-on-arm64)). When the
 LibreOffice team retires a version from `download.documentfoundation.org/libreoffice/stable/`, its URL stops working:
 keep the pinned version current.
 
@@ -143,13 +144,17 @@ keep the pinned version current.
 
 Linux packages run on Ubuntu 22.04 (glibc 2.35). rhwp's Linux release is linked on Ubuntu 24.04 (needs glibc 2.39).
 The `linux-native` job of `.github/workflows/portable.yml` builds it from its pinned, unmodified source on Ubuntu 22.04
-(x64 and arm64) with `build/build-linux-native.py`:
+(x64 and arm64) with `build/build-native.py`:
 
 - `rhwp`: `cargo build --release --locked --bin rhwp` at the tag's commit with its pinned Rust toolchain, in the
   layout of rhwp's release archive.
-- `check` (also run on its own): fails when engines.json pins another rhwp version than the script builds.
+- `unhwp` (arm64 only): Unhwp's NuGet package ships no linux-arm64 library, so `libunhwp.so` is built from the commit
+  the package's nuspec names (`cargo build --release --locked -p unhwp --lib --features ffi`, as upstream builds it).
+- `check` (also run on its own): fails when engines.json pins another rhwp version, or Directory.Packages.props
+  another Unhwp version, than the script builds.
 
-The Linux package jobs pass the result to `build/build-portable.ps1 -RhwpOverride <dir>`. Local builds without it use
+The Linux package jobs pass the result to `build/build-portable.ps1 -RhwpOverride <dir>` (arm64 also
+`-UnhwpOverride <libunhwp.so>`, which the arm64 tests are built with too: `-p:UnhwpNativeLibrary`). Local builds without it use
 the downloaded rhwp (fine on the machine that builds it). SharpHook's native libraries are packaged as they come
 from NuGet: SharpHook 8.0.0 built its X11 back ends against glibc 2.38, 8.0.1 needs glibc 2.34 at most again.
 
@@ -157,7 +162,29 @@ from NuGet: SharpHook 8.0.0 built its X11 back ends against glibc 2.38, 8.0.1 ne
 and the packages are unpacked and started on Ubuntu 22.04 (`build/smoke-portable.ps1`: CLI, rhwp conversions, loading
 the X11 input hook back end; `build/smoke-launch-app.py`: the app under Xvfb). If a SharpHook or engine update fails
 these checks, keep the previous version until upstream builds for an older glibc again, or build the binary from its
-pinned source in `build/build-linux-native.py` like rhwp (PR #113 did this for SharpHook 8.0.0's libuiohook back ends).
+pinned source in `build/build-native.py` like rhwp (PR #113 did this for SharpHook 8.0.0's libuiohook back ends).
+
+## Windows on ARM64
+
+`build/build-installer.ps1 -Runtime win-arm64` builds `Filee-<version>-win-arm64-Setup.exe` (and `-Portable.zip`): the
+app, the command line and Setup for win-arm64, the Explorer menu DLL for ARM64 (`build-explorer-menu.ps1
+-Architecture arm64`, packaged as `arm64`), and ARM64 builds of the bundled engines (`fetch-engines.ps1 -Runtime
+win-arm64`). The engines the app downloads stay x64: on Windows 11 on ARM, which runs them under emulation, the app
+offers the win-x64 downloads (`EngineDownloads.DownloadRuntime`); Windows 10 on ARM can't run them and gets none.
+Setup's engine list is made when it is packed (`build/tools/make-setup.cs`), so the ARM64 Setup offers the x64 one.
+
+- **7-Zip**: the official ARM64 installer of the version engines.json pins, a 7z self-extracting archive unpacked by
+  the x64 7-Zip (Windows' `tar.exe` can't undo its ARM64 executable filter).
+- **rhwp** and **Unhwp's library** have no ARM64 release. `.github/workflows/windows-arm64-native.yml` (run it from the
+  Actions tab once per version) builds them on a Windows ARM64 runner with `build/build-native.py`, from the same
+  pinned commits as above, with the C runtime linked statically (`+crt-static`): they import no Visual C++ runtime DLL,
+  so the ARM64 build ships none. Its artifact is hosted on dl.filee.sh and pinned by SHA-256 in `$arm64Pins` of
+  `build/fetch-engines.ps1`; until a pin is filled in, a win-arm64 build stops and says so. `unhwp.dll` goes next to
+  `Filee.exe` through the build (`-p:UnhwpNativeLibrary`).
+
+`UnhwpConverter` reports Unhwp as available where its library loads, so a build without it shows the engine as not
+available on this platform. CI's `build (win-arm64)` job builds and tests on Windows 11 ARM64; once both pins are filled
+in it also builds the package (artifact `windows-arm64-package`).
 
 ## Images and vector graphics
 

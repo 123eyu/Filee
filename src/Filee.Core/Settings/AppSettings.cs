@@ -262,6 +262,12 @@ public sealed class AppSettings
     public double UiScale { get; set; } = 1;
 
     /// <summary>
+    /// The main window's navigation is collapsed to an icon rail (the button at its bottom). A missing value (settings from
+    /// before it) reads as expanded, so it needs no schema step.
+    /// </summary>
+    public bool NavCollapsed { get; set; }
+
+    /// <summary>
     /// Where the main window was when it last closed, so the next start opens it there (#586). Null until it has closed
     /// once. A Filee from before it skips the property, so it needs no schema step.
     /// </summary>
