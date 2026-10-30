@@ -543,9 +543,12 @@ public class DonutFlipTests
             Assert.True(donut.IsFlipping);
             Assert.False(donut.HasOldFace);
             Assert.Equal(0, donut.FlipOrigin);
-            Assert.True(donut.SliceFlipWidth(false, 0) > 0);
+            // The incoming face starts exactly edge-on, without a minimum-width stripe.
+            Assert.Equal(0, donut.SliceFlipWidth(false, 0));
             Assert.Equal(0, donut.SliceFlipWidth(false, 2));
-            donut.Advance(DonutMenu.FlipDuration - DonutMenu.SliceTurn / 2);
+            donut.Advance(0.01);
+            Assert.InRange(donut.SliceFlipWidth(false, 0), 0.01, 0.99);
+            donut.Advance(DonutMenu.FlipDuration - DonutMenu.SliceTurn / 2 - 0.01);
             Assert.False(donut.IsFlipping);
             Assert.Equal(1, donut.SliceFlipWidth(false, 2));
             donut.AccentBrush = Avalonia.Media.Brushes.Red;
@@ -1157,7 +1160,9 @@ public class DonutFlipTests
 
             // Drawn right here, not by the render loop: that would play the rest of the turn first.
             donut.HandleKey(Key.Tab);
-            donut.Advance(DonutMenu.FlipDuration * 0.3);
+            donut.Advance(DonutMenu.SliceTurn / 2);
+            Assert.Equal(0, donut.SliceFlipWidth(false, 0));
+            donut.Advance(DonutMenu.SliceTurn / 4);
             Assert.InRange(donut.SliceFlipWidth(false, 0), 0.01, 0.99);
             var size = new PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height);
             using (var turning = new Avalonia.Media.Imaging.RenderTargetBitmap(size))
