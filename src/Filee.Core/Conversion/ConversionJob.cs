@@ -66,6 +66,15 @@ public sealed class FileResult
     /// <summary>The system's own words after <see cref="NoticeReasonKey"/> (not localized), or null.</summary>
     public string? NoticeDetail { get; set; }
 
+    /// <summary>
+    /// A picture it became stayed under the preset's minimum size (#662). Apart from <see cref="NoticeKey"/>, which a
+    /// later note (the original kept or copied) replaces: both are shown.
+    /// </summary>
+    public bool UnderMinimumSize { get; set; }
+
+    /// <summary>There is a note to show: <see cref="NoticeKey"/>, <see cref="UnderMinimumSize"/> or both.</summary>
+    public bool HasNotice => NoticeKey is not null || UnderMinimumSize;
+
     /// <summary>"Replace the original" sent the source to the Recycle Bin / Trash (its path may now hold the result).</summary>
     public bool OriginalInTrash { get; set; }
 

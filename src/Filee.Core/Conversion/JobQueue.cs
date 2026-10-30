@@ -356,6 +356,9 @@ public sealed class JobQueue : IAsyncDisposable
             allocator.Discard();
             throw;
         }
+        // Not checked against the maximum (as before), but a picture under the minimum gets its notice (#662).
+        if (SizeLimit.IsUnderMinimum(job.Preset, [output]))
+            first.UnderMinimumSize = true;
         first.Outputs.Add(output);
         foreach (var f in job.Files.Where(f => f.State != FileState.Failed))
         {
@@ -532,6 +535,8 @@ public sealed class JobQueue : IAsyncDisposable
         {
             await write(output, progress);
             SizeLimit.Check(job.Preset, [output]); // joined media aren't fitted: one over the limit is refused (#553)
+            if (SizeLimit.IsUnderMinimum(job.Preset, [output]))
+                first.UnderMinimumSize = true;
             first.Outputs.Add(output);
             foreach (var f in joined)
             {
@@ -852,7 +857,7 @@ public sealed class JobQueue : IAsyncDisposable
                         if (preset.Image.ChangesSpeed && !(isLast && finalOutput))
                             preset = AtOriginalSpeed(preset);
                         // Likewise the size limit: only the result has to fit, not a picture passed to the next engine.
-                        if ((preset.Image.MaxSizeMb > 0 || preset.Media.MaxSizeMb > 0) && !(isLast && finalOutput))
+                        if ((preset.Image.MaxSizeMb > 0 || preset.Image.MinSizeMb > 0 || preset.Media.MaxSizeMb > 0) && !(isLast && finalOutput))
                             preset = WithoutSizeLimit(preset);
                         var stepInfo = new ConversionStep(input, step.From, step.To, preset, allocator, workDir, step.FrameSequence,
                             key => file.NoticeKey = key, step.MotionPhoto, step.LivePhoto, fonts =>
@@ -885,6 +890,9 @@ public sealed class JobQueue : IAsyncDisposable
             // The size limit (#553): a result the engine couldn't fit (HEIC, a render, an animation) isn't handed over.
             if (finalOutput)
                 SizeLimit.Check(runWith, inputs);
+            // The minimum (#662), on the pictures themselves: after the source was copied over, before they go into a ZIP.
+            if (finalOutput && SizeLimit.IsUnderMinimum(runWith, inputs))
+                file.UnderMinimumSize = true;
 
             if (zipResult && inputs.Count > 0)
                 inputs = PackZip(job, file, index, inputs, ct);
@@ -950,6 +958,7 @@ public sealed class JobQueue : IAsyncDisposable
         {
             var copy = preset.Clone();
             copy.Image.MaxSizeMb = 0;
+            copy.Image.MinSizeMb = 0;
             copy.Media.MaxSizeMb = 0;
             return copy;
         }

@@ -20,6 +20,15 @@ public interface IChoice
     string? Detail { get; }
 }
 
+/// <summary>The unit of a picture's size range in the preset editor (#662); the preset itself keeps megabytes.</summary>
+public enum FileSizeUnit
+{
+    /// <summary>1,000 bytes.</summary>
+    KB,
+    /// <summary>1,000,000 bytes.</summary>
+    MB,
+}
+
 /// <summary>A value with a localized label for combo boxes.</summary>
 public sealed record Choice<T>(T Value, string Label, string? Detail = null) : IChoice
 {
@@ -173,7 +182,12 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _traceColors = Math.Clamp(_edit.Trace.Colors, TracingOptions.MinColors, TracingOptions.MaxColors);
         _traceDetail = Math.Clamp(_edit.Trace.Detail, 0, 100);
         _quality = _edit.Image.Quality;
-        _imageMaxSizeMb = (decimal)_edit.Image.MaxSizeMb;
+        // In KB when the size that's set (the maximum, else the minimum) is under 1 MB: 0.05 MB reads as 50 KB.
+        var shown = _edit.Image.MaxSizeMb > 0 ? _edit.Image.MaxSizeMb : _edit.Image.MinSizeMb;
+        _imageSizeUnit = SizeUnits[shown is > 0 and < 1 ? 0 : 1];
+        var perMegabyte = _imageSizeUnit.Value == FileSizeUnit.KB ? 1000m : 1m;
+        _imageMaxSize = (decimal)_edit.Image.MaxSizeMb * perMegabyte;
+        _imageMinSize = (decimal)_edit.Image.MinSizeMb * perMegabyte;
         _videoMaxSizeMb = (decimal)_edit.Media.MaxSizeMb;
         _resizePercent = _edit.Image.ResizePercent;
         _longEdge = _edit.Image.LongEdge;
@@ -272,7 +286,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         nameof(AudioCodecs), nameof(AudioCodecChoice), nameof(ShowAudioCodec),
         nameof(ShowArchive), nameof(ShowArchiveOptions), nameof(ShowExtractNote),
         nameof(ShowSaveEveryFrame), nameof(ShowAnimationSpeed), nameof(ShowTrace), nameof(ShowCad), nameof(ShowCadColors), nameof(ShowExtractMotionPhoto), nameof(ShowSlideshow),
-        nameof(ShowLivePhotoChoice), nameof(LivePhotoKinds), nameof(LivePhotoChoice), nameof(IsLivePhoto), nameof(LivePhotoHint))]
+        nameof(ShowLivePhotoChoice), nameof(LivePhotoKinds), nameof(LivePhotoChoice), nameof(IsLivePhoto), nameof(LivePhotoHint),
+        nameof(ShowImageSize), nameof(SizeRangeError), nameof(IsValid))]
     private Choice<string> _target;
 
     private LivePhotoKind _livePhotoValue;
@@ -299,7 +314,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
                 return;
             _livePhotoValue = value.Value;
             OnPropertyChanged();
-            foreach (var name in (string[])[nameof(IsLivePhoto), nameof(LivePhotoHint), nameof(ShowImage), nameof(ShowPdf), nameof(ShowSaveEveryFrame)])
+            foreach (var name in (string[])[nameof(IsLivePhoto), nameof(LivePhotoHint), nameof(ShowImage), nameof(ShowPdf), nameof(ShowSaveEveryFrame), nameof(ShowImageSize), nameof(SizeRangeError), nameof(IsValid)])
                 OnPropertyChanged(name);
         }
     }
@@ -410,8 +425,30 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     [ObservableProperty] private bool _fitsDebayer;
     [ObservableProperty] private int _quality;
 
-    /// <summary>"Size limit (MB)" for a picture or a video (0 = none, #553).</summary>
-    [ObservableProperty] private decimal? _imageMaxSizeMb;
+    /// <summary>A picture's size range (#553, #662) in <see cref="ImageSizeUnit"/>; 0 or empty = none.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(SizeRangeError), nameof(IsValid))] private decimal? _imageMinSize;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(SizeRangeError), nameof(IsValid))] private decimal? _imageMaxSize;
+
+    /// <summary>KB or MB, for both ends of the range; not saved (the preset keeps megabytes).</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(SizeFormat), nameof(SizeIncrement))] private Choice<FileSizeUnit> _imageSizeUnit;
+
+    public IReadOnlyList<Choice<FileSizeUnit>> SizeUnits { get; } =
+        [new(FileSizeUnit.KB, "KB"), new(FileSizeUnit.MB, "MB")];
+
+    /// <summary>Every byte shows: 50.5 KB, or a precise size saved before.</summary>
+    public string SizeFormat => ImageSizeUnit.Value == FileSizeUnit.KB ? "0.####" : "0.#######";
+    public decimal SizeIncrement => ImageSizeUnit.Value == FileSizeUnit.KB ? 10 : 0.5m;
+
+    /// <summary>4096 MB in either unit, as the video's box: what the boxes show is what is saved.</summary>
+    public decimal SizeMaximum => ImageSizeUnit.Value == FileSizeUnit.KB ? 4_096_000 : 4096;
+
+    /// <summary>The size range's boxes are shown (not for a Live / Motion Photo, nor a format without a quality).</summary>
+    public bool ShowImageSize => ShowImage && ShowQuality;
+
+    /// <summary>A minimum over the maximum, while the boxes are shown; a maximum of 0 is no maximum.</summary>
+    public string? SizeRangeError => ShowImageSize && ImageMaxSize > 0 && ImageMinSize > ImageMaxSize ? _loc["presets.size_range_invalid"] : null;
+
+    /// <summary>"Size limit (MB)" for a video (0 = none, #553).</summary>
     [ObservableProperty] private decimal? _videoMaxSizeMb;
     [ObservableProperty] private int _resizePercent;
     [ObservableProperty] private int _longEdge;
@@ -554,6 +591,24 @@ public sealed partial class PresetEditorViewModel : ObservableObject
 
     // A combo box that loses its selection sets null: every choice keeps its value (see Choices.Restore).
     partial void OnTargetChanged(Choice<string>? oldValue, Choice<string> newValue) => Choices.Restore(oldValue, newValue, v => Target = v);
+
+    /// <summary>
+    /// Both ends keep their size in the other unit: 500 KB becomes 0.5 MB. The boxes' maximum is raised before the
+    /// values grow and lowered after they shrink, so a box never cuts a value to the other unit's maximum.
+    /// </summary>
+    partial void OnImageSizeUnitChanged(Choice<FileSizeUnit>? oldValue, Choice<FileSizeUnit> newValue)
+    {
+        if (Choices.Restore(oldValue, newValue, v => ImageSizeUnit = v) || oldValue is null || oldValue.Value == newValue.Value)
+            return;
+        var toKilobytes = newValue.Value == FileSizeUnit.KB;
+        if (toKilobytes)
+            OnPropertyChanged(nameof(SizeMaximum));
+        var factor = toKilobytes ? 1000m : 0.001m;
+        ImageMinSize *= factor;
+        ImageMaxSize *= factor;
+        if (!toKilobytes)
+            OnPropertyChanged(nameof(SizeMaximum));
+    }
     partial void OnResizeChanged(Choice<ResizeMode>? oldValue, Choice<ResizeMode> newValue) => Choices.Restore(oldValue, newValue, v => Resize = v);
     partial void OnRotationChanged(Choice<ImageRotation>? oldValue, Choice<ImageRotation> newValue) => Choices.Restore(oldValue, newValue, v => Rotation = v);
     partial void OnFlipChanged(Choice<ImageFlip>? oldValue, Choice<ImageFlip> newValue) => Choices.Restore(oldValue, newValue, v => Flip = v);
@@ -698,7 +753,10 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     private static double SizeLimit(decimal? megabytes) => (double)Math.Clamp(megabytes ?? 0, 0, 4096);
 
     public string? NameError => string.IsNullOrWhiteSpace(Name) ? _loc["presets.name_required"] : null;
-    public bool IsValid => NameError is null;
+    public bool IsValid => NameError is null && SizeRangeError is null;
+
+    /// <summary>A size from the range's boxes in megabytes.</summary>
+    private decimal? Megabytes(decimal? size) => ImageSizeUnit.Value == FileSizeUnit.KB ? size / 1000 : size;
 
     /// <summary>Writes the edits into the original preset. Returns false if the input is invalid.</summary>
     public bool Apply()
@@ -714,7 +772,8 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         var image = _original.Image;
         image.Quality = Math.Clamp(Quality, 1, 100);
         // Only where the field is shown, as with SaveEveryFrame below: a limit left behind by a JPG target fits nothing.
-        image.MaxSizeMb = ShowQuality ? SizeLimit(ImageMaxSizeMb) : 0;
+        image.MaxSizeMb = ShowQuality ? SizeLimit(Megabytes(ImageMaxSize)) : 0;
+        image.MinSizeMb = ShowImageSize ? SizeLimit(Megabytes(ImageMinSize)) : 0;
         if (Resize.Value == ResizeMode.Custom)
         {
             // Custom sizing is stored as CustomSize with Resize None, never as a resize name an older version rejects
