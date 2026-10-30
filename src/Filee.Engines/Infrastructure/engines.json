@@ -168,10 +168,10 @@
           "kind": "tar.gz"
         },
         "7zip": {
-          "version": "26.03",
-          "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603-mac.tar.xz",
-          "sha256": "5CA87677072C59F5602E5C49BAA27D4694BACD2259B4E507F0094249D4281480",
-          "size": 1863192,
+          "version": "25.01",
+          "url": "https://github.com/ip7z/7zip/releases/download/25.01/7z2501-mac.tar.xz",
+          "sha256": "26AA75BC262BB10BF0805617B95569C3035C2C590A99F7DB55C7E9607B2685E0",
+          "size": 1876264,
           "kind": "tar.xz"
         },
         "pandoc": {
@@ -208,10 +208,10 @@
           "kind": "tar.gz"
         },
         "7zip": {
-          "version": "26.03",
-          "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603-mac.tar.xz",
-          "sha256": "5CA87677072C59F5602E5C49BAA27D4694BACD2259B4E507F0094249D4281480",
-          "size": 1863192,
+          "version": "25.01",
+          "url": "https://github.com/ip7z/7zip/releases/download/25.01/7z2501-mac.tar.xz",
+          "sha256": "26AA75BC262BB10BF0805617B95569C3035C2C590A99F7DB55C7E9607B2685E0",
+          "size": 1876264,
           "kind": "tar.xz"
         },
         "pandoc": {

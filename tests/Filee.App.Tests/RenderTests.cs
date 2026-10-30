@@ -25,6 +25,8 @@ public class RenderTests
 {
     public static TheoryData<string, string> Pages => new()
     {
+        { "home", "it" }, { "general", "it" }, { "triggers", "it" }, { "toolbar", "it" },
+        { "presets", "it" }, { "theme", "it" }, { "engines", "it" }, { "about", "it" }, { "watch", "it" },
         { "home", "de" }, { "general", "de" }, { "triggers", "de" }, { "toolbar", "de" },
         { "presets", "de" }, { "theme", "de" }, { "engines", "de" }, { "about", "de" }, { "watch", "de" },
         { "home", "tr" }, { "general", "tr" }, { "triggers", "tr" }, { "toolbar", "tr" },
@@ -493,7 +495,7 @@ public class RenderTests
             editor.Target = editor.Targets.Single(t => t.Value == "jpg");
             Assert.False(editor.ShowVideoMaxSize);
             Assert.True(editor.ShowQuality);
-            editor.ImageMaxSizeMb = 1.5m;
+            editor.ImageMaxSize = 1.5m;
             Assert.True(editor.Apply());
             Assert.Equal((0.0, 1.5), (added[^1].Media.MaxSizeMb, added[^1].Image.MaxSizeMb));
 

@@ -931,6 +931,12 @@ internal static class SettingsMigrations
         //      donut; custom claims stay put.
         if (from < 54)
             changed |= LearnExtensions(profiles, out _, ["001", "7z.001", "zip.001", "tar.001"]);
+        // v55: Apple Voice Memos recordings (.qta, #646) learn the audio donut; custom claims stay put.
+        if (from < 55)
+            changed |= LearnExtensions(profiles, out _, ["qta"]);
+        // v56: Bink videos (.bik, #751) learn the video donut; custom claims stay put.
+        if (from < 56)
+            changed |= LearnExtensions(profiles, out _, ["bik"]);
         return changed;
     }
 

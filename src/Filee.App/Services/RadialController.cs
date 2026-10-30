@@ -267,10 +267,10 @@ public sealed class RadialController(
             }
         };
         // One line per drag, to tell "the drag never reached the donut" from "it did but nothing lit up" when someone
-        // reports a donut that doesn't react.
-        window.DragSummary += (events, hit, lit) =>
-            log.LogInformation("Drag over the donut: {Events} move event(s), ended on {Kind} {Index}, drawn lit {Lit:0.00}",
-                events, hit.Kind, hit.Index, lit);
+        // reports a donut that doesn't react, and a drop from a drag the system ended without one (#784).
+        window.DragSummary += (events, hit, lit, dropped) =>
+            log.LogInformation("Drag over the donut: {Events} move event(s), ended on {Kind} {Index}, drawn lit {Lit:0.00}{Drop}",
+                events, hit.Kind, hit.Index, lit, dropped ? "" : ", left without a drop");
         window.EscapePressed += () => Close();
         window.Deactivated += (_, _) =>
         {
@@ -327,6 +327,11 @@ public sealed class RadialController(
         var orphaned = web is null && files.Any(WebDrop.IsPlaceholder);
         if (viewModel.PresetAt(index, sub) is not { } preset || SourcesFor(preset, files) is not { Count: > 0 } sources || orphaned)
         {
+            // Said in the log, as a drop that closes the donut looks the same as one the system never delivered (#784).
+            log.LogInformation("The donut closed without converting: {Reason}",
+                viewModel.PresetAt(index, sub) is not { } slice ? $"no preset at slice {index}/{sub}"
+                : orphaned ? "the browser drop behind the files is gone"
+                : $"none of the {files.Count} file(s) fit preset {slice.Id}");
             web?.Dispose();
             Close();
             return;
@@ -334,6 +339,7 @@ public sealed class RadialController(
 
         if (preset.IsTool)
         {
+            log.LogInformation("Opening {Preset} for {Count} file(s)", preset.Id, sources.Count);
             var near = _window?.Position;
             Close(animate: false);
             if (web is null)
@@ -615,7 +621,13 @@ public sealed class RadialController(
         }
         _visible = true;
         if (activate)
+        {
             window.Activate();
+            // ShowActivated is false because the same window is also used during an OS drag, where taking focus would
+            // break Explorer's drag. Click mode is different: the donut owns the keyboard until it closes, so focus it
+            // explicitly for Tab/arrow/Enter handling.
+            window.DonutControl.Focus();
+        }
     }
 
     private static bool SameFiles(IReadOnlyList<string> a, IReadOnlyList<string> b) =>

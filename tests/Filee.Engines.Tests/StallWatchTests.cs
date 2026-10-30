@@ -16,14 +16,15 @@ public sealed class StallWatchTests
     public async Task A_program_that_keeps_reporting_runs_well_past_the_stall_limit()
     {
         var token = TestContext.Current.CancellationToken;
-        var watch = new StallWatch(TimeSpan.FromMilliseconds(300));
+        // A limit far above the 50 ms between lines: a busy CI runner can delay a 50 ms wait by a few hundred ms.
+        var watch = new StallWatch(TimeSpan.FromSeconds(1));
         var exited = new TaskCompletionSource();
         var started = Stopwatch.StartNew();
 
-        // "34% Running transforms on e-book..." every 50 ms for a second, three times the limit.
+        // "34% Running transforms on e-book..." every 50 ms for three seconds, three times the limit.
         var output = Task.Run(async () =>
         {
-            while (started.Elapsed < TimeSpan.FromSeconds(1))
+            while (started.Elapsed < TimeSpan.FromSeconds(3))
             {
                 watch.Touch();
                 await Task.Delay(50, token);
@@ -32,7 +33,7 @@ public sealed class StallWatchTests
         }, token);
 
         Assert.True(await watch.WaitAsync(exited.Task, token, Interval));
-        Assert.True(started.Elapsed >= TimeSpan.FromSeconds(1));
+        Assert.True(started.Elapsed >= TimeSpan.FromSeconds(3));
         await output;
     }
 

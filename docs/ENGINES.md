@@ -22,7 +22,7 @@ Filee chooses engines automatically. Settings → *Engines* shows their status, 
 | PDF slides | built in (PDFium, PdfPig) | **PDF → PPTX**: a picture of each page on its own slide (looks like the PDF, not editable), the page's text in the speaker notes |
 | PDF tables | built in (PdfPig) | **PDF → XLSX, ODS, CSV** (#267): each table drawn with lines on its own sheet, numbers and dates as real values, merged cells and column widths kept |
 | E-mail | built in (MimeKit, MsgReader) | **EML, Outlook MSG → HTML** (headers + body, inline pictures), **TXT**, **ZIP** (the attachments); **MSG → EML**; **MHTML → HTML** (the saved page in one file, pictures inlined; on to PDF, DOCX, HWPX, TXT, Markdown, EPUB from there) |
-| Data | built in (System.Text.Json, YamlDotNet, Tomlyn, System.Xml) | **JSON, JSON Lines, YAML, TOML, XML, CSV ↔ each other** (CSV for tables); **vCard, iCalendar ↔ CSV**; spreadsheets, contacts and events reach JSON / YAML / TOML / XML through CSV |
+| Data | built in (System.Text.Json, YamlDotNet, Tomlyn, System.Xml) | **JSON, JSON Lines, YAML, TOML, XML, CSV ↔ each other** (CSV for tables); **vCard, iCalendar ↔ CSV**; FreeMASTER oscilloscope TXT → CSV; spreadsheets, contacts and events reach JSON / YAML / TOML / XML through CSV |
 | **E-books** | built in | **EPUB, MOBI/AZW/AZW3/PRC, FB2, HTMLZ, TXTZ → EPUB, HWPX (→ PDF), TXT, HTML, Markdown, FB2, HTMLZ, TXTZ**; HTML, Markdown, TXT, DOCX → EPUB/FB2/HTMLZ/TXTZ; HTML → TXT; comics CBZ/CBR/CB7/CBT/CBC → PDF, EPUB, CBZ; PDF → CBZ; AZW4 → PDF; **EPUB ↔ KEPUB** (Kobo) |
 | CAD (ACadSharp + built-in renderer) | built in (library) | **DWG ↔ DXF**; DWG/DXF → **PDF** (vector), **SVG**, PNG, JPG, WEBP, TIFF, BMP, GIF, ICO, AVIF |
 | **Subtitles** | built in | **SRT, ASS/SSA, WebVTT, SAMI (SMI), LRC, TTML, MicroDVD, SCC → SRT, ASS, WebVTT, SAMI, LRC, TTML, MicroDVD**, always UTF-8 (Korean CP949 / EUC-KR files read correctly) |
@@ -797,8 +797,12 @@ in the preset library only). Video and audio need FFmpeg.
   is encoded to AAC.
 - **Merge videos** copies the clips with the concat demuxer only when all share the codec setup (ffprobe's extradata
   hash), size, pixel format, frame rate, turn and kind of sound; otherwise every clip is fitted into the first clip's
-  frame and encoded, a clip without sound silent for its length. **Merge audio** always decodes and joins the sound
+  frame and encoded, a clip without sound silent for its length. Sound tracks FFmpeg can't decode are skipped: each
+  clip gives its first track FFmpeg can decode, and the clips are copied only when that track has the same number in
+  every clip. **Merge audio** always decodes and joins the sound
   into one M4A, so no encoder padding or gap is left between files. Both are in `Media/MediaJoining.cs`.
+  As a special case, a pair of self-contained `.m4s` files, one with only video and one with only audio, is muxed
+  together into one MP4 without re-encoding (in either order). Both codecs and the preset's settings must allow copying.
 - **Video from images**: each picture is fitted into 1920 × 1080 as a JPEG, then shown for the preset's seconds with
   crossfades (`xfade`) of 1 s, at most half a picture's time, or cuts. At most `MediaOptions.MaxSlides` (300)
   pictures, not counting downloads that failed; the queue refuses more before any is converted. A filter graph too
@@ -1477,6 +1481,8 @@ Dahua DVR / NVR recordings (`.dav`, read only, #594) are read by FFmpeg's `dhav`
 the target and preset allow it (`CanCopyVideo`), like any other container's; G.711 sound is encoded for targets that
 can't hold it. The chunks carry the camera's wall-clock time, so FFmpeg reports the recording date as the start time;
 the output starts at zero.
+Bink videos (`.bik`, read only, #751), the cutscene format of many games, are read by FFmpeg's `bink` demuxer and
+decoder and go to every video and audio target. FFmpeg has no Bink encoder, so nothing writes `.bik`.
 A Video CD's `MPEGAV/AVSEQ01.DAT` (MPEG-1 in a RIFF/CDXA wrapper) counts as MPEG: `.dat` is an extension of that
 format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fails instead of making a file.
 
@@ -1509,6 +1515,9 @@ format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fa
 
   Read only (FFmpeg's decoders): APE (Monkey's Audio), Musepack (MPC), TAK, DSF and DFF (DSD), DTS, Speex (SPX) and the
   formats above. No encoder for them is in the build, or (DTS) only an experimental one.
+  Apple Voice Memos recordings (`.qta`, read only, #646) are QuickTime audio: FFmpeg's mov demuxer reads them and
+  they go to every audio target, from the first audio track FFmpeg can decode, like any other source
+  (iOS 26 memos also carry a spatial APAC track FFmpeg has no decoder for).
 
 - **Rewrapping instead of re-encoding.** When the target container takes the source's codecs as they are
   (`MediaEncoding.Remuxable`: H.264/HEVC + AAC, ALAC, AC-3, E-AC-3 or MP3 for MP4/M4V/MOV, also ProRes and PCM for
@@ -1573,7 +1582,9 @@ format, and FFmpeg reads what the file holds, so a `.dat` with no video in it fa
   subtitle engine (ASS and WebVTT extraction cost 11 so SRT is the hub).
 - The first video stream (cover pictures excluded) is converted. Video to video keeps every audio track (languages,
   commentary), each copied where the target takes its codec or encoded on its own, with its language tag; FLV and DV
-  hold one and keep the first. Video to audio takes the first. Files without sound still convert to video. Title, artist
+  hold one and keep the first. Video to audio takes the first. Tracks FFmpeg can't decode (no decoder, like the spatial
+  APAC track of iPhone recordings, or a codec ffprobe can't name) are skipped, unless the file has no other sound; the
+  clip window's waveform, *Remove silence* and clip music take the same track. Files without sound still convert to video. Title, artist
   and other tags and chapters are kept, album art too for MP3, M4A, M4B and FLAC. Portrait phone videos are turned
   upright. Odd sizes are evened out, frame rates that MPEG-2/MXF/MPEG-4 part 2 cannot store are converted, and channels
   WMA or AMR cannot hold are mixed down.
