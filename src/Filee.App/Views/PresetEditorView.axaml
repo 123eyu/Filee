@@ -303,6 +303,23 @@
           <CheckBox Content="{DynamicResource presets.hardware_encoding}" IsChecked="{Binding HardwareEncoding}" />
           <TextBlock Classes="caption" TextWrapping="Wrap" Margin="28,0,0,0" Text="{DynamicResource presets.hardware_encoding_hint}" />
         </StackPanel>
+        <StackPanel Spacing="2" IsVisible="{Binding ShowCaption}">
+          <CheckBox Content="{DynamicResource presets.caption_video}" IsChecked="{Binding Caption}" />
+          <TextBlock Classes="caption" TextWrapping="Wrap" Margin="28,0,0,0" Text="{DynamicResource presets.caption_video_hint}" />
+          <Grid ColumnDefinitions="*,12,*" Margin="28,6,0,0" IsVisible="{Binding Caption}">
+            <StackPanel>
+              <TextBlock Classes="label" Text="{DynamicResource presets.spoken_language}" />
+              <ComboBox ItemsSource="{Binding SpokenLanguageChoices}" SelectedItem="{Binding SpokenLanguage}" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch" MaxDropDownHeight="420" AutomationProperties.Name="{DynamicResource presets.spoken_language}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:IChoice">
+                    <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
       </StackPanel>
     </Border>
 
