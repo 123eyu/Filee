@@ -821,6 +821,7 @@
 "presets.min_size": "Minimo",
 "presets.max_size_short": "Massimo",
 "presets.size_unit": "Unità",
+  "presets.size_limit": "Limite di dimensione",
 "presets.min_size_hint_image": "0 = nessun minimo. Un'immagine più piccola viene salvata di nuovo con qualità più alta; i formati senza impostazione di qualità (PNG, GIF…) non vengono ingranditi e il file riceve un avviso.",
 "presets.size_range_invalid": "Il minimo è maggiore del massimo.",
 "presets.audio_bitrate": "Bitrate audio",

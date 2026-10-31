@@ -821,6 +821,7 @@
   "presets.min_size": "En az",
   "presets.max_size_short": "En çok",
   "presets.size_unit": "Birim",
+  "presets.size_limit": "Boyut sınırı",
   "presets.min_size_hint_image": "0 = en az sınır yok. Daha küçük bir resim daha yüksek kaliteyle yeniden kaydedilir; kalite ayarı olmayan biçimler (PNG, GIF…) büyütülmez, bunun yerine dosyaya bir bildirim eklenir.",
   "presets.size_range_invalid": "En az değer en çok değerden büyük.",
   "presets.audio_bitrate": "Ses bit hızı",

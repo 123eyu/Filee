@@ -821,6 +821,7 @@
   "presets.min_size": "ต่ำสุด",
   "presets.max_size_short": "สูงสุด",
   "presets.size_unit": "หน่วย",
+  "presets.size_limit": "ขนาดสูงสุด",
   "presets.min_size_hint_image": "0 = ไม่มีขั้นต่ำ ภาพที่เล็กกว่าจะถูกบันทึกใหม่ด้วยคุณภาพที่สูงขึ้น รูปแบบที่ไม่มีการตั้งค่าคุณภาพ (PNG, GIF…) จะไม่ถูกทำให้ใหญ่ขึ้น แต่ไฟล์จะได้รับการแจ้งเตือนแทน",
   "presets.size_range_invalid": "ค่าต่ำสุดมากกว่าค่าสูงสุด",
   "presets.audio_bitrate": "บิตเรตเสียง",

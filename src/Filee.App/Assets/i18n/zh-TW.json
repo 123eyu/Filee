@@ -836,6 +836,7 @@
   "presets.min_size": "最小",
   "presets.max_size_short": "最大",
   "presets.size_unit": "單位",
+  "presets.size_limit": "大小上限",
   "presets.min_size_hint_image": "0 = 無最小值。較小的圖片會以更高的品質重新儲存；沒有品質設定的格式（PNG、GIF…）不會變大，而是為檔案附加通知。",
   "presets.size_range_invalid": "最小值大於最大值。",
   "presets.audio_bitrate": "音訊位元率",

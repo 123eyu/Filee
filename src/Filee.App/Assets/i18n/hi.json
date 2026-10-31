@@ -821,6 +821,7 @@
   "presets.min_size": "न्यूनतम",
   "presets.max_size_short": "अधिकतम",
   "presets.size_unit": "इकाई",
+  "presets.size_limit": "आकार सीमा",
   "presets.min_size_hint_image": "0 = कोई न्यूनतम नहीं। छोटी तस्वीर को ऊँची गुणवत्ता पर फिर से सहेजा जाता है; बिना गुणवत्ता सेटिंग वाले फ़ॉर्मैट (PNG, GIF…) बड़े नहीं किए जाते, इसके बजाय फ़ाइल पर सूचना लगती है।",
   "presets.size_range_invalid": "न्यूनतम अधिकतम से बड़ा है।",
   "presets.audio_bitrate": "ऑडियो बिटरेट",

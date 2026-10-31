@@ -821,6 +821,7 @@
   "presets.min_size": "الحد الأدنى",
   "presets.max_size_short": "الحد الأقصى",
   "presets.size_unit": "الوحدة",
+  "presets.size_limit": "حد الحجم",
   "presets.min_size_hint_image": "0 = بلا حد أدنى. تُحفظ الصورة الأصغر مرة أخرى بجودة أعلى؛ لا تُكبَّر الصيغ التي لا تحتوي على إعداد للجودة (PNG وGIF…) ويحصل الملف على تنبيه بدلًا من ذلك.",
   "presets.size_range_invalid": "الحد الأدنى أكبر من الحد الأقصى.",
   "presets.audio_bitrate": "معدل بت الصوت",

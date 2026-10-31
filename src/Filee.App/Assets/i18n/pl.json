@@ -836,6 +836,7 @@
   "presets.min_size": "Minimum",
   "presets.max_size_short": "Maksimum",
   "presets.size_unit": "Jednostka",
+  "presets.size_limit": "Limit rozmiaru",
   "presets.min_size_hint_image": "0 = bez minimum. Mniejszy obraz zostaje zapisany ponownie w wyższej jakości; formaty bez ustawienia jakości (PNG, GIF…) nie są powiększane, a plik dostaje powiadomienie.",
   "presets.size_range_invalid": "Minimum jest większe niż maksimum.",
   "presets.audio_bitrate": "Bitrate audio",

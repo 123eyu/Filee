@@ -821,6 +821,7 @@
   "presets.min_size": "Minimum",
   "presets.max_size_short": "Maksimum",
   "presets.size_unit": "Satuan",
+  "presets.size_limit": "Batas ukuran",
   "presets.min_size_hint_image": "0 = tanpa minimum. Gambar yang lebih kecil disimpan ulang dengan kualitas lebih tinggi; format tanpa pengaturan kualitas (PNG, GIF…) tidak diperbesar, dan file diberi pemberitahuan sebagai gantinya.",
   "presets.size_range_invalid": "Minimum lebih besar dari maksimum.",
   "presets.audio_bitrate": "Bitrate audio",

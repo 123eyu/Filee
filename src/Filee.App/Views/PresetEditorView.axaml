@@ -268,10 +268,10 @@
         <!-- Two per row, whichever apply to the target: hidden ones leave no gap. -->
         <UniformGrid Columns="2" ColumnSpacing="12" RowSpacing="10">
           <StackPanel IsVisible="{Binding ShowVideoMaxSize}">
-            <TextBlock Classes="label" Text="{DynamicResource presets.max_size}" />
+            <TextBlock Classes="label" Text="{DynamicResource presets.size_limit}" />
             <Grid ColumnDefinitions="*,8,Auto">
               <NumericUpDown Value="{Binding VideoMaxSize}" Minimum="0" Maximum="{Binding VideoSizeMaximum}" Increment="{Binding VideoSizeIncrement}" FormatString="{Binding VideoSizeFormat}"
-                             ToolTip.Tip="{DynamicResource presets.max_size_hint_video}" AutomationProperties.Name="{DynamicResource presets.max_size}" />
+                             ToolTip.Tip="{DynamicResource presets.max_size_hint_video}" AutomationProperties.Name="{DynamicResource presets.size_limit}" />
               <ComboBox Grid.Column="2" ItemsSource="{Binding VideoSizeUnits}" SelectedItem="{Binding VideoSizeUnitChoice}"
                         AutomationProperties.Name="{DynamicResource presets.size_unit}" />
             </Grid>

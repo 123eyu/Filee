@@ -821,6 +821,7 @@
   "presets.min_size": "最小",
   "presets.max_size_short": "最大",
   "presets.size_unit": "単位",
+  "presets.size_limit": "サイズ上限",
   "presets.min_size_hint_image": "0 = 最小なし。小さい画像は品質を上げて保存し直します。品質設定のない形式（PNG、GIF…）は大きくならず、代わりに通知が付きます。",
   "presets.size_range_invalid": "最小が最大より大きくなっています。",
   "presets.audio_bitrate": "音声ビットレート",

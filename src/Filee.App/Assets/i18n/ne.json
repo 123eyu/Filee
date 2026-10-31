@@ -821,6 +821,7 @@
   "presets.min_size": "न्यूनतम",
   "presets.max_size_short": "अधिकतम",
   "presets.size_unit": "एकाइ",
+  "presets.size_limit": "आकार सीमा",
   "presets.min_size_hint_image": "0 = न्यूनतम छैन। सानो तस्बिरलाई उच्च गुणस्तरमा फेरि सुरक्षित गरिन्छ; गुणस्तर सेटिङ नभएका ढाँचाहरू (PNG, GIF…) ठूला बनाइँदैनन्, बरु फाइलमा सूचना थपिन्छ।",
   "presets.size_range_invalid": "न्यूनतम अधिकतमभन्दा ठूलो छ।",
   "presets.audio_bitrate": "अडियो बिटरेट",
