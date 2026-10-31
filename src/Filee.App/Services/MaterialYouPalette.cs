@@ -29,8 +29,10 @@ public sealed class MaterialYouPalette
     public required Color OnAccent { get; init; }
 
     /// <summary>Creates an Avalonia ResourceDictionary mapping standard Filee theme keys to solid brushes and resources.</summary>
-    public ResourceDictionary ToResourceDictionary() => new()
+    public ResourceDictionary ToResourceDictionary()
     {
+        var resources = new ResourceDictionary
+        {
         ["PageBrush"] = new SolidColorBrush(Page),
         ["SurfaceBrush"] = new SolidColorBrush(Surface),
         ["SurfaceAltBrush"] = new SolidColorBrush(SurfaceAlt),
@@ -90,7 +92,26 @@ public sealed class MaterialYouPalette
         ["TextControlButtonBorderBrushPressed"] = new SolidColorBrush(Colors.Transparent),
         ["TextControlButtonForegroundPointerOver"] = new SolidColorBrush(Accent),
         ["TextControlButtonForegroundPressed"] = new SolidColorBrush(Accent),
-    };
+        };
+
+        // Dark mode: Fluent's hover and focus fills for inputs and dropdowns are near-black, a sudden dark box. Keep them a
+        // faint step lighter than the resting fill instead, so hovering only hints at the change.
+        if (Luminance(Surface) < 0.5)
+        {
+            var rest = new SolidColorBrush(SurfaceAlt);
+            var faint = new SolidColorBrush(SoftPalette.Shade(SurfaceAlt, 0.06));
+            foreach (var key in new[] { "TextControlBackground", "ComboBoxBackground", "ComboBoxBackgroundUnfocused" })
+                resources[key] = rest;
+            foreach (var key in new[]
+                     {
+                         "TextControlBackgroundPointerOver", "TextControlBackgroundFocused",
+                         "ComboBoxBackgroundPointerOver", "ComboBoxBackgroundPressed",
+                     })
+                resources[key] = faint;
+        }
+
+        return resources;
+    }
 
     /// <summary>True if the colour is monochrome (low saturation or black/white/charcoal).</summary>
     public static bool IsMonochrome(Color c)

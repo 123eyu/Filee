@@ -508,6 +508,32 @@ public class MaterialYouThemeTests
         }
     }
 
+    [Fact]
+    public void Dark_inputs_and_dropdowns_get_a_faint_hover_instead_of_near_black()
+    {
+        foreach (var seed in new[] { "#7F77DD", "#1D9E75", "#1F1E1D" })
+        {
+            var dark = MaterialYouPalette.Generate(Color.Parse(seed), isDark: true).ToResourceDictionary();
+
+            foreach (var (rest, hover) in new[]
+                     {
+                         ("TextControlBackground", "TextControlBackgroundPointerOver"),
+                         ("TextControlBackground", "TextControlBackgroundFocused"),
+                         ("ComboBoxBackground", "ComboBoxBackgroundPointerOver"),
+                     })
+            {
+                var restColor = Assert.IsType<SolidColorBrush>(dark[rest]).Color;
+                var hoverColor = Assert.IsType<SolidColorBrush>(dark[hover]).Color;
+
+                // A step lighter than the resting fill, never darker than it.
+                Assert.True(MaterialYouPalette.Luminance(hoverColor) > MaterialYouPalette.Luminance(restColor),
+                    $"{seed}: {hover} {hoverColor} should be slightly lighter than {rest} {restColor}");
+                Assert.True(MaterialYouPalette.Luminance(hoverColor) - MaterialYouPalette.Luminance(restColor) < 0.12,
+                    $"{seed}: {hover} {hoverColor} should stay faint next to {rest} {restColor}");
+            }
+        }
+    }
+
     private static Color ResolveColor(string key, ThemeVariant variant)
     {
         var window = new Window();
