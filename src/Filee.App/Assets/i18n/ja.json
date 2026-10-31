@@ -814,7 +814,6 @@
   "presets.media_quality.Small": "小さめ（共有向け）",
   "presets.max_height": "高さの上限",
   "presets.max_height.original": "元のまま",
-  "presets.max_size": "サイズ上限 (MB)",
   "presets.max_size_hint_image": "0 = 上限なし。大きい画像は品質を下げ、次に縮小して、収まるまで保存し直します。",
   "presets.max_size_hint_video": "0 = 上限なし。大きい動画は長さに合ったビットレートでエンコードし直します。",
   "presets.size_range": "ファイルサイズ",
