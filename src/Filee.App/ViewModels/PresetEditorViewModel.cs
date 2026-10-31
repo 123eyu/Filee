@@ -650,10 +650,14 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     {
         if (Choices.Restore(oldValue, newValue, v => VideoSizeUnitChoice = v) || oldValue is null || oldValue.Value == newValue.Value)
             return;
-        OnPropertyChanged(nameof(VideoSizeMaximum));
+        var toPercent = newValue.Value == VideoSizeUnit.Percent;
+        if (!toPercent)
+            OnPropertyChanged(nameof(VideoSizeMaximum));
         OnPropertyChanged(nameof(VideoSizeIncrement));
         OnPropertyChanged(nameof(VideoSizeFormat));
         OnPropertyChanged(nameof(VideoMaxSize));
+        if (toPercent)
+            OnPropertyChanged(nameof(VideoSizeMaximum));
     }
 
     /// <summary>

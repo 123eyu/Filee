@@ -275,6 +275,39 @@ public class SizeLimitTests
     }
 
     [Fact]
+    public void ForVideo_refuses_when_source_is_missing_or_cannot_be_measured()
+    {
+        var percentPreset = new MediaOptions { MaxSizePercent = 25 };
+        var exNull = Assert.Throws<ConversionRefusedException>(() => SizeLimit.ForVideo(percentPreset, (string?)null));
+        Assert.Equal("error.over_size_limit", exNull.ErrorKey);
+
+        var exMissing = Assert.Throws<ConversionRefusedException>(() => SizeLimit.ForVideo(percentPreset, "C:/does_not_exist.mp4"));
+        Assert.Equal("error.over_size_limit", exMissing.ErrorKey);
+
+        var exZero = Assert.Throws<ConversionRefusedException>(() => SizeLimit.ForVideo(percentPreset, 0L));
+        Assert.Equal("error.over_size_limit", exZero.ErrorKey);
+    }
+
+    [Fact]
+    public void ForVideo_calculates_combined_limit_for_joined_sources()
+    {
+        var percentPreset = new MediaOptions { MaxSizePercent = 50 };
+        using var dir = new TempDir();
+        var video1 = dir.File("video1.mp4", new string('a', 10_000));
+        var video2 = dir.File("video2.mp4", new string('b', 30_000));
+
+        // Total source size is 40,000 bytes. 50% = 20,000 bytes.
+        Assert.Equal(20_000, SizeLimit.ForVideo(percentPreset, [video1, video2]));
+
+        // Missing source among joined sources refuses
+        var ex = Assert.Throws<ConversionRefusedException>(() => SizeLimit.ForVideo(percentPreset, [video1, "C:/missing.mp4"]));
+        Assert.Equal("error.over_size_limit", ex.ErrorKey);
+
+        var exEmpty = Assert.Throws<ConversionRefusedException>(() => SizeLimit.ForVideo(percentPreset, (IEnumerable<string>?)null));
+        Assert.Equal("error.over_size_limit", exEmpty.ErrorKey);
+    }
+
+    [Fact]
     public async Task Video_percentage_limit_clears_on_intermediate_steps()
     {
         using var dir = new TempDir();

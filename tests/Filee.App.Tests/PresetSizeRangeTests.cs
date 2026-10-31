@@ -232,17 +232,19 @@ public class PresetSizeRangeTests
         Assert.Equal($"photo.jpg — {loc["notice.under_min_size"]}", job.Notices);
     }
 
-    [AvaloniaFact]
-    public void Video_size_unit_switch_keeps_each_value_separately()
+    [AvaloniaTheory]
+    [InlineData(25)]
+    [InlineData(500)]
+    public void Video_size_unit_switch_keeps_each_value_separately(int initialMb)
     {
         TestServices.EnsureInitialized("en");
-        var preset = new Preset { Name = "Video Preset", TargetFormat = "mp4", Media = { MaxSizeMb = 25 } };
+        var preset = new Preset { Name = "Video Preset", TargetFormat = "mp4", Media = { MaxSizeMb = initialMb } };
         InEditor(preset, (editor, window) =>
         {
             Assert.Equal(VideoSizeUnit.MB, editor.VideoSizeUnitChoice.Value);
-            Assert.Equal(25m, editor.VideoMaxSize);
+            Assert.Equal((decimal)initialMb, editor.VideoMaxSize);
 
-            // Switch to percent: value should not turn into 25%, but be null or previous percent
+            // Switch to percent: value should not turn into 99% or initial MB, but be null or previous percent
             editor.VideoSizeUnitChoice = editor.VideoSizeUnits.Single(u => u.Value == VideoSizeUnit.Percent);
             Pump();
             Assert.Null(editor.VideoMaxSize);
@@ -256,7 +258,7 @@ public class PresetSizeRangeTests
             // Switch back to MB: original MB value is preserved
             editor.VideoSizeUnitChoice = editor.VideoSizeUnits.Single(u => u.Value == VideoSizeUnit.MB);
             Pump();
-            Assert.Equal(25m, editor.VideoMaxSize);
+            Assert.Equal((decimal)initialMb, editor.VideoMaxSize);
             Assert.Equal(4096m, editor.VideoSizeMaximum);
 
             // Switch back to percent: percent value is preserved

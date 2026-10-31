@@ -539,7 +539,7 @@ public sealed partial class JobQueue : IAsyncDisposable
         try
         {
             await write(output, progress);
-            SizeLimit.Check(job.Preset, [output]); // joined media aren't fitted: one over the limit is refused (#553)
+            SizeLimit.Check(job.Preset, [output], joined.Select(f => f.SourcePath)); // joined media aren't fitted: one over the limit is refused (#553)
             if (SizeLimit.IsUnderMinimum(job.Preset, [output]))
                 first.UnderMinimumSize = true;
             first.Outputs.Add(output);
