@@ -829,7 +829,6 @@
   "presets.media_quality.Small": "小（便于分享）",
   "presets.max_height": "最大高度",
   "presets.max_height.original": "原始",
-  "presets.max_size": "大小上限（MB）",
   "presets.max_size_hint_image": "0 = 不限。较大的图片会先降低质量、再缩小，重新保存直到符合上限。",
   "presets.max_size_hint_video": "0 = 不限。较大的视频会按其时长允许的码率重新编码。",
   "presets.size_range": "文件大小",
