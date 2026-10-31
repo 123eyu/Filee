@@ -140,6 +140,7 @@
   "notice.original_kept": "मूल फाइल राखियो, नतिजा प्रतिलिपिको रूपमा सुरक्षित भयो",
   "notice.original_in_trash": "मूल फाइल रिसाइकल बिन / ट्र्यासमा छ, नतिजाले आफ्नै नाम राख्यो",
   "notice.original_unchanged": "यसलाई सानो बनाउन सकिएन, त्यसैले मूल फाइल जस्ताको तस्तै छोडियो",
+  "notice.move_original_kept": "Copied, but the original couldn't be removed",
   "trash.no_recycle_bin": "यो ड्राइभमा रिसाइकल बिन / ट्र्यास छैन",
   "trash.in_use": "फाइल अर्को प्रोग्राममा खुला छ",
   "trash.read_only": "फाइल पढ्न मात्र मिल्ने छ",
@@ -1272,5 +1273,7 @@
   "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
   "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
   "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action"
+  "presets.copy_action": "Action",
+  "presets.move_to_folder": "Move to folder",
+  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
 }

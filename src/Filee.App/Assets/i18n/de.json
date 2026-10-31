@@ -140,6 +140,7 @@
   "notice.original_kept": "Das Original wurde beibehalten und das Ergebnis als Kopie gespeichert",
   "notice.original_in_trash": "Das Original liegt im Papierkorb. Das Ergebnis hat seinen eigenen Namen behalten",
   "notice.original_unchanged": "Die Datei ließ sich nicht verkleinern. Das Original blieb unverändert",
+  "notice.move_original_kept": "Copied, but the original couldn't be removed",
   "trash.no_recycle_bin": "dieses Laufwerk hat keinen Papierkorb",
   "trash.in_use": "die Datei ist in einem anderen Programm geöffnet",
   "trash.read_only": "die Datei ist schreibgeschützt",
@@ -1270,5 +1271,7 @@
   "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
   "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
   "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action"
+  "presets.copy_action": "Action",
+  "presets.move_to_folder": "Move to folder",
+  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
 }

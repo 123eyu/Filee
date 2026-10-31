@@ -140,6 +140,7 @@
   "notice.original_kept": "Se conservó el original, el resultado se guardó como copia",
   "notice.original_in_trash": "El original está en la Papelera, el resultado conservó su propio nombre",
   "notice.original_unchanged": "No se pudo hacer más pequeño, así que el original se dejó como estaba",
+  "notice.move_original_kept": "Copied, but the original couldn't be removed",
   "trash.no_recycle_bin": "esta unidad no tiene Papelera de reciclaje",
   "trash.in_use": "el archivo está abierto en otro programa",
   "trash.read_only": "el archivo es de solo lectura",
@@ -1272,5 +1273,7 @@
   "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
   "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
   "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action"
+  "presets.copy_action": "Action",
+  "presets.move_to_folder": "Move to folder",
+  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
 }

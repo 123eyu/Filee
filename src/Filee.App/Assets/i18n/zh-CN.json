@@ -146,6 +146,7 @@
   "notice.original_kept": "已保留原文件，结果另存为副本",
   "notice.original_in_trash": "原文件已在回收站/废纸篓中，结果保留了自己的名称",
   "notice.original_unchanged": "无法变小，因此保留原文件不变",
+  "notice.move_original_kept": "Copied, but the original couldn't be removed",
   "trash.no_recycle_bin": "此驱动器没有回收站/废纸篓",
   "trash.in_use": "文件正在被其他程序使用",
   "trash.read_only": "文件为只读",
@@ -1292,5 +1293,7 @@
   "presets.copy_hint": "直接复制文件和文件夹，不转换格式。原件保留，重名时自动编号。",
   "presets.copy_choose_folder": "请选择目标文件夹，或选择“每次询问”。",
   "presets.copy_back": "复制到文件夹放在背面，请切换到背面后添加。",
-  "presets.copy_action": "操作"
+  "presets.copy_action": "操作",
+  "presets.move_to_folder": "Move to folder",
+  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
 }

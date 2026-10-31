@@ -36,8 +36,10 @@
       <StackPanel Grid.Column="2">
         <TextBlock Classes="label" Text="{DynamicResource presets.target}" IsVisible="{Binding ShowConversionOutput}" />
         <TextBlock Classes="label" Text="{DynamicResource presets.copy_action}" IsVisible="{Binding IsCopyToFolder}" />
+        <ComboBox x:Name="CopyActionBox" ItemsSource="{Binding CopyActions}" SelectedItem="{Binding CopyAction}" IsVisible="{Binding IsCopyToFolder}"
+                  HorizontalAlignment="Stretch" AutomationProperties.Name="{DynamicResource presets.copy_action}" />
         <ComboBox x:Name="TargetBox" Classes="targets" ItemsSource="{Binding Targets}" SelectedItem="{Binding Target}"
-                  IsEnabled="{Binding CanChangeTarget}"
+                  IsEnabled="{Binding CanChangeTarget}" IsVisible="{Binding !IsCopyToFolder}"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MaxDropDownHeight="420" AutomationProperties.Name="{DynamicResource presets.target}">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="vm:IChoice">
@@ -515,7 +517,7 @@
       </StackPanel>
     </Border>
 
-    <TextBlock Text="{DynamicResource presets.copy_hint}" IsVisible="{Binding IsCopyToFolder}" TextWrapping="Wrap" />
+    <TextBlock Text="{Binding CopyHint}" IsVisible="{Binding IsCopyToFolder}" TextWrapping="Wrap" />
 
     <!-- Output -->
     <Border Classes="card" Padding="14">
