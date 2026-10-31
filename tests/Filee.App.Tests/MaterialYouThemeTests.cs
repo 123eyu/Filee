@@ -430,6 +430,91 @@ public class MaterialYouThemeTests
         }
     }
 
+    [Fact]
+    public void Light_lavender_accent_stays_lavender_instead_of_turning_dark_blue()
+    {
+        var seed = Color.Parse("#7F77DD");
+        var light = MaterialYouPalette.Generate(seed, isDark: false);
+
+        // Regression for #835: the accent used to be forced to 45% lightness, which gave #392EB8.
+        Assert.NotEqual(Color.Parse("#392EB8"), light.Accent);
+
+        var (seedHue, _, seedLightness) = MaterialYouPalette.RgbToHsl(seed);
+        var (hue, _, lightness) = MaterialYouPalette.RgbToHsl(light.Accent);
+        Assert.InRange(Math.Abs(hue - seedHue), 0, 0.02);
+        Assert.InRange(seedLightness - lightness, 0, 0.08);
+    }
+
+    [Fact]
+    public void Light_accent_text_is_readable_for_every_preset_and_swatch()
+    {
+        var seeds = ThemeService.Presets.Select(p => p.LightColor)
+            .Concat(new[] { "#7F77DD", "#1D9E75", "#D85A30", "#378ADD", "#D4537E", "#BA7517", "#639922", "#5F5E5A" }.Select(hex => Color.Parse(hex)));
+
+        foreach (var seed in seeds)
+        {
+            var light = MaterialYouPalette.Generate(seed, isDark: false);
+            var ratio = MaterialYouPalette.ContrastRatio(light.Accent, light.OnAccent);
+            Assert.True(ratio >= MaterialYouPalette.MinAccentContrast,
+                $"{seed}: {light.OnAccent} on {light.Accent} has contrast {ratio:F2}");
+        }
+    }
+
+    [AvaloniaFact]
+    public void Buttons_slider_checkbox_and_focused_text_box_follow_the_accent_in_light_and_dark()
+    {
+        TestServices.EnsureInitialized("en");
+        var themeService = AppHost.Get<ThemeService>();
+
+        try
+        {
+            themeService.Apply(new ThemeSettings { Style = ThemeStyle.MaterialYou, Accent = "#7F77DD", PresetKey = "lavender" }, "en");
+
+            foreach (var variant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                var accent = ResolveBrush("AccentBrush", variant).Color;
+                var onAccent = ResolveBrush("OnAccentBrush", variant).Color;
+
+                foreach (var key in new[]
+                         {
+                             "AccentButtonBackground", "SliderTrackValueFill",
+                             "CheckBoxCheckBackgroundFillChecked", "CheckBoxCheckBackgroundStrokeChecked",
+                             "TextControlBorderBrushFocused", "SystemAccentColor",
+                         })
+                {
+                    var color = key == "SystemAccentColor" ? ResolveColor(key, variant) : ResolveBrush(key, variant).Color;
+                    Assert.True(accent == color, $"{variant}: {key} is {color}, expected the accent {accent}");
+                }
+
+                // The slider thumb is a slightly darker shade of the accent, so it can be told apart from the filled track.
+                var thumb = ResolveBrush("AccentThumbBrush", variant).Color;
+                Assert.NotEqual(accent, thumb);
+                Assert.Equal(thumb, ResolveBrush("SliderThumbBackground", variant).Color);
+                Assert.True(MaterialYouPalette.Luminance(thumb) < MaterialYouPalette.Luminance(accent),
+                    $"{variant}: slider thumb {thumb} should be darker than the track {accent}");
+
+                // The cross in search boxes must not fall back to Fluent's default blue on hover or press.
+                Assert.Equal(accent, ResolveBrush("TextControlButtonForegroundPointerOver", variant).Color);
+                Assert.Equal(accent, ResolveBrush("TextControlButtonForegroundPressed", variant).Color);
+                Assert.Equal(Colors.Transparent, ResolveBrush("TextControlButtonBackgroundPointerOver", variant).Color);
+
+                Assert.Equal(onAccent, ResolveBrush("AccentButtonForeground", variant).Color);
+                Assert.Equal(onAccent, ResolveBrush("CheckBoxCheckGlyphForegroundChecked", variant).Color);
+            }
+        }
+        finally
+        {
+            themeService.Apply(new ThemeSettings(), "en");
+        }
+    }
+
+    private static Color ResolveColor(string key, ThemeVariant variant)
+    {
+        var window = new Window();
+        Assert.True(window.TryFindResource(key, variant, out var value), $"Failed to resolve resource {key} for variant {variant}");
+        return Assert.IsType<Color>(value);
+    }
+
     private static SolidColorBrush ResolveBrush(string key, ThemeVariant variant)
     {
         var window = new Window();

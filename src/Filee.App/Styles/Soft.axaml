@@ -366,7 +366,7 @@
     <Setter Property="Width" Value="8" />
     <Setter Property="Height" Value="28" />
     <Setter Property="CornerRadius" Value="{DynamicResource SoftRadiusPill}" />
-    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AccentThumbBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderThickness" Value="1.5" />
     <Setter Property="VerticalAlignment" Value="Center" />
@@ -381,6 +381,13 @@
   </Style>
   <Style Selector="Window.material-you Slider:horizontal /template/ Thumb#PART_Thumb:pressed">
     <Setter Property="RenderTransform" Value="scale(1.4, 1.15)" />
+  </Style>
+
+  <!-- Search box cross: turns the accent colour on hover and press (no background) instead of Fluent's default blue -->
+  <Style Selector="Window.material-you TextBox /template/ Button#PART_ClearButton:pointerover /template/ ContentPresenter#PART_ContentPresenter, Window.material-you TextBox /template/ Button#PART_ClearButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
   </Style>
 
   <!-- ToggleButtons (Filter chips / Modifier keys) -->
