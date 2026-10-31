@@ -234,6 +234,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         _keepDates = _edit.Output.KeepDates;
         _zipResult = _edit.Output.ZipResult;
         _replaceOriginal = _edit.Output.ReplaceOriginal;
+        _moveInsteadOfCopy = _edit.Output.MoveInsteadOfCopy;
     }
 
     public string PresetId => _original.Id;
@@ -566,6 +567,26 @@ public sealed partial class PresetEditorViewModel : ObservableObject
     [ObservableProperty] private bool _zipResult;
     /// <summary>The result takes the original's place, which goes to the Recycle Bin / Trash (OutputRule.ReplaceOriginal).</summary>
     [ObservableProperty] private bool _replaceOriginal;
+    /// <summary>Copy to folder: the files are moved instead of copied (OutputRule.MoveInsteadOfCopy, #856).</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CopyHint), nameof(CopyAction))]
+    private bool _moveInsteadOfCopy;
+
+    /// <summary>Copy to folder's Action: copy (the default) or move.</summary>
+    public IReadOnlyList<Choice<bool>> CopyActions =>
+        [new(false, _loc["presets.copy_to_folder"]), new(true, _loc["presets.move_to_folder"])];
+
+    public Choice<bool> CopyAction
+    {
+        get => CopyActions[MoveInsteadOfCopy ? 1 : 0];
+        set
+        {
+            if (value is not null)
+                MoveInsteadOfCopy = value.Value;
+        }
+    }
+
+    /// <summary>What Copy to folder does with the originals, as the box below it is set.</summary>
+    public string CopyHint => _loc[MoveInsteadOfCopy ? "presets.move_hint" : "presets.copy_hint"];
     [ObservableProperty] private Choice<MediaQuality> _mediaQuality;
     [ObservableProperty] private Choice<int> _maxHeight;
     [ObservableProperty] private Choice<int> _audioBitrate;
@@ -934,6 +955,7 @@ public sealed partial class PresetEditorViewModel : ObservableObject
         // Only for geospatial targets, where it is offered: a box ticked for Shapefile must not zip a later PNG.
         output.ZipResult = ShowZipResult && ZipResult;
         output.ReplaceOriginal = !IsCopyToFolder && ReplaceOriginal;
+        output.MoveInsteadOfCopy = IsCopyToFolder && MoveInsteadOfCopy;
         return true;
     }
 

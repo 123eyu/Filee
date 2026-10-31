@@ -140,6 +140,7 @@
   "notice.original_kept": "تم الاحتفاظ بالأصل وحُفظت النتيجة كنسخة",
   "notice.original_in_trash": "الأصل في سلة المحذوفات، واحتفظت النتيجة باسمها",
   "notice.original_unchanged": "تعذّر تصغيره، لذا تُرك الأصل كما هو",
+  "notice.move_original_kept": "Copied, but the original couldn't be removed",
   "trash.no_recycle_bin": "لا توجد سلة محذوفات على هذا القرص",
   "trash.in_use": "الملف مفتوح في برنامج آخر",
   "trash.read_only": "الملف للقراءة فقط",
@@ -1271,5 +1272,7 @@
   "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
   "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
   "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action"
+  "presets.copy_action": "Action",
+  "presets.move_to_folder": "Move to folder",
+  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
 }

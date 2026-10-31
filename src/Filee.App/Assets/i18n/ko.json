@@ -146,6 +146,7 @@
   "notice.original_kept": "원본은 그대로 두고 결과를 사본으로 저장했어요",
   "notice.original_in_trash": "원본은 휴지통으로 옮겼고, 결과는 저장된 이름 그대로예요",
   "notice.original_unchanged": "더 작게 만들지 못해서 원본을 그대로 두었어요",
+  "notice.move_original_kept": "Copied, but the original couldn't be removed",
   "trash.no_recycle_bin": "이 드라이브에는 휴지통이 없어요",
   "trash.in_use": "다른 프로그램에서 파일을 열고 있어요",
   "trash.read_only": "읽기 전용 파일이에요",
@@ -1292,5 +1293,7 @@
   "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
   "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
   "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action"
+  "presets.copy_action": "Action",
+  "presets.move_to_folder": "Move to folder",
+  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
 }
