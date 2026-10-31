@@ -146,7 +146,7 @@
   "notice.original_kept": "Oryginał został zachowany, wynik zapisano jako kopię",
   "notice.original_in_trash": "Oryginał jest w Koszu, wynik zachował własną nazwę",
   "notice.original_unchanged": "Nie udało się go zmniejszyć, więc oryginał pozostał bez zmian",
-  "notice.move_original_kept": "Copied, but the original couldn't be removed",
+  "notice.move_original_kept": "Skopiowano, ale nie udało się usunąć oryginału",
   "trash.no_recycle_bin": "ten dysk nie ma Kosza",
   "trash.in_use": "plik jest otwarty w innym programie",
   "trash.read_only": "plik jest tylko do odczytu",
@@ -1289,11 +1289,11 @@
   "whats_new.2_0_0.more.title": "I jeszcze trochę",
   "whats_new.2_0_0.more.text": "Przywróć domyślne ustawienia jednego pierścienia, przeszukuj całą historię i konwertuj dokumenty w gudżarati, hindi lub arabskim przez LibreOffice.",
   "preset.extract_motion.donut": "Wyodrębnij wideo z Live Photo",
-  "presets.copy_to_folder": "Copy to folder",
-  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
-  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
-  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action",
-  "presets.move_to_folder": "Move to folder",
-  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
+  "presets.copy_to_folder": "Kopiuj do folderu",
+  "presets.copy_hint": "Kopiuje pliki i foldery bez konwersji. Oryginały zostają na miejscu; istniejące nazwy dostają numer.",
+  "presets.copy_choose_folder": "Wybierz folder docelowy albo „Pytaj za każdym razem”.",
+  "presets.copy_back": "„Kopiuj do folderu” należy do tyłu. Przełącz na „Tył”, aby to dodać.",
+  "presets.copy_action": "Działanie",
+  "presets.move_to_folder": "Przenieś do folderu",
+  "presets.move_hint": "Przenosi pliki i foldery bez konwersji. Znikają z poprzedniego miejsca, gdy już dotrą; istniejące nazwy dostają numer."
 }

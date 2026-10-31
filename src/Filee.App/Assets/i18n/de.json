@@ -140,7 +140,7 @@
   "notice.original_kept": "Das Original wurde beibehalten und das Ergebnis als Kopie gespeichert",
   "notice.original_in_trash": "Das Original liegt im Papierkorb. Das Ergebnis hat seinen eigenen Namen behalten",
   "notice.original_unchanged": "Die Datei ließ sich nicht verkleinern. Das Original blieb unverändert",
-  "notice.move_original_kept": "Copied, but the original couldn't be removed",
+  "notice.move_original_kept": "Kopiert, aber das Original konnte nicht entfernt werden",
   "trash.no_recycle_bin": "dieses Laufwerk hat keinen Papierkorb",
   "trash.in_use": "die Datei ist in einem anderen Programm geöffnet",
   "trash.read_only": "die Datei ist schreibgeschützt",
@@ -1267,11 +1267,11 @@
   "whats_new.2_0_0.more.title": "Und noch mehr",
   "whats_new.2_0_0.more.text": "Setze einzelne Ringmenüs zurück, durchsuche den gesamten Verlauf und konvertiere Dokumente auf Gujarati, Hindi oder Arabisch mit LibreOffice.",
   "preset.extract_motion.donut": "Video extrahieren",
-  "presets.copy_to_folder": "Copy to folder",
-  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
-  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
-  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action",
-  "presets.move_to_folder": "Move to folder",
-  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
+  "presets.copy_to_folder": "In Ordner kopieren",
+  "presets.copy_hint": "Dateien und Ordner ohne Konvertierung kopieren. Die Originale bleiben, wo sie sind; vorhandene Namen bekommen eine Nummer.",
+  "presets.copy_choose_folder": "Wähle einen Zielordner oder „Jedes Mal fragen“.",
+  "presets.copy_back": "„In Ordner kopieren“ gehört auf die Rückseite. Wechsle zu „Rückseite“, um es hinzuzufügen.",
+  "presets.copy_action": "Aktion",
+  "presets.move_to_folder": "In Ordner verschieben",
+  "presets.move_hint": "Dateien und Ordner ohne Konvertierung verschieben. Sobald sie angekommen sind, sind sie am alten Ort weg; vorhandene Namen bekommen eine Nummer."
 }

@@ -140,7 +140,7 @@
 "notice.original_kept": "L'originale è stato conservato, il risultato è stato salvato come copia",
 "notice.original_in_trash": "L'originale è nel Cestino, il risultato ha mantenuto il proprio nome",
 "notice.original_unchanged": "Impossibile ridurlo, quindi l'originale è stato lasciato com'è",
-"notice.move_original_kept": "Copied, but the original couldn't be removed",
+"notice.move_original_kept": "Copiato, ma non è stato possibile rimuovere l’originale",
 "trash.no_recycle_bin": "questa unità non ha un Cestino",
 "trash.in_use": "il file è aperto in un altro programma",
 "trash.read_only": "il file è di sola lettura",
@@ -1267,11 +1267,11 @@
 "whats_new.2_0_0.more.title": "E qualcosa in più",
 "whats_new.2_0_0.more.text": "Ripristina un singolo donut ai valori predefiniti, cerca in tutta la cronologia e converti documenti in gujarati, hindi o arabo tramite LibreOffice.",
 "preset.extract_motion.donut": "Estrai video",
-  "presets.copy_to_folder": "Copy to folder",
-  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
-  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
-  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action",
-  "presets.move_to_folder": "Move to folder",
-  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
+  "presets.copy_to_folder": "Copia nella cartella",
+  "presets.copy_hint": "Copia file e cartelle senza conversione. Gli originali restano dove sono; ai nomi già esistenti si aggiunge un numero.",
+  "presets.copy_choose_folder": "Scegli una cartella di destinazione, oppure «Chiedi ogni volta».",
+  "presets.copy_back": "«Copia nella cartella» va sul retro. Passa a «Retro» per aggiungerlo.",
+  "presets.copy_action": "Azione",
+  "presets.move_to_folder": "Sposta nella cartella",
+  "presets.move_hint": "Sposta file e cartelle senza conversione. Spariscono da dove erano una volta arrivati; ai nomi già esistenti si aggiunge un numero."
 }

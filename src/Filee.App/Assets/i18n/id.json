@@ -140,7 +140,7 @@
   "notice.original_kept": "File asli dipertahankan, hasil konversi disimpan sebagai salinan",
   "notice.original_in_trash": "File asli ada di Tong Sampah, hasil konversi mempertahankan namanya sendiri",
   "notice.original_unchanged": "Ukuran tidak dapat diperkecil lagi, sehingga file asli dibiarkan apa adanya",
-  "notice.move_original_kept": "Copied, but the original couldn't be removed",
+  "notice.move_original_kept": "Tersalin, tetapi file asli tidak dapat dihapus",
   "trash.no_recycle_bin": "drive ini tidak memiliki Tong Sampah",
   "trash.in_use": "file sedang terbuka di program lain",
   "trash.read_only": "file bersifat hanya-baca (read-only)",
@@ -1267,11 +1267,11 @@
   "whats_new.2_0_0.more.title": "Dan masih banyak lagi",
   "whats_new.2_0_0.more.text": "Atur ulang satu menu donut ke bawaan, cari seluruh riwayat Anda, dan konversi dokumen Gujarati, Hindi, atau Arab melalui LibreOffice.",
   "preset.extract_motion.donut": "Ekstrak video",
-  "presets.copy_to_folder": "Copy to folder",
-  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
-  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
-  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action",
-  "presets.move_to_folder": "Move to folder",
-  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
+  "presets.copy_to_folder": "Salin ke folder",
+  "presets.copy_hint": "Salin file dan folder tanpa konversi. File asli tetap di tempatnya; nama yang sudah ada diberi nomor.",
+  "presets.copy_choose_folder": "Pilih folder tujuan, atau \"Tanyakan setiap kali\".",
+  "presets.copy_back": "\"Salin ke folder\" ada di sisi belakang. Pindah ke \"Belakang\" untuk menambahkannya.",
+  "presets.copy_action": "Tindakan",
+  "presets.move_to_folder": "Pindahkan ke folder",
+  "presets.move_hint": "Pindahkan file dan folder tanpa konversi. File hilang dari tempat asalnya setelah tiba; nama yang sudah ada diberi nomor."
 }
