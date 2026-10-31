@@ -150,18 +150,22 @@ public sealed class MaterialYouPalette
 
     private static readonly Color DarkOnAccent = Color.Parse("#1F1E1D");
 
-    /// <summary>Lowest contrast at which a white label is still kept on a dark-mode accent fill (WCAG's 3:1 for UI components).</summary>
-    public const double MinWhiteLabelContrast = 3.0;
-
     private static readonly Color DarkModeDarkLabel = Color.Parse("#16141A");
 
     /// <summary>
-    /// The label colour on a dark-mode accent fill. White stays white whenever it reads (3:1 or better), which keeps the
-    /// buttons the way they looked before: Lavender (#7F77DD) is 3.76:1 with white, but the old luminance cut-off (0.45)
-    /// turned its labels black. Only fills that are too pale for white (pastels, lightened accents) get the dark label.
+    /// The label colour on a dark-mode accent fill, held to the same <see cref="MinAccentContrast"/> (4.5:1, normal-size
+    /// text) as in light mode. White is used when it reaches that; otherwise the dark label, which has more contrast on
+    /// mid-tone fills such as Lavender (#7F77DD: 3.76:1 with white, 4.86:1 with the dark label). The few fills where
+    /// neither reaches 4.5:1 get whichever of the two is higher.
     /// </summary>
-    internal static Color DarkModeOnAccent(Color fill) =>
-        ContrastRatio(fill, Colors.White) >= MinWhiteLabelContrast ? Colors.White : DarkModeDarkLabel;
+    internal static Color DarkModeOnAccent(Color fill)
+    {
+        var white = ContrastRatio(fill, Colors.White);
+        if (white >= MinAccentContrast)
+            return Colors.White;
+
+        return ContrastRatio(fill, DarkModeDarkLabel) >= white ? DarkModeDarkLabel : Colors.White;
+    }
 
     /// <summary>
     /// Picks the light-mode accent fill and the colour used on top of it. The fill stays as close to the chosen accent

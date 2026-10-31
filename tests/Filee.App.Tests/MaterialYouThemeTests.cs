@@ -535,27 +535,21 @@ public class MaterialYouThemeTests
     }
 
     [Fact]
-    public void Dark_accent_labels_stay_white_when_white_reads_and_turn_dark_only_on_pale_fills()
+    public void Dark_accent_labels_reach_the_same_contrast_as_in_light_mode()
     {
-        // Lavender in dark mode is #7F77DD, which is 3.76:1 with white. Its Save / New labels must stay white, not black.
+        // Lavender in dark mode is #7F77DD: white would be 3.76:1, so it gets the dark label (4.86:1).
         var lavender = MaterialYouPalette.Generate(Color.Parse("#7F77DD"), isDark: true);
-        Assert.Equal(Color.Parse("#7F77DD"), lavender.Accent);
-        Assert.Equal(Colors.White, lavender.OnAccent);
+        Assert.NotEqual(Colors.White, lavender.OnAccent);
 
-        // Pale fills cannot carry white: they get the dark label.
-        foreach (var pale in new[] { "#F5C26B", "#8FD6C0" })
-        {
-            var dark = MaterialYouPalette.Generate(Color.Parse(pale), isDark: true);
-            Assert.NotEqual(Colors.White, dark.OnAccent);
-        }
+        var seeds = ThemeService.Presets.Select(p => p.DarkColor)
+            .Concat(ThemeService.Swatches.Select(hex => Color.Parse(hex)));
 
-        // Whatever the label is, it always reads on its fill.
-        foreach (var hex in new[] { "#7F77DD", "#1D9E75", "#D85A30", "#378ADD", "#D4537E", "#BA7517", "#639922", "#5F5E5A", "#F5C26B", "#8FD6C0" })
+        foreach (var seed in seeds)
         {
-            var dark = MaterialYouPalette.Generate(Color.Parse(hex), isDark: true);
+            var dark = MaterialYouPalette.Generate(seed, isDark: true);
             var ratio = MaterialYouPalette.ContrastRatio(dark.Accent, dark.OnAccent);
-            Assert.True(ratio >= MaterialYouPalette.MinWhiteLabelContrast,
-                $"{hex}: {dark.OnAccent} on {dark.Accent} has contrast {ratio:F2}");
+            Assert.True(ratio >= MaterialYouPalette.MinAccentContrast,
+                $"{seed}: {dark.OnAccent} on {dark.Accent} has contrast {ratio:F2}");
         }
     }
 
