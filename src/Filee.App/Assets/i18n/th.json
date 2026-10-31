@@ -814,7 +814,6 @@
   "presets.media_quality.Small": "ขนาดเล็ก (สำหรับแชร์)",
   "presets.max_height": "ความสูงสูงสุด",
   "presets.max_height.original": "ต้นฉบับ",
-  "presets.max_size": "ขนาดสูงสุด (MB)",
   "presets.max_size_hint_image": "0 = ไม่จำกัด รูปที่ใหญ่กว่าจะถูกบันทึกใหม่ด้วยคุณภาพต่ำลง แล้วย่อขนาด จนกว่าจะพอดี",
   "presets.max_size_hint_video": "0 = ไม่จำกัด วิดีโอที่ใหญ่กว่าจะถูกเข้ารหัสใหม่ด้วยบิตเรตที่ความยาวของมันรองรับ",
   "presets.size_range": "ขนาดไฟล์",
