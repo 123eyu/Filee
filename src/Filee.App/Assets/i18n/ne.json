@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "Filee हटाइँदैछ",
   "installer.uninstall.done_title": "Filee हटाइयो",
   "installer.uninstall.done": "Filee अब यस कम्प्युटरमा छैन।",
+  "installer.uninstall.restart": "प्रयोगमा रहेका केही फाइलहरू कम्प्युटर पुनः सुरु गर्दा मेटिनेछन्। तपाईंले हातैले केही मेटाउनु पर्दैन।",
   "installer.uninstall.settings_kept": "तपाईंका सेटिङहरू राखिएका छन्, ताकि तपाईंले फेरि Filee स्थापना गर्दा काम आओस्।",
   "installer.uninstall.not_installed": "{0} मा Filee स्थापना गरिएको छैन।",
   "installer.options.hide": "लुकाउनुहोस्",

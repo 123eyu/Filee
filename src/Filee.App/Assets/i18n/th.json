@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "กำลังลบ Filee",
   "installer.uninstall.done_title": "ลบ Filee เรียบร้อยแล้ว",
   "installer.uninstall.done": "Filee ไม่มีอยู่ในคอมพิวเตอร์เครื่องนี้แล้ว",
+  "installer.uninstall.restart": "ไฟล์บางไฟล์ที่ยังถูกใช้งานอยู่จะถูกลบเมื่อคุณรีสตาร์ตคอมพิวเตอร์ ไม่ต้องลบอะไรเอง",
   "installer.uninstall.settings_kept": "การตั้งค่าของคุณยังคงถูกเก็บไว้ สำหรับการติดตั้ง Filee ใหม่อีกครั้ง",
   "installer.uninstall.not_installed": "ไม่ได้ติดตั้ง Filee ไว้ใน {0}",
   "installer.options.hide": "ซ่อน",

@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "جارٍ إزالة Filee",
   "installer.uninstall.done_title": "أُزيل Filee",
   "installer.uninstall.done": "لم يعد Filee موجودًا على هذا الكمبيوتر.",
+  "installer.uninstall.restart": "تُحذف بعض الملفات التي كانت لا تزال قيد الاستخدام عند إعادة تشغيل الكمبيوتر. لا حاجة إلى حذف أي شيء يدويًا.",
   "installer.uninstall.settings_kept": "تبقى إعداداتك لحين تثبيت Filee مجددًا.",
   "installer.uninstall.not_installed": "Filee غير مثبّت في {0}.",
   "installer.options.hide": "إخفاء",
