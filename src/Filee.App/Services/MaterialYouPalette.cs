@@ -150,6 +150,19 @@ public sealed class MaterialYouPalette
 
     private static readonly Color DarkOnAccent = Color.Parse("#1F1E1D");
 
+    /// <summary>Lowest contrast at which a white label is still kept on a dark-mode accent fill (WCAG's 3:1 for UI components).</summary>
+    public const double MinWhiteLabelContrast = 3.0;
+
+    private static readonly Color DarkModeDarkLabel = Color.Parse("#16141A");
+
+    /// <summary>
+    /// The label colour on a dark-mode accent fill. White stays white whenever it reads (3:1 or better), which keeps the
+    /// buttons the way they looked before: Lavender (#7F77DD) is 3.76:1 with white, but the old luminance cut-off (0.45)
+    /// turned its labels black. Only fills that are too pale for white (pastels, lightened accents) get the dark label.
+    /// </summary>
+    internal static Color DarkModeOnAccent(Color fill) =>
+        ContrastRatio(fill, Colors.White) >= MinWhiteLabelContrast ? Colors.White : DarkModeDarkLabel;
+
     /// <summary>
     /// Picks the light-mode accent fill and the colour used on top of it. The fill stays as close to the chosen accent
     /// as readability allows: the old rule jumped any light accent to a fixed 45% lightness, which turned lavender
@@ -219,7 +232,7 @@ public sealed class MaterialYouPalette
         else
         {
             var darkPrimary = l < 0.65 ? HslToRgb(h, Math.Min(sat * 0.75, 0.65), 0.75) : seed;
-            var onPrimary = Luminance(darkPrimary) > 0.45 ? Color.Parse("#16141A") : Colors.White;
+            var onPrimary = DarkModeOnAccent(darkPrimary);
             var primaryContainer = HslToRgb(h, Math.Min(sat * 0.5, 0.38), 0.26);
             var onPrimaryContainer = HslToRgb(h, Math.Min(sat * 0.7, 0.55), 0.88);
 
