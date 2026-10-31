@@ -1128,6 +1128,7 @@
   "installer.uninstall.progress": "Usuwanie Filee",
   "installer.uninstall.done_title": "Usunięto Filee",
   "installer.uninstall.done": "Filee nie ma już na tym komputerze.",
+  "installer.uninstall.restart": "Kilka plików, które były jeszcze w użyciu, zostanie usuniętych po ponownym uruchomieniu komputera. Nie trzeba niczego usuwać ręcznie.",
   "installer.uninstall.settings_kept": "Ustawienia zostały zachowane na wypadek ponownej instalacji Filee.",
   "installer.uninstall.not_installed": "Filee nie jest zainstalowany w {0}.",
   "installer.options.hide": "Ukryj",

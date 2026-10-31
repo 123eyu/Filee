@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "Quitando Filee",
   "installer.uninstall.done_title": "Filee se ha quitado",
   "installer.uninstall.done": "Filee ya no está en este equipo.",
+  "installer.uninstall.restart": "Algunos archivos que aún estaban en uso se eliminan al reiniciar el equipo. No tienes que borrar nada a mano.",
   "installer.uninstall.settings_kept": "Tus ajustes se conservan para cuando vuelvas a instalar Filee.",
   "installer.uninstall.not_installed": "Filee no está instalado en {0}.",
   "installer.options.hide": "Ocultar",

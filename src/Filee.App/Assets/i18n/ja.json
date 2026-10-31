@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "Fileeを削除しています",
   "installer.uninstall.done_title": "Fileeを削除しました",
   "installer.uninstall.done": "Fileeはこのコンピューターから削除されました。",
+  "installer.uninstall.restart": "使用中だった一部のファイルは、コンピューターを再起動すると削除されます。手動で削除するものはありません。",
   "installer.uninstall.settings_kept": "設定は残してあります。Fileeを再インストールすると、そのまま使えます。",
   "installer.uninstall.not_installed": "{0}にFileeはインストールされていません。",
   "installer.options.hide": "閉じる",

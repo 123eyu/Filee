@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "Menghapus Filee",
   "installer.uninstall.done_title": "Filee telah dihapus",
   "installer.uninstall.done": "Filee sudah tidak ada lagi di komputer ini.",
+  "installer.uninstall.restart": "Beberapa file yang masih digunakan akan dihapus saat Anda memulai ulang komputer. Tidak ada yang perlu dihapus secara manual.",
   "installer.uninstall.settings_kept": "Pengaturan Anda tetap disimpan jika Anda memasang Filee lagi nanti.",
   "installer.uninstall.not_installed": "Filee tidak terpasang di {0}.",
   "installer.options.hide": "Sembunyikan",
