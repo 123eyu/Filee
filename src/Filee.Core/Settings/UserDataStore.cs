@@ -951,6 +951,10 @@ internal static class SettingsMigrations
         // v57: "Caption" preset (Whisper AI) outputs SRT directly; added to Video and Audio donut profiles
         if (from < 57)
             changed |= AddCaptionPreset(presets, profiles);
+        // v58: C, C++ and C# source files (#864, #828) learn the text donut; custom claims stay put. (Schema 58 may be
+        //      renumbered if another change takes it first.)
+        if (from < 58)
+            changed |= LearnExtensions(profiles, out _, ["c", "h", "cpp", "cc", "cxx", "hpp", "hh", "hxx", "cs"]);
         return changed;
     }
 
