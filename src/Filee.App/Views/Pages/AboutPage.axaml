@@ -34,7 +34,9 @@
     <Grid x:Name="InfoUpdateGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
       <Border Classes="card info-card">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
-          <Image Source="avares://Filee/Assets/Icons/filee.png" Width="72" Height="72" VerticalAlignment="Top" />
+          <!-- Centered next to the text. Side by side, this card is stretched to the height of the Updates card, so a
+               top-aligned logo would sit above the middle of the text. -->
+          <Image Source="avares://Filee/Assets/Icons/filee.png" Width="72" Height="72" VerticalAlignment="Center" />
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
             <TextBlock Text="Filee" FontSize="24" FontWeight="Bold" />
             <TextBlock Classes="muted" Text="{Binding Version}" />
