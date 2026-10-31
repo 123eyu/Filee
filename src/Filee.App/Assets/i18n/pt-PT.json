@@ -829,7 +829,6 @@
   "presets.media_quality.Small": "Tamanho reduzido (para partilhar)",
   "presets.max_height": "Altura máxima",
   "presets.max_height.original": "Original",
-  "presets.max_size": "Limite de tamanho (MB)",
   "presets.max_size_hint_image": "0 = sem limite. Uma imagem maior é guardada novamente com menos qualidade e depois mais pequena, até caber.",
   "presets.max_size_hint_video": "0 = sem limite. Um vídeo maior é codificado novamente com a taxa de bits que a duração permite.",
   "presets.size_range": "Tamanho do ficheiro",
