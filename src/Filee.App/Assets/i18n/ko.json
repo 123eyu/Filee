@@ -1128,6 +1128,7 @@
   "installer.uninstall.progress": "Filee 제거 중",
   "installer.uninstall.done_title": "Filee를 제거했어요",
   "installer.uninstall.done": "Filee가 이 컴퓨터에서 제거됐어요.",
+  "installer.uninstall.restart": "사용 중이던 파일 몇 개는 컴퓨터를 다시 시작하면 지워져요. 직접 지울 것은 없어요.",
   "installer.uninstall.settings_kept": "설정은 남겨 뒀어요. Filee를 다시 설치하면 그대로 쓸 수 있어요.",
   "installer.uninstall.not_installed": "{0}에 Filee가 설치되어 있지 않아요.",
   "installer.options.hide": "접기",

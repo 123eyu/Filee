@@ -1128,6 +1128,7 @@
   "installer.uninstall.progress": "正在移除 Filee",
   "installer.uninstall.done_title": "Filee 已移除",
   "installer.uninstall.done": "Filee 已从这台电脑上移除。",
+  "installer.uninstall.restart": "部分正在使用的文件会在重启电脑后自动删除，无需手动删除。",
   "installer.uninstall.settings_kept": "你的设置已保留，重新安装 Filee 时即可使用。",
   "installer.uninstall.not_installed": "{0} 中没有安装 Filee。",
   "installer.options.hide": "收起",

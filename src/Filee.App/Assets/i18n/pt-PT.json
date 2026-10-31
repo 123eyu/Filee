@@ -1128,6 +1128,7 @@
   "installer.uninstall.progress": "A remover o Filee",
   "installer.uninstall.done_title": "O Filee foi removido",
   "installer.uninstall.done": "O Filee já não está neste computador.",
+  "installer.uninstall.restart": "Alguns ficheiros que ainda estavam em uso são eliminados quando reiniciares o computador. Não há nada para apagar manualmente.",
   "installer.uninstall.settings_kept": "As tuas definições são mantidas para quando voltares a instalar o Filee.",
   "installer.uninstall.not_installed": "O Filee não está instalado em {0}.",
   "installer.options.hide": "Ocultar",

@@ -1128,6 +1128,7 @@
   "installer.uninstall.progress": "Removing Filee",
   "installer.uninstall.done_title": "Filee was removed",
   "installer.uninstall.done": "Filee is no longer on this computer.",
+  "installer.uninstall.restart": "A few files that were still in use are deleted when you restart the computer. There is nothing to delete by hand.",
   "installer.uninstall.settings_kept": "Your settings stay, for when you install Filee again.",
   "installer.uninstall.not_installed": "Filee is not installed in {0}.",
   "installer.options.hide": "Hide",

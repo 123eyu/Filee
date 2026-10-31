@@ -1128,6 +1128,7 @@
   "installer.uninstall.progress": "Suppression de Filee",
   "installer.uninstall.done_title": "Filee a été supprimé",
   "installer.uninstall.done": "Filee n'est plus présent sur cet ordinateur.",
+  "installer.uninstall.restart": "Quelques fichiers encore utilisés sont supprimés au redémarrage de l'ordinateur. Il n'y a rien à supprimer à la main.",
   "installer.uninstall.settings_kept": "Vos paramètres sont conservés, pour le jour où vous réinstallerez Filee.",
   "installer.uninstall.not_installed": "Filee n'est pas installé dans {0}.",
   "installer.options.hide": "Masquer",

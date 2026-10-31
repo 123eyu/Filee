@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "Filee kaldırılıyor",
   "installer.uninstall.done_title": "Filee kaldırıldı",
   "installer.uninstall.done": "Filee artık bu bilgisayarda bulunmuyor.",
+  "installer.uninstall.restart": "Hâlâ kullanımda olan birkaç dosya bilgisayarı yeniden başlattığınızda silinir. Elle silmeniz gereken bir şey yok.",
   "installer.uninstall.settings_kept": "Filee'yi yeniden kurmanız için ayarlarınız saklanıyor.",
   "installer.uninstall.not_installed": "Filee {0} konumunda kurulu değil.",
   "installer.options.hide": "Gizle",

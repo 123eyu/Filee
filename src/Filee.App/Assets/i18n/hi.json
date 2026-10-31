@@ -1108,6 +1108,7 @@
   "installer.uninstall.progress": "Filee हटाया जा रहा है",
   "installer.uninstall.done_title": "Filee हटा दिया गया",
   "installer.uninstall.done": "Filee अब इस कंप्यूटर पर नहीं है।",
+  "installer.uninstall.restart": "जो कुछ फ़ाइलें अभी उपयोग में थीं, वे कंप्यूटर रीस्टार्ट करने पर हट जाएँगी। आपको कुछ भी हाथ से हटाने की ज़रूरत नहीं है।",
   "installer.uninstall.settings_kept": "आपकी सेटिंग्स रखी गई हैं, ताकि Filee दोबारा इंस्टॉल करने पर काम आएँ।",
   "installer.uninstall.not_installed": "{0} में Filee इंस्टॉल नहीं है।",
   "installer.options.hide": "छिपाएँ",
