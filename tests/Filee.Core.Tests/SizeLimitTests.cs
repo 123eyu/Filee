@@ -248,4 +248,70 @@ public class SizeLimitTests
         // A new list each time: adding one never changes the next.
         Assert.NotSame(places[0], BuiltInData.PlacePresets()[0]);
     }
+
+    [Fact]
+    public void A_percentage_limit_computes_correct_bytes()
+    {
+        Assert.Equal(25_000_000, SizeLimit.Bytes(100_000_000L, 25));
+        Assert.Equal(5_000_000, SizeLimit.Bytes(10_000_000L, 50));
+        Assert.Equal(12_345_678, SizeLimit.Bytes(123_456_789L, 10));
+    }
+
+    [Fact]
+    public void ForVideo_calculates_limit_from_percent_or_megabytes()
+    {
+        var percentPreset = new MediaOptions { MaxSizePercent = 25 };
+        Assert.Equal(25_000_000, SizeLimit.ForVideo(percentPreset, 100_000_000L));
+
+        var mbPreset = new MediaOptions { MaxSizeMb = 10 };
+        Assert.Equal(10_000_000, SizeLimit.ForVideo(mbPreset, 100_000_000L));
+
+        var nonePreset = new MediaOptions();
+        Assert.Equal(0, SizeLimit.ForVideo(nonePreset, 100_000_000L));
+
+        using var dir = new TempDir();
+        var video = dir.File("source.mp4", new string('v', 10_000));
+        Assert.Equal(2_500, SizeLimit.ForVideo(percentPreset, video));
+    }
+
+    [Fact]
+    public async Task Video_percentage_limit_clears_on_intermediate_steps()
+    {
+        using var dir = new TempDir();
+        var clip = dir.File("clip.avi");
+        var first = new FakeConverter("first", new ConversionEdge("avi", "mkv"));
+        var second = new FakeConverter("second", new ConversionEdge("mkv", "mp4"));
+        await using var queue = new JobQueue(new ConverterCatalog([first, second]));
+        var preset = new Preset { TargetFormat = "mp4", Media = { MaxSizePercent = 50 } };
+
+        await queue.RunAsync(new ConversionJob([clip], preset, "MP4"));
+
+        var middle = Assert.Single(first.Presets);
+        Assert.Equal(0, middle.Media.MaxSizePercent);
+        var last = Assert.Single(second.Presets);
+        Assert.Equal(50, last.Media.MaxSizePercent);
+        Assert.Equal(50, preset.Media.MaxSizePercent);
+    }
+
+    [Fact]
+    public async Task A_video_result_over_percentage_limit_is_refused()
+    {
+        using var dir = new TempDir();
+        // Source is 10,000 bytes. With 20% limit, max allowed is 2,000 bytes.
+        var source = dir.File("source.mp4", new string('a', 10_000));
+        // FakeConverter writes 3,000 bytes output, which exceeds 2,000 bytes.
+        var fake = new FakeConverter("ffmpeg", new ConversionEdge("mp4", "mp4"))
+        {
+            Content = _ => new string('x', 3_000),
+        };
+        await using var queue = new JobQueue(new ConverterCatalog([fake]));
+        var job = new ConversionJob([source], new Preset { TargetFormat = "mp4", Media = { MaxSizePercent = 20 } }, "MP4");
+
+        await queue.RunAsync(job);
+
+        var file = Assert.Single(job.Files);
+        Assert.Equal(FileState.Failed, file.State);
+        Assert.Equal("error.over_size_limit", file.ErrorKey);
+        Assert.Empty(job.Outputs);
+    }
 }
