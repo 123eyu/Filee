@@ -814,7 +814,6 @@
   "presets.media_quality.Small": "Küçük (paylaşım için)",
   "presets.max_height": "En fazla yükseklik",
   "presets.max_height.original": "Özgün",
-  "presets.max_size": "Boyut sınırı (MB)",
   "presets.max_size_hint_image": "0 = sınır yok. Daha büyük bir resim, sığana kadar önce daha düşük kalitede, sonra daha küçük olarak yeniden kaydedilir.",
   "presets.max_size_hint_video": "0 = sınır yok. Daha büyük bir video, süresinin izin verdiği bit hızıyla yeniden kodlanır.",
   "presets.size_range": "Dosya boyutu",
