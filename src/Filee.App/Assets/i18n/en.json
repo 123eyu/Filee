@@ -829,7 +829,6 @@
   "presets.media_quality.Small": "Small (for sharing)",
   "presets.max_height": "Maximum height",
   "presets.max_height.original": "Original",
-  "presets.max_size": "Size limit (MB)",
   "presets.max_size_hint_image": "0 = no limit. A larger picture is saved again at a lower quality, then smaller, until it fits.",
   "presets.max_size_hint_video": "0 = no limit. A larger video is encoded again at the bitrate its length allows.",
   "presets.size_range": "File size",
