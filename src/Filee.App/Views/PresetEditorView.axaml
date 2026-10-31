@@ -269,8 +269,12 @@
         <UniformGrid Columns="2" ColumnSpacing="12" RowSpacing="10">
           <StackPanel IsVisible="{Binding ShowVideoMaxSize}">
             <TextBlock Classes="label" Text="{DynamicResource presets.max_size}" />
-            <NumericUpDown Value="{Binding VideoMaxSizeMb}" Minimum="0" Maximum="4096" Increment="1" FormatString="0.#"
-                           ToolTip.Tip="{DynamicResource presets.max_size_hint_video}" AutomationProperties.Name="{DynamicResource presets.max_size}" />
+            <Grid ColumnDefinitions="*,8,Auto">
+              <NumericUpDown Value="{Binding VideoMaxSize}" Minimum="0" Maximum="{Binding VideoSizeMaximum}" Increment="{Binding VideoSizeIncrement}" FormatString="{Binding VideoSizeFormat}"
+                             ToolTip.Tip="{DynamicResource presets.max_size_hint_video}" AutomationProperties.Name="{DynamicResource presets.max_size}" />
+              <ComboBox Grid.Column="2" ItemsSource="{Binding VideoSizeUnits}" SelectedItem="{Binding VideoSizeUnitChoice}"
+                        AutomationProperties.Name="{DynamicResource presets.size_unit}" />
+            </Grid>
           </StackPanel>
           <StackPanel IsVisible="{Binding ShowVideoCodec}">
             <TextBlock Classes="label" Text="{DynamicResource presets.video_codec}" />
