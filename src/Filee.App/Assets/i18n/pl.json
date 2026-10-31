@@ -829,7 +829,6 @@
   "presets.media_quality.Small": "Mała (do udostępniania)",
   "presets.max_height": "Maksymalna wysokość",
   "presets.max_height.original": "Oryginalna",
-  "presets.max_size": "Limit rozmiaru (MB)",
   "presets.max_size_hint_image": "0 = bez limitu. Większy obraz jest zapisywany ponownie w niższej jakości, a potem mniejszy, aż się zmieści.",
   "presets.max_size_hint_video": "0 = bez limitu. Większe wideo jest kodowane ponownie z przepływnością, na jaką pozwala jego długość.",
   "presets.size_range": "Rozmiar pliku",
