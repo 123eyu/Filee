@@ -383,8 +383,10 @@
     <Setter Property="RenderTransform" Value="scale(1.4, 1.15)" />
   </Style>
 
-  <!-- Search box cross: turns the accent colour on hover and press (no background) instead of Fluent's default blue -->
-  <Style Selector="Window.material-you TextBox /template/ Button#PART_ClearButton:pointerover /template/ ContentPresenter#PART_ContentPresenter, Window.material-you TextBox /template/ Button#PART_ClearButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+  <!-- Search box cross (TextBox.clearButton): turns the accent colour on hover and press, never a filled square, instead of
+       Fluent's default blue. Fluent's clear button is a plain Button (theme FluentTextBoxButton) whose only template part is a
+       ContentPresenter named PART_ContentPresenter; its :pointerover and :pressed styles paint that presenter. -->
+  <Style Selector="Window.material-you TextBox /template/ Button:pointerover /template/ ContentPresenter#PART_ContentPresenter, Window.material-you TextBox /template/ Button:pressed /template/ ContentPresenter#PART_ContentPresenter, Window.material-you TextBox Button:pointerover /template/ ContentPresenter#PART_ContentPresenter, Window.material-you TextBox Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
