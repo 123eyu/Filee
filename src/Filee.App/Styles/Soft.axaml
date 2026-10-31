@@ -292,6 +292,20 @@
   <Style Selector="ComboBox /template/ ScrollViewer">
     <Setter Property="AllowAutoHide" Value="False" />
   </Style>
+  <!-- The chevron points down while the list is closed and flips to point up while it is open (the ComboBox has the
+       :dropdownopen state exactly then). "none" -> rotate(180deg) is animated as a transform, so it turns smoothly. A plain
+       ease-out is used rather than SoftEase, whose overshoot would swing the chevron past 180 degrees and back. -->
+  <Style Selector="ComboBox /template/ PathIcon#DropDownGlyph">
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ComboBox:dropdownopen /template/ PathIcon#DropDownGlyph">
+    <Setter Property="RenderTransform" Value="rotate(180deg)" />
+  </Style>
 
 
   <!-- ───────── Page content fade-in (keyframes can't animate RenderTransform, so Margin slides) ───────── -->
