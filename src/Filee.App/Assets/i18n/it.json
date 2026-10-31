@@ -814,7 +814,6 @@
 "presets.media_quality.Small": "Piccola (per condividere)",
 "presets.max_height": "Altezza massima",
 "presets.max_height.original": "Originale",
-"presets.max_size": "Limite di dimensione (MB)",
 "presets.max_size_hint_image": "0 = nessun limite. Un'immagine più grande viene salvata di nuovo a qualità più bassa, poi più piccola, finché non rientra.",
 "presets.max_size_hint_video": "0 = nessun limite. Un video più grande viene ricodificato al bitrate che la sua durata consente.",
 "presets.size_range": "Dimensione file",
