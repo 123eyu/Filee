@@ -95,13 +95,11 @@ public sealed class MaterialYouPalette
         };
 
         // Dark mode: Fluent's hover and focus fills for inputs and dropdowns are near-black, a sudden dark box. Keep them a
-        // faint step lighter than the resting fill instead, so hovering only hints at the change.
+        // faint step lighter than the resting fill (SurfaceAlt, which the Material You styles already give inputs and
+        // dropdowns) instead, so hovering only hints at the change. The resting fills themselves are not set here.
         if (Luminance(Surface) < 0.5)
         {
-            var rest = new SolidColorBrush(SurfaceAlt);
             var faint = new SolidColorBrush(SoftPalette.Shade(SurfaceAlt, 0.06));
-            foreach (var key in new[] { "TextControlBackground", "ComboBoxBackground", "ComboBoxBackgroundUnfocused" })
-                resources[key] = rest;
             foreach (var key in new[]
                      {
                          "TextControlBackgroundPointerOver", "TextControlBackgroundFocused",

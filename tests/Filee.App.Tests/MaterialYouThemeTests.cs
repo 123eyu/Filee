@@ -513,23 +513,26 @@ public class MaterialYouThemeTests
     {
         foreach (var seed in new[] { "#7F77DD", "#1D9E75", "#1F1E1D" })
         {
-            var dark = MaterialYouPalette.Generate(Color.Parse(seed), isDark: true).ToResourceDictionary();
+            var palette = MaterialYouPalette.Generate(Color.Parse(seed), isDark: true);
+            var dark = palette.ToResourceDictionary();
 
-            foreach (var (rest, hover) in new[]
+            // Only hover and focus change: the resting fills are left to the Material You styles, as before.
+            foreach (var rest in new[] { "TextControlBackground", "ComboBoxBackground", "ComboBoxBackgroundUnfocused" })
+                Assert.False(dark.ContainsKey(rest), $"{seed}: {rest} is a resting fill and should not be set");
+
+            foreach (var hover in new[]
                      {
-                         ("TextControlBackground", "TextControlBackgroundPointerOver"),
-                         ("TextControlBackground", "TextControlBackgroundFocused"),
-                         ("ComboBoxBackground", "ComboBoxBackgroundPointerOver"),
+                         "TextControlBackgroundPointerOver", "TextControlBackgroundFocused",
+                         "ComboBoxBackgroundPointerOver", "ComboBoxBackgroundPressed",
                      })
             {
-                var restColor = Assert.IsType<SolidColorBrush>(dark[rest]).Color;
                 var hoverColor = Assert.IsType<SolidColorBrush>(dark[hover]).Color;
 
-                // A step lighter than the resting fill, never darker than it.
-                Assert.True(MaterialYouPalette.Luminance(hoverColor) > MaterialYouPalette.Luminance(restColor),
-                    $"{seed}: {hover} {hoverColor} should be slightly lighter than {rest} {restColor}");
-                Assert.True(MaterialYouPalette.Luminance(hoverColor) - MaterialYouPalette.Luminance(restColor) < 0.12,
-                    $"{seed}: {hover} {hoverColor} should stay faint next to {rest} {restColor}");
+                // A step lighter than the resting fill (SurfaceAlt), never darker than it.
+                Assert.True(MaterialYouPalette.Luminance(hoverColor) > MaterialYouPalette.Luminance(palette.SurfaceAlt),
+                    $"{seed}: {hover} {hoverColor} should be slightly lighter than {palette.SurfaceAlt}");
+                Assert.True(MaterialYouPalette.Luminance(hoverColor) - MaterialYouPalette.Luminance(palette.SurfaceAlt) < 0.12,
+                    $"{seed}: {hover} {hoverColor} should stay faint next to {palette.SurfaceAlt}");
             }
         }
     }
