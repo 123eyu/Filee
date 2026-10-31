@@ -140,7 +140,7 @@
   "notice.original_kept": "मूल फ़ाइल रखी गई, परिणाम कॉपी के रूप में सहेजा गया",
   "notice.original_in_trash": "मूल फ़ाइल रीसायकल बिन / ट्रैश में है, परिणाम ने अपना नाम रखा",
   "notice.original_unchanged": "इसे छोटा नहीं किया जा सका, इसलिए मूल फ़ाइल जैसी थी वैसी छोड़ दी गई",
-  "notice.move_original_kept": "Copied, but the original couldn't be removed",
+  "notice.move_original_kept": "कॉपी हो गया, लेकिन मूल फ़ाइल हटाई नहीं जा सकी",
   "trash.no_recycle_bin": "इस ड्राइव में रीसायकल बिन / ट्रैश नहीं है",
   "trash.in_use": "फ़ाइल किसी दूसरे प्रोग्राम में खुली है",
   "trash.read_only": "फ़ाइल केवल पढ़ने के लिए है",
@@ -1269,11 +1269,11 @@
   "whats_new.2_0_0.more.title": "और भी थोड़ा",
   "whats_new.2_0_0.more.text": "एक ही डोनट को डिफ़ॉल्ट पर रीसेट करें, पूरा इतिहास खोजें, और गुजराती, हिन्दी या अरबी दस्तावेज़ LibreOffice से बदलें।",
   "preset.extract_motion.donut": "लाइव फ़ोटो वीडियो निकालें",
-  "presets.copy_to_folder": "Copy to folder",
-  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
-  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
-  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action",
-  "presets.move_to_folder": "Move to folder",
-  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
+  "presets.copy_to_folder": "फ़ोल्डर में कॉपी करें",
+  "presets.copy_hint": "फ़ाइलें और फ़ोल्डर बिना रूपांतरण के कॉपी करें। मूल फ़ाइलें अपनी जगह रहती हैं; पहले से मौजूद नामों में एक संख्या जुड़ जाती है।",
+  "presets.copy_choose_folder": "गंतव्य फ़ोल्डर चुनें, या \"हर बार पूछें\"।",
+  "presets.copy_back": "\"फ़ोल्डर में कॉपी करें\" पीछे वाले हिस्से पर रहता है। इसे जोड़ने के लिए \"पीछे\" पर जाएँ।",
+  "presets.copy_action": "क्रिया",
+  "presets.move_to_folder": "फ़ोल्डर में ले जाएँ",
+  "presets.move_hint": "फ़ाइलें और फ़ोल्डर बिना रूपांतरण के ले जाएँ। पहुँचने के बाद वे अपनी पुरानी जगह से हट जाते हैं; पहले से मौजूद नामों में एक संख्या जुड़ जाती है।"
 }

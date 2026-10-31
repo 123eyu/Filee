@@ -146,7 +146,7 @@
   "notice.original_kept": "已保留原始檔案，結果另存為副本",
   "notice.original_in_trash": "原始檔案已在資源回收筒/垃圾桶中，結果保留了自己的名稱",
   "notice.original_unchanged": "無法變小，因此保留原始檔案不變",
-  "notice.move_original_kept": "Copied, but the original couldn't be removed",
+  "notice.move_original_kept": "已複製，但無法刪除原始檔案",
   "trash.no_recycle_bin": "此磁碟機沒有資源回收筒/垃圾桶",
   "trash.in_use": "檔案正由其他程式開啟",
   "trash.read_only": "檔案為唯讀",
@@ -1289,11 +1289,11 @@
   "whats_new.2_0_0.more.title": "還有更多",
   "whats_new.2_0_0.more.text": "可以只把一個環形工具列還原為初始設定、搜尋全部歷史記錄，並透過 LibreOffice 轉換古吉拉特語、印地語或阿拉伯語文件。",
   "preset.extract_motion.donut": "擷取原況/動態相片影片",
-  "presets.copy_to_folder": "Copy to folder",
-  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
-  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
-  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action",
-  "presets.move_to_folder": "Move to folder",
-  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
+  "presets.copy_to_folder": "複製到資料夾",
+  "presets.copy_hint": "不轉換，直接複製檔案和資料夾。原始檔案留在原處；同名時會加上編號。",
+  "presets.copy_choose_folder": "選擇目標資料夾，或選擇「每次詢問」。",
+  "presets.copy_back": "「複製到資料夾」放在背面。切換到「背面」即可新增。",
+  "presets.copy_action": "動作",
+  "presets.move_to_folder": "移動到資料夾",
+  "presets.move_hint": "不轉換，直接移動檔案和資料夾。抵達目標後，原位置的檔案就不在了；同名時會加上編號。"
 }

@@ -140,7 +140,7 @@
   "notice.original_kept": "मूल फाइल राखियो, नतिजा प्रतिलिपिको रूपमा सुरक्षित भयो",
   "notice.original_in_trash": "मूल फाइल रिसाइकल बिन / ट्र्यासमा छ, नतिजाले आफ्नै नाम राख्यो",
   "notice.original_unchanged": "यसलाई सानो बनाउन सकिएन, त्यसैले मूल फाइल जस्ताको तस्तै छोडियो",
-  "notice.move_original_kept": "Copied, but the original couldn't be removed",
+  "notice.move_original_kept": "प्रतिलिपि भयो, तर मूल फाइल हटाउन सकिएन",
   "trash.no_recycle_bin": "यो ड्राइभमा रिसाइकल बिन / ट्र्यास छैन",
   "trash.in_use": "फाइल अर्को प्रोग्राममा खुला छ",
   "trash.read_only": "फाइल पढ्न मात्र मिल्ने छ",
@@ -1269,11 +1269,11 @@
   "whats_new.2_0_0.more.title": "र थोरै अरू पनि",
   "whats_new.2_0_0.more.text": "एउटै डोनटलाई पूर्वनिर्धारितमा रिसेट गर्नुहोस्, सम्पूर्ण इतिहास खोज्नुहोस्, र LibreOffice मार्फत गुजराती, हिन्दी वा अरबी कागजातहरू रूपान्तरण गर्नुहोस्।",
   "preset.extract_motion.donut": "लाइभ फोटो भिडियो निकाल्नुहोस्",
-  "presets.copy_to_folder": "Copy to folder",
-  "presets.copy_hint": "Copy files and folders without conversion. Originals stay where they are; existing names get a number.",
-  "presets.copy_choose_folder": "Choose a destination folder, or Ask every time.",
-  "presets.copy_back": "Copy to folder belongs on the back face. Switch to Back to add it.",
-  "presets.copy_action": "Action",
-  "presets.move_to_folder": "Move to folder",
-  "presets.move_hint": "Move files and folders without conversion. They are gone from where they were once they have arrived; existing names get a number."
+  "presets.copy_to_folder": "फोल्डरमा प्रतिलिपि गर्नुहोस्",
+  "presets.copy_hint": "फाइल र फोल्डरहरू रूपान्तरण नगरी प्रतिलिपि गर्नुहोस्। मूल फाइलहरू आफ्नै ठाउँमा रहन्छन्; पहिल्यै भएका नाममा एउटा अङ्क थपिन्छ।",
+  "presets.copy_choose_folder": "गन्तव्य फोल्डर छान्नुहोस्, वा \"हरेक पटक सोध्नुहोस्\"।",
+  "presets.copy_back": "\"फोल्डरमा प्रतिलिपि गर्नुहोस्\" पछाडिको भागमा राखिन्छ। थप्न \"पछाडि\" मा जानुहोस्।",
+  "presets.copy_action": "कार्य",
+  "presets.move_to_folder": "फोल्डरमा सार्नुहोस्",
+  "presets.move_hint": "फाइल र फोल्डरहरू रूपान्तरण नगरी सार्नुहोस्। पुगेपछि ती पुरानो ठाउँबाट हट्छन्; पहिल्यै भएका नाममा एउटा अङ्क थपिन्छ।"
 }
